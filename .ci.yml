@@ -1,0 +1,10 @@
+stages:
+  - linting
+flake8:
+  stage: linting
+  image:
+    name: "debian:bookworm"
+  before_script:
+    - pip3 install -r requirements.txt
+  script:
+    - flake8 --verbose ./src

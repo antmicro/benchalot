@@ -1,0 +1,15 @@
+---
+output:
+  name: "result.csv"
+  format: "csv"
+matrix:
+  thread: [2, 4, 8]
+  input: ["data1", "data2", "data3"]
+  commit: ["abc123", "cba321"]
+run:
+  before:
+    - "cd ~/repository/ && git checkout $matrix.commit && make build"
+  benchmark:
+    - "~/repository/bin/sort --threads=$matrix.thread $matrix.input"
+  after:
+    - "cd ~/repository/ && make clean"
