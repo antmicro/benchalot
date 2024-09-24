@@ -47,7 +47,10 @@ run:
 
 ```
 
-Benchmarker based on that config will run benchmark for each value specified in `matrix.*` fields, it will then store the results in `result.csv` file. Commands specified as strings in `run` field will be executed with every substring beginning with `$matrix.` being substituted to corresponding variable. For each value of the variable a run will be performed. 
+Based on that config, Benchmarker will run a benchmark for each value specified in `matrix.*` fields.
+It will then store the results in the `result.csv` file.
+Commands specified as strings in `run` field will be executed with every substring beginning with `$matrix.` being substituted to the corresponding variable.
+For each value of the variable, a run will be performed. 
 `before` is used to change current commit of the project working directory and to build new version of the program. 
 `benchmark` contains the commands to be measured with their arguments.
 `after` section performs cleanup after the measurement. 

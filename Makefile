@@ -10,4 +10,4 @@ lint:
 typecheck:
 	mypy ./src/*
 
-sanatize: format lint typecheck
+sanitize: format lint typecheck

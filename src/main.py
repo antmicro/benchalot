@@ -44,8 +44,8 @@ else:
         config = yaml.safe_load(config_file)
 
 # process commands, i.e. replace variable names with values.
-if  "run" not in config:
-    print("ERROR: `run` section not found the config file.", file = stderr)
+if "run" not in config:
+    print("ERROR: `run` section not found the config file.", file=stderr)
     exit(1)
 
 benchmarks = []
