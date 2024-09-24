@@ -2,6 +2,7 @@ import yaml
 from itertools import product
 from subprocess import run
 from timeit import timeit
+import pandas as pd
 
 with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
@@ -26,7 +27,10 @@ def prepare_command(command: str, var_combination) -> str:
 
 
 var_combinations = list(product_dict(**config["matrix"]))
-results = {}
+results = pd.DataFrame(
+    columns=[key for key in config["matrix"].keys()] + ["measurement[s]"]
+)
+print(results)
 for var_combination in var_combinations:
     print(f"Exectuting with variables set to: {var_combination}.")
     for command in config["run"]["before"]:
@@ -40,8 +44,9 @@ for var_combination in var_combinations:
         print(f"Queueing: {c}")
         benchmarked_commands.append(c)
     result = timeit(lambda: run_multiple_commands(benchmarked_commands), number=1)
-    results[tuple(var_combination.items())] = result
-
+    results.loc[len(results.index)] = [
+        var_combination[key] for key in var_combination
+    ] + [result]
     for command in config["run"]["after"]:
         c = prepare_command(command, var_combination)
         print(f"Running {c}")
@@ -50,4 +55,7 @@ for var_combination in var_combinations:
             shell=True,
         )
     print()
-print(results)
+
+print(results.head())
+
+results.to_csv(config["output"]["name"], encoding="utf-8", index=False)
