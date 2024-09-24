@@ -13,12 +13,12 @@ def product_dict(**kwargs):
         yield dict(zip(keys, instance))
 
 
-def run_multiple_commands(commands: list) -> float:
+def run_multiple_commands(commands: list):
     for c in commands:
         run(c, shell=True)
 
 
-def prepare_command(command: str, var_combination) -> list:
+def prepare_command(command: str, var_combination) -> str:
 
     for var in var_combination:
         command = command.replace(f"$matrix.{var}", str(var_combination[var]))
@@ -40,11 +40,14 @@ for var_combination in var_combinations:
         print(f"Queueing: {c}")
         benchmarked_commands.append(c)
     result = timeit(lambda: run_multiple_commands(benchmarked_commands), number=1)
-    results[tuple(var_combination.items())] =  result
+    results[tuple(var_combination.items())] = result
 
     for command in config["run"]["after"]:
         c = prepare_command(command, var_combination)
         print(f"Running {c}")
-        run(c, shell=True, )
+        run(
+            c,
+            shell=True,
+        )
     print()
 print(results)
