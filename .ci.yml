@@ -28,3 +28,4 @@ flake8:
   script:
     - source .venv/bin/activate
     - make lint
+    - make typecheck

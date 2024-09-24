@@ -6,3 +6,6 @@ check_format:
 
 lint: 
 	flake8 --verbose ./src
+
+typecheck:
+	mypy ./src/*
