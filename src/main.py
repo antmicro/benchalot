@@ -44,6 +44,10 @@ else:
         config = yaml.safe_load(config_file)
 
 # process commands, i.e. replace variable names with values.
+if  "run" not in config:
+    print("ERROR: `run` section not found the config file.", file = stderr)
+    exit(1)
+
 benchmarks = []
 if "matrix" not in config:
     benchmarks.append(config["run"])
@@ -86,5 +90,5 @@ for benchmark in benchmarks:
 
 
 print(results.head())
-
-results.to_csv(config["output"]["name"], encoding="utf-8", index=False)
+if "output" in config and "name" in config["output"]:
+    results.to_csv(config["output"]["name"], encoding="utf-8", index=False)
