@@ -1,5 +1,6 @@
 import yaml
 from itertools import product
+from subprocess import run
 
 with open("config.yml", 'r') as file:
     config = yaml.safe_load(file)
@@ -24,9 +25,15 @@ def prepare_command(command: str, var_combination) -> list:
 for var_combination in var_combinations:
     print(f"Exectuting with variables set to: {var_combination}.")
     for command in config['run']['before']:
-        print(prepare_command(command, var_combination))
+        c = prepare_command(command, var_combination)
+        print(f"Running {' '.join(c)}")
+        run(c, shell=True)
     for command in config['run']['benchmark']:
-        print(prepare_command(command, var_combination))
+        c = prepare_command(command, var_combination)
+        print(f"Running {' '.join(c)}")
+        run(c, shell=True)
     for command in config['run']['after']:
-        print(prepare_command(command, var_combination))
+        c = prepare_command(command, var_combination)
+        print(f"Running {' '.join(c)}")
+        run(c, shell=True)
     print()

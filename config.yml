@@ -3,13 +3,11 @@ output:
   name: "result.csv"
   format: "csv"
 matrix:
-  thread: [2, 4, 8]
-  input: ["data1", "data2", "data3"]
-  commit: ["abc123", "cba321"]
+  commit: ["e78af0f465f4df31ab90d47a36a81cab7b5e85a2", "6652eb532aa192b588c73835069f043567edc1b5"]
 run:
   before:
-    - "cd ~/repository/ && git checkout $matrix.commit && make build"
+    - "cd ~/Documents/sleeper && git checkout $matrix.commit && make build"
   benchmark:
-    - "~/repository/bin/sort --threads=$matrix.thread $matrix.input"
+    - "~/Documents/sleeper/sleeper"
   after:
-    - "cd ~/repository/ && make clean"
+    - "cd ~/Documents/sleeper && make clean"
