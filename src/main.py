@@ -1,17 +1,27 @@
 import yaml
+import pandas as pd
 from itertools import product
 from subprocess import run
 from timeit import timeit
-import pandas as pd
-
-with open("config.yml", "r") as file:
-    config = yaml.safe_load(file)
+from sys import stderr
 
 
-def product_dict(**kwargs):
+def create_variable_combinations(**kwargs):
     keys = kwargs.keys()
     for instance in product(*kwargs.values()):
         yield dict(zip(keys, instance))
+
+
+def prepare_commands(commands: list, var_combination) -> list:
+    def prepare_command(command: str, var_combination) -> str:
+        for var in var_combination:
+            command = command.replace(f"$matrix.{var}", str(var_combination[var]))
+        return command
+
+    prepared_commands = []
+    for command in commands:
+        prepared_commands.append(prepare_command(command, var_combination))
+    return prepared_commands
 
 
 def run_multiple_commands(commands: list):
@@ -19,42 +29,61 @@ def run_multiple_commands(commands: list):
         run(c, shell=True)
 
 
-def prepare_command(command: str, var_combination) -> str:
-
-    for var in var_combination:
-        command = command.replace(f"$matrix.{var}", str(var_combination[var]))
-    return command
+def benchmark_commands(commands: list) -> float:
+    return timeit(lambda: run_multiple_commands(commands), number=1)
 
 
-var_combinations = list(product_dict(**config["matrix"]))
+# load configuration file
+try:
+    config_file = open("config.yml", "r")
+except FileNotFoundError:
+    print("'config.yml' not found.", file=stderr)
+    exit(1)
+else:
+    with config_file:
+        config = yaml.safe_load(config_file)
+
+# process commands, i.e. replace variable names with values.
+benchmarks = []
+if "matrix" not in config:
+    benchmarks.append(config["run"])
+    benchmarks[0]["matrix"] = {}
+else:
+    var_combinations = list(create_variable_combinations(**config["matrix"]))
+    for var_combination in var_combinations:
+        benchmark = {"matrix": var_combination}
+        if "before" in config["run"]:
+            benchmark["before"] = prepare_commands(
+                config["run"]["before"], var_combination
+            )
+        if "benchmark" in config["run"]:
+            benchmark["benchmark"] = prepare_commands(
+                config["run"]["benchmark"], var_combination
+            )
+        if "after" in config["run"]:
+            benchmark["after"] = prepare_commands(
+                config["run"]["after"], var_combination
+            )
+        benchmarks.append(benchmark)
+
+# perform benchmarks
 results = pd.DataFrame(
-    columns=[key for key in config["matrix"].keys()] + ["measurement[s]"]
+    columns=[key for key in benchmarks[0]["matrix"].keys()] + ["measurement[s]"]
 )
-print(results)
-for var_combination in var_combinations:
-    print(f"Exectuting with variables set to: {var_combination}.")
-    for command in config["run"]["before"]:
-        c = prepare_command(command, var_combination)
-        print(f"Running {c}")
-        run(c, shell=True)
-
-    benchmarked_commands = []
-    for command in config["run"]["benchmark"]:
-        c = prepare_command(command, var_combination)
-        print(f"Queueing: {c}")
-        benchmarked_commands.append(c)
-    result = timeit(lambda: run_multiple_commands(benchmarked_commands), number=1)
+for benchmark in benchmarks:
+    if "before" in benchmark:
+        run_multiple_commands(benchmark["before"])
+    if "benchmark" in benchmark:
+        result = benchmark_commands(benchmark["benchmark"])
+    else:
+        print("ERROR: No 'benchmark' section in the config file.", file=stderr)
+        exit(1)
+    if "after" in benchmark:
+        run_multiple_commands(benchmark["after"])
     results.loc[len(results.index)] = [
-        var_combination[key] for key in var_combination
+        benchmark["matrix"][key] for key in benchmark["matrix"]
     ] + [result]
-    for command in config["run"]["after"]:
-        c = prepare_command(command, var_combination)
-        print(f"Running {c}")
-        run(
-            c,
-            shell=True,
-        )
-    print()
+
 
 print(results.head())
 

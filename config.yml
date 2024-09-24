@@ -4,7 +4,6 @@ output:
   format: "csv"
 matrix:
   commit: ["1ff8e7aa46b69badd29c563eea5ad38511587945", "6652eb532aa192b588c73835069f043567edc1b5"]
-working_dir: ~/Documents/sleeper
 run:
   before:
     - "cd ~/Documents/sleeper && git checkout $matrix.commit && make build"
