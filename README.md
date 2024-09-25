@@ -17,7 +17,7 @@ pip install -r requirements.txt
 ```
 
 Configure the application by editing the YAML configuration file.
-Pass configuration file's name as an argument.
+Then pass configuration file's name as an argument.
 For example, start the benchmark by typing this command:
 
 ```bash
@@ -27,12 +27,10 @@ python src/main.py config.yml
 
 ## Configuration
 
-Benchmarker is configured using a YAML file. 
-Example:
+Benchmarker is configured using a YAML file, e.g.:
 
 ```yaml
 ---
-
 output:
   name: "result.csv"
   format: "csv"
@@ -47,10 +45,9 @@ run:
     - "~/repository/bin/sort --threads=$matrix.thread $matrix.input"
   after:
     - "cd ~/repository/ && make clean"
-
 ```
 
-Based on that config, Benchmarker will run benchmark for each value specified in `matrix.*` fields.
+Based on that config, Benchmarker will run a benchmark for each value specified in `matrix.*` fields.
 It will then store the results in the `output.name` file.
 Commands specified as strings in `run` field will be executed with every substring beginning with `$matrix.` being substituted to corresponding variable.
 For each combination of variable values, a run will be performed, e.g.:  
@@ -63,7 +60,7 @@ The above configuration will result in runs:
 in total performing 27 benchmarks.
 If there is no `matrix` section, Benchmarker will execute `run` section once.
 
-`before` contains commands to be executed before the benchmark. 
+`before` contains the commands to be executed before the benchmark. 
 `benchmark` contains the commands to be benchmarked.
-`after` contains commands to be executed after the measurement. 
+`after` contains the commands to be executed after the measurement. 
 The `before` and `after` sections are optional.
