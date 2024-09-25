@@ -66,8 +66,7 @@ The above configuration will result in runs:
 [...]  
 `$matrix.thread = 8; $matrix.input = "data3"; $matrix.commit = "cba321"`
 in total performing 27 benchmarks.
-If there is no `matrix` section, Benchmarker will execute `run` section once.
-### Run
+If there is no `matrix` section, Benchmarker will execute the `run` section once.
 
 `before` contains the commands to be executed before the benchmark. 
 `benchmark` contains the commands to be benchmarked.
