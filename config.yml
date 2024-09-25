@@ -19,3 +19,4 @@ output:
     format: "bar-chart"
     x-axis: thread
     facet: commit
+    color: input
