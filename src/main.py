@@ -4,7 +4,7 @@ from itertools import product
 from subprocess import run
 from time import monotonic_ns
 from sys import stderr, argv
-from plotnine import ggplot, aes, geom_col, facet_grid, theme_classic
+from plotnine import ggplot, aes, geom_col, facet_grid, theme_classic, labs
 
 
 def create_variable_combinations(**kwargs):
@@ -115,5 +115,6 @@ if "output" in config:
                 + geom_col()
                 + facet_grid(cols=output["facet"])
                 + theme_classic()
+                + labs(x=output['x-axis'])
             )
-            plot.save(output["filename"], width=16, height=9, dpi=100)
+            plot.save(output["filename"], width=10, height=9, dpi=100)

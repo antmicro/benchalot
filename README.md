@@ -31,21 +31,29 @@ Benchmarker is configured using a YAML file, e.g.:
 
 ```yaml
 ---
-output:
-  name: "result.csv"
-  format: "csv"
 matrix:
   thread: [2, 4, 8]
+  commit: ["04b536d553a21219d1419820e35d8cd703561636", "32d369e077b7330022d8eda68bcbbfcd25b9e56a"]
   input: ["data1", "data2", "data3"]
-  commit: ["abc123", "cba321"]
 run:
   before:
-    - "cd ~/repository/ && git checkout $matrix.commit && make build"
+    - "cd ~/Documents/sleeper && git checkout $matrix.commit && make build"
   benchmark:
-    - "~/repository/bin/sort --threads=$matrix.thread $matrix.input"
+    - "~/Documents/sleeper/sleeper $matrix.thread $matrix.input"
   after:
-    - "cd ~/repository/ && make clean"
+    - "cd ~/Documents/sleeper && make clean"
+output:
+  csv:
+    filename: "result.csv"
+    format: "csv"
+  plot:
+    filename: "plot.png"
+    format: "bar-chart"
+    x-axis: thread
+    facet: commit
 ```
+
+### Matrix
 
 Based on that config, Benchmarker will run a benchmark for each value specified in `matrix.*` fields.
 It will then store the results in the `output.name` file.
@@ -59,8 +67,25 @@ The above configuration will result in runs:
 `$matrix.thread = 8; $matrix.input = "data3"; $matrix.commit = "cba321"`
 in total performing 27 benchmarks.
 If there is no `matrix` section, Benchmarker will execute `run` section once.
+### Run
 
 `before` contains the commands to be executed before the benchmark. 
 `benchmark` contains the commands to be benchmarked.
 `after` contains the commands to be executed after the measurement. 
 The `before` and `after` sections are optional.
+
+### Output
+
+In the `output` section user can specify desired output of the program.
+Each subsection of the `output` corresponds to one output file described by `filename` and `format`.
+Currently there are two supported formats: `csv` and `bar-plot` (in the form of an `*.png` image).
+
+`csv` output will contain columns corresponding to variables and one column with benchmark results.
+
+`bar-plot` should be configured with options:
+* `x-axis` (mandatory): contains name of the variable which will be used as x-axis on the plot.
+* `facet` (optional): contains name of the variable which will be used to facet (divide into subplots) the plot.
+
+For example, the config above with result with this `plot.png`:
+
+<img src="plot.png" alt="plot created automatically based on configuration file" width="700" height="630"/>
