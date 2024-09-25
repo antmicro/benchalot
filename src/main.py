@@ -71,9 +71,7 @@ else:
         benchmarks.append(benchmark)
 
 # perform benchmarks
-results = pd.DataFrame(
-    columns=[key for key in benchmarks[0]["matrix"].keys()] + ["measurement[s]"]
-)
+results = []
 for benchmark in benchmarks:
     if "before" in benchmark:
         run_multiple_commands(benchmark["before"])
@@ -84,11 +82,10 @@ for benchmark in benchmarks:
         exit(1)
     if "after" in benchmark:
         run_multiple_commands(benchmark["after"])
-    results.loc[len(results.index)] = [
-        benchmark["matrix"][key] for key in benchmark["matrix"]
-    ] + [result]
+    results.append([benchmark["matrix"][key] for key in benchmark["matrix"]] + [result])
 
+resultsDf = pd.DataFrame(results)
+print(resultsDf.head())
 
-print(results.head())
 if "output" in config and "name" in config["output"]:
-    results.to_csv(config["output"]["name"], encoding="utf-8", index=False)
+    resultsDf.to_csv(config["output"]["name"], encoding="utf-8", index=False)
