@@ -3,29 +3,32 @@
 Benchmarker is a tool used for automatic benchmarking of software. 
 
 
-User can be specify commands to be run before and after taking measurement to prepare and maintain environment of the measurement using configuration file.
-
+User can specify commands to be run before and after taking measurement to prepare the environment using a configuration file.
 
 # Usage
 
-To use the program install and create python virutal environment:
+To use the program install and create a Python virtual environment:
 
 ```bash
 sudo apt install python3-venv
 python3 -m  venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Configure the application by edditing the `config.yml` file. Then start the benchamrk by typing this command:
+Configure the application by editing the YAML configuration file.
+Pass configuration file's name as an argument.
+For example, start the benchmark by typing this command:
 
 ```bash
-python src/main.py
+python src/main.py config.yml
 ```
 
 
 ## Configuration
 
-Benchmarker is configured using a `config.yml` file placed inside the root directory of the project. 
+Benchmarker is configured using a YAML file. 
+Example:
 
 ```yaml
 ---
@@ -47,12 +50,20 @@ run:
 
 ```
 
-Based on that config, Benchmarker will run a benchmark for each value specified in `matrix.*` fields.
-It will then store the results in the `result.csv` file.
-Commands specified as strings in `run` field will be executed with every substring beginning with `$matrix.` being substituted to the corresponding variable.
-For each value of the variable, a run will be performed. 
-`before` is used to change current commit of the project working directory and to build new version of the program. 
-`benchmark` contains the commands to be measured with their arguments.
-`after` section performs cleanup after the measurement. 
+Based on that config, Benchmarker will run benchmark for each value specified in `matrix.*` fields.
+It will then store the results in the `output.name` file.
+Commands specified as strings in `run` field will be executed with every substring beginning with `$matrix.` being substituted to corresponding variable.
+For each combination of variable values, a run will be performed, e.g.:  
+The above configuration will result in runs:  
+`$matrix.thread = 2; $matrix.input = "data1"; $matrix.commit = "abc123"`  
+`$matrix.thread = 4; $matrix.input = "data1"; $matrix.commit = "abc123"`  
+`$matrix.thread = 8; $matrix.input = "data1"; $matrix.commit = "abc123"`  
+[...]  
+`$matrix.thread = 8; $matrix.input = "data3"; $matrix.commit = "cba321"`
+in total performing 27 benchmarks.
+If there is no `matrix` section, Benchmarker will execute `run` section once.
 
-Only execution time of commands inside the `benchmark` section is stored in the output.  
+`before` contains commands to be executed before the benchmark. 
+`benchmark` contains the commands to be benchmarked.
+`after` contains commands to be executed after the measurement. 
+The `before` and `after` sections are optional.
