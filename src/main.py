@@ -36,29 +36,34 @@ def benchmark_commands(commands: list) -> float:
     run_multiple_commands(commands)
     return (monotonic_ns() - start) / 1e9  # convert to seconds
 
+
 def error(msg):
     print(f"ERROR: {msg}", file=stderr)
     exit(1)
 
+
 def validate_config(config):
     def get_var_not_found_msg(var):
-        return f"Variable `{var}` not found."
+        return f"Variable at `{var}` not found."
+
     if "run" not in config:
         error("`run` section not found the config file.")
-    if "benchmark" not in config['run']:
+    if "benchmark" not in config["run"]:
         error("No 'benchmark' section in the config file.")
     if "matrix" in config:
-        for section in ['before', 'benchmark', 'after']:
-            for command in config['run'][section]:
+        for section in ["before", "benchmark", "after"]:
+            for command in config["run"][section]:
                 variables = findall("\$matrix\.[a-zA-Z0-9]*", command)
                 for var in variables:
                     var_key = var.split(".")[1]
                     if var_key not in config["matrix"]:
-                        error(get_var_not_found_msg(f{var_key}))
-    
+                        error(get_var_not_found_msg(f"run.{section}.{var_key}"))
+
     if "output" in config:
+
         def get_output_error_msg(section: str, key: str) -> str:
             return f"No `{section}` section in `output.{key}`"
+
         for key in config["output"]:
             output = config["output"][key]
             if "filename" not in output:
@@ -69,16 +74,15 @@ def validate_config(config):
                 if "matrix" not in config:
                     error("No matrix section.")
                 if "x-axis" not in output:
-                    error("x-axis", key)
-                if output["x-axis"] not in config['matrix']:
-                    error(f"`matrix.{output['x-axis']}` not found.")
+                    error(get_output_error_msg("x-axis", key))
+                if output["x-axis"] not in config["matrix"]:
+                    error(get_var_not_found_msg(f"output.{key}.x-axis"))
                 if "facet" in output:
-                    if output["facet"] not in config['matrix']:
-                        error(get_var_not_found_msg(output["facet"]))
+                    if output["facet"] not in config["matrix"]:
+                        error(get_var_not_found_msg(f"output.{key}.facet"))
                 if "color" in output:
-                    if output["color"] not in config['matrix']:
-                        error(get_var_not_found_msg(output["color"]))
-
+                    if output["color"] not in config["matrix"]:
+                        error(get_var_not_found_msg(f"output.{key}.color"))
 
 
 # load configuration file
@@ -146,8 +150,10 @@ if "output" in config:
         if output["format"] == "csv":
             resultsDf.to_csv(output["filename"], encoding="utf-8", index=False)
         elif output["format"] == "bar-chart":
-            if output["x-axis"] not in config['matrix']:
-                print(f"WARNING: Output {key}: `{output['x-axis']}` variable not found. Output for {key} will not be created.")
+            if output["x-axis"] not in config["matrix"]:
+                print(
+                    f"WARNING: Output {key}: `{output['x-axis']}` variable not found. Output for {key} will not be created."
+                )
                 continue
             plot = (
                 ggplot(
@@ -163,12 +169,16 @@ if "output" in config:
             )
             if "facet" in output:
                 plot += facet_grid(cols=output["facet"])
-                if output["facet"] not in config['matrix']:
-                    print(f"WARNING: Output {key}: `{output['facet']}` variable not found. Output for {key} will not be created.")
+                if output["facet"] not in config["matrix"]:
+                    print(
+                        f"WARNING: Output {key}: `{output['facet']}` variable not found. Output for {key} will not be created."
+                    )
                     continue
                 if "color" in output:
-                    if output["color"] not in config['matrix']:
-                        print(f"WARNING: Output {key}: `{output['color']}` variable not found. Output for {key} will not be created.")
+                    if output["color"] not in config["matrix"]:
+                        print(
+                            f"WARNING: Output {key}: `{output['color']}` variable not found. Output for {key} will not be created."
+                        )
                         continue
                 plot += aes(fill=f"factor({output['color']})")
                 plot += labs(fill=output["color"])
