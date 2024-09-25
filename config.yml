@@ -1,13 +1,20 @@
 ---
 output:
-  name: "result.csv"
-  format: "csv"
+  csv:
+    filename: "result.csv"
+    format: "csv"
+  plot:
+    filename: "plot.png"
+    format: "bar-chart"
+    x-axis: data
+    facet: commit
 matrix:
   commit: ["1ff8e7aa46b69badd29c563eea5ad38511587945", "6652eb532aa192b588c73835069f043567edc1b5"]
+  data: [1, 2, 3, 4, 5]
 run:
   before:
     - "cd ~/Documents/sleeper && git checkout $matrix.commit && make build"
   benchmark:
-    - "~/Documents/sleeper/sleeper"
+    - "~/Documents/sleeper/sleeper $matrix.data"
   after:
     - "cd ~/Documents/sleeper && make clean"

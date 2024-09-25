@@ -4,6 +4,7 @@ from itertools import product
 from subprocess import run
 from time import monotonic_ns
 from sys import stderr, argv
+from plotnine import ggplot, aes, geom_col, facet_grid, theme_classic
 
 
 def create_variable_combinations(**kwargs):
@@ -89,11 +90,30 @@ for benchmark in benchmarks:
         run_multiple_commands(benchmark["after"])
     results.append([benchmark["matrix"][key] for key in benchmark["matrix"]] + [result])
 
+# get output
 resultsDf = pd.DataFrame(
     results,
     columns=[key for key in benchmarks[0]["matrix"].keys()] + ["measurement[s]"],
 )
 print(resultsDf.head())
-
-if "output" in config and "name" in config["output"]:
-    resultsDf.to_csv(config["output"]["name"], encoding="utf-8", index=False)
+if "output" in config:
+    for key in config["output"]:
+        output = config["output"][key]
+        if "filename" not in output:
+            print(f"Warning: Output: {key} lacks `filename` section. Omitting...")
+            continue
+        if "format" not in output:
+            print(f"Warning: Output: {key} lacks `format` section. Omitting...")
+            continue
+        if output["format"] == "csv":
+            resultsDf.to_csv(output["filename"], encoding="utf-8", index=False)
+        elif output["format"] == "bar-chart":
+            plot = (
+                ggplot(
+                    resultsDf, aes(x=f"factor({output['x-axis']})", y="measurement[s]")
+                )
+                + geom_col()
+                + facet_grid(cols=output["facet"])
+                + theme_classic()
+            )
+            plot.save(output["filename"], width=16, height=9, dpi=100)
