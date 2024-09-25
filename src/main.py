@@ -97,29 +97,41 @@ resultsDf = pd.DataFrame(
 )
 print(resultsDf.head())
 if "output" in config:
+
+    def print_warning(key, section):
+        print(
+            f"WARNING: Output: {key} lacks `filename` section. Output for {section} will not be created."
+        )
+
     for key in config["output"]:
         output = config["output"][key]
         if "filename" not in output:
-            print(f"Warning: Output: {key} lacks `filename` section. Omitting...")
+            print_warning(key, "filename")
             continue
         if "format" not in output:
-            print(f"Warning: Output: {key} lacks `format` section. Omitting...")
+            print_warning(key, "format")
             continue
         if output["format"] == "csv":
             resultsDf.to_csv(output["filename"], encoding="utf-8", index=False)
         elif output["format"] == "bar-chart":
+            if "x-axis" not in output:
+                print_warning(key, "x-axis")
+                continue
             plot = (
                 ggplot(
                     resultsDf,
                     aes(
                         x=f"factor({output['x-axis']})",
                         y="measurement[s]",
-                        fill=output["color"],
                     ),
                 )
                 + geom_bar(position="dodge", stat="identity")
-                + facet_grid(cols=output["facet"])
                 + theme_classic()
-                + labs(x=output["x-axis"], fill=output["color"])
+                + labs(x=output["x-axis"])
             )
+            if "facet" in output:
+                plot += facet_grid(cols=output["facet"])
+            if "color" in output:
+                plot += aes(fill=f"factor({output['color']})")
+                plot += labs(fill=output["color"])
             plot.save(output["filename"], width=10, height=9, dpi=100)
