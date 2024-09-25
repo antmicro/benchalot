@@ -100,7 +100,7 @@ if "output" in config:
 
     def print_warning(key, section):
         print(
-            f"WARNING: Output: {key} lacks `filename` section. Output for {section} will not be created."
+            f"WARNING: Output {key}: No `{section}` section. Output for {key} will not be created."
         )
 
     for key in config["output"]:
@@ -117,6 +117,9 @@ if "output" in config:
             if "x-axis" not in output:
                 print_warning(key, "x-axis")
                 continue
+            if output["x-axis"] not in config['matrix']:
+                print(f"WARNING: Output {key}: `{output['x-axis']}` variable not found. Output for {key} will not be created.")
+                continue
             plot = (
                 ggplot(
                     resultsDf,
@@ -131,7 +134,13 @@ if "output" in config:
             )
             if "facet" in output:
                 plot += facet_grid(cols=output["facet"])
-            if "color" in output:
+                if output["facet"] not in config['matrix']:
+                    print(f"WARNING: Output {key}: `{output['facet']}` variable not found. Output for {key} will not be created.")
+                    continue
+                if "color" in output:
+                    if output["color"] not in config['matrix']:
+                        print(f"WARNING: Output {key}: `{output['color']}` variable not found. Output for {key} will not be created.")
+                        continue
                 plot += aes(fill=f"factor({output['color']})")
                 plot += labs(fill=output["color"])
             plot.save(output["filename"], width=10, height=9, dpi=100)
