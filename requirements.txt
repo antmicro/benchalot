@@ -5,3 +5,4 @@ pandas==2.2.3
 PyYAML==6.0.2
 types-PyYAML==6.0.12.20240917
 pandas-stubs==2.2.2.240909
+plotnine==0.13.6
