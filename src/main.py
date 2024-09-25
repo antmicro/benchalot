@@ -5,6 +5,7 @@ from subprocess import run
 from time import monotonic_ns
 from sys import stderr, argv
 from plotnine import ggplot, aes, geom_bar, facet_grid, theme_classic, labs
+from re import findall
 
 
 def create_variable_combinations(**kwargs):
@@ -35,6 +36,50 @@ def benchmark_commands(commands: list) -> float:
     run_multiple_commands(commands)
     return (monotonic_ns() - start) / 1e9  # convert to seconds
 
+def error(msg):
+    print(f"ERROR: {msg}", file=stderr)
+    exit(1)
+
+def validate_config(config):
+    def get_var_not_found_msg(var):
+        return f"Variable `{var}` not found."
+    if "run" not in config:
+        error("`run` section not found the config file.")
+    if "benchmark" not in config['run']:
+        error("No 'benchmark' section in the config file.")
+    if "matrix" in config:
+        for section in ['before', 'benchmark', 'after']:
+            for command in config['run'][section]:
+                variables = findall("\$matrix\.[a-zA-Z0-9]*", command)
+                for var in variables:
+                    var_key = var.split(".")[1]
+                    if var_key not in config["matrix"]:
+                        error(get_var_not_found_msg(f{var_key}))
+    
+    if "output" in config:
+        def get_output_error_msg(section: str, key: str) -> str:
+            return f"No `{section}` section in `output.{key}`"
+        for key in config["output"]:
+            output = config["output"][key]
+            if "filename" not in output:
+                error(get_output_error_msg("filename", key))
+            if "format" not in output:
+                error(get_output_error_msg("filename", key))
+            if output["format"] == "bar-chart":
+                if "matrix" not in config:
+                    error("No matrix section.")
+                if "x-axis" not in output:
+                    error("x-axis", key)
+                if output["x-axis"] not in config['matrix']:
+                    error(f"`matrix.{output['x-axis']}` not found.")
+                if "facet" in output:
+                    if output["facet"] not in config['matrix']:
+                        error(get_var_not_found_msg(output["facet"]))
+                if "color" in output:
+                    if output["color"] not in config['matrix']:
+                        error(get_var_not_found_msg(output["color"]))
+
+
 
 # load configuration file
 if len(argv) != 2:
@@ -49,10 +94,9 @@ else:
     with config_file:
         config = yaml.safe_load(config_file)
 
+validate_config(config)
+
 # process commands, i.e. replace variable names with values.
-if "run" not in config:
-    print("ERROR: `run` section not found the config file.", file=stderr)
-    exit(1)
 
 benchmarks = []
 if "matrix" not in config:
@@ -97,26 +141,11 @@ resultsDf = pd.DataFrame(
 )
 print(resultsDf.head())
 if "output" in config:
-
-    def print_warning(key, section):
-        print(
-            f"WARNING: Output {key}: No `{section}` section. Output for {key} will not be created."
-        )
-
     for key in config["output"]:
         output = config["output"][key]
-        if "filename" not in output:
-            print_warning(key, "filename")
-            continue
-        if "format" not in output:
-            print_warning(key, "format")
-            continue
         if output["format"] == "csv":
             resultsDf.to_csv(output["filename"], encoding="utf-8", index=False)
         elif output["format"] == "bar-chart":
-            if "x-axis" not in output:
-                print_warning(key, "x-axis")
-                continue
             if output["x-axis"] not in config['matrix']:
                 print(f"WARNING: Output {key}: `{output['x-axis']}` variable not found. Output for {key} will not be created.")
                 continue
