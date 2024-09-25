@@ -87,7 +87,10 @@ for benchmark in benchmarks:
         run_multiple_commands(benchmark["after"])
     results.append([benchmark["matrix"][key] for key in benchmark["matrix"]] + [result])
 
-resultsDf = pd.DataFrame(results)
+resultsDf = pd.DataFrame(
+    results,
+    columns=[key for key in benchmarks[0]["matrix"].keys()] + ["measurement[s]"],
+)
 print(resultsDf.head())
 
 if "output" in config and "name" in config["output"]:
