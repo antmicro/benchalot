@@ -37,8 +37,8 @@ def benchmark_commands(commands: list) -> float:
 
 
 # load configuration file
-if len(argv) < 2:
-    print("ERROR: Please pass config filename as an argument.", file=stderr)
+if len(argv) != 2:
+    print(f"Usage: {argv[0]} <config>", file=stderr)
     exit(1)
 try:
     config_file = open(argv[1], "r")
