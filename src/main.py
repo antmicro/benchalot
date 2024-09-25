@@ -2,7 +2,7 @@ import yaml
 import pandas as pd
 from itertools import product
 from subprocess import run
-from timeit import timeit
+from time import monotonic_ns
 from sys import stderr, argv
 
 
@@ -30,7 +30,9 @@ def run_multiple_commands(commands: list):
 
 
 def benchmark_commands(commands: list) -> float:
-    return timeit(lambda: run_multiple_commands(commands), number=1)
+    start = monotonic_ns()
+    run_multiple_commands(commands)
+    return (monotonic_ns() - start) / 1e9  # convert to seconds
 
 
 # load configuration file
