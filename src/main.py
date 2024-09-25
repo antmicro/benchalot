@@ -3,7 +3,7 @@ import pandas as pd
 from itertools import product
 from subprocess import run
 from timeit import timeit
-from sys import stderr
+from sys import stderr, argv
 
 
 def create_variable_combinations(**kwargs):
@@ -34,10 +34,13 @@ def benchmark_commands(commands: list) -> float:
 
 
 # load configuration file
+if len(argv) < 2:
+    print("ERROR: Please pass config filename as an argument.", file=stderr)
+    exit(1)
 try:
-    config_file = open("config.yml", "r")
+    config_file = open(argv[1], "r")
 except FileNotFoundError:
-    print("'config.yml' not found.", file=stderr)
+    print(f"ERROR:'{argv[1]}' not found.", file=stderr)
     exit(1)
 else:
     with config_file:
