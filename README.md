@@ -55,12 +55,10 @@ output:
     width: 10
     height: 9
     dpi: 100
-  plot2:
-    filename: "plot2.png"
-    format: "bar-chart"
-    x-axis: input
-    color: commit
-    dpi: 150
+  table:
+    format: "table-md"
+    filename: "table.md"
+    columns: ["commit", "input"]
 ```
 
 ### Matrix
@@ -87,17 +85,34 @@ The `before` and `after` sections are optional.
 
 In the `output` section user can specify desired output of the program.
 Each subsection of the `output` corresponds to one output file described by `filename` and `format`.
-Currently there are two supported formats: `csv` and `bar-plot` (in the form of an `*.png` image).
+Currently there are three supported formats: `csv`, `bar-plot` and `table-md`.
 
 `csv` output will contain columns corresponding to variables and one column with benchmark results.
 
-`bar-plot` should be configured with options:
+`bar-plot` will result in `.png` image containing the plot.
+Configure using this options:
 * `x-axis` (mandatory): contains name of the variable which will be used as x-axis on the plot.
 * `facet` (optional): contains name of the variable which will be used to facet (divide into subplots) the plot.
 * `width` (optional, default = 10in): width of resulting image in inches.
 * `height` (optional, default = 9in): height of resulting image in inches.
 * `dpi` (optional, default = 100): DPI of resulting image.
 
+`table-md` will result in plain text file containing a markdown table. 
+Configured using this options:
+* `columns` (optional, default - include all columns): contains array of variable names which will be used to group the results in the table.
+
 For example, the config above with result with this `plot.png`:
 
 <img src="plot.png" alt="plot created automatically based on configuration file" width="700" height="630"/>
+
+And this `table.md`:
+```markdown
+| commit                                   | input   |   time |
+|:-----------------------------------------|:--------|-------:|
+| 04b536d553a21219d1419820e35d8cd703561636 | data1   | 0.2901 |
+| 04b536d553a21219d1419820e35d8cd703561636 | data2   | 0.4389 |
+| 04b536d553a21219d1419820e35d8cd703561636 | data3   | 0.0097 |
+| 32d369e077b7330022d8eda68bcbbfcd25b9e56a | data1   | 0.2929 |
+| 32d369e077b7330022d8eda68bcbbfcd25b9e56a | data2   | 0.1468 |
+| 32d369e077b7330022d8eda68bcbbfcd25b9e56a | data3   | 0.4097 |
+```
