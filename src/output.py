@@ -5,21 +5,21 @@ import pandas as pd
 def output_results(results: list, config):
 
     if "matrix" in config:
-        resultsDf = pd.DataFrame(
+        results_df = pd.DataFrame(
             data=results,
             columns=([key for key in config["matrix"].keys()] + ["measurement[s]"]),
         )
     else:
-        resultsDf = pd.DataFrame(data=results, columns=["measurement[s]"])
-    print(resultsDf.head())
+        results_df = pd.DataFrame(data=results, columns=["measurement[s]"])
+    print(results_df.head())
     for key in config["output"]:
         output = config["output"][key]
         if output["format"] == "csv":
-            resultsDf.to_csv(output["filename"], encoding="utf-8", index=False)
+            results_df.to_csv(output["filename"], encoding="utf-8", index=False)
         elif output["format"] == "bar-chart":
             plot = (
                 ggplot(
-                    resultsDf,
+                    results_df,
                     aes(
                         x=f"factor({output['x-axis']})",
                         y="measurement[s]",
