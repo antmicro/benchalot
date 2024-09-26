@@ -4,13 +4,14 @@ import pandas as pd
 
 def output_results(results: list, config):
 
+    results_column = "time"
     if "matrix" in config:
         results_df = pd.DataFrame(
             data=results,
-            columns=([key for key in config["matrix"].keys()] + ["measurement[s]"]),
+            columns=([key for key in config["matrix"].keys()] + [results_column]),
         )
     else:
-        results_df = pd.DataFrame(data=results, columns=["measurement[s]"])
+        results_df = pd.DataFrame(data=results, columns=[results_column])
     print(results_df.head())
     for key in config["output"]:
         output = config["output"][key]
@@ -22,7 +23,7 @@ def output_results(results: list, config):
                     results_df,
                     aes(
                         x=f"factor({output['x-axis']})",
-                        y="measurement[s]",
+                        y=results_column,
                     ),
                 )
                 + geom_bar(position="dodge", stat="identity")
