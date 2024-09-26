@@ -84,6 +84,9 @@ Currently there are two supported formats: `csv` and `bar-plot` (in the form of 
 `bar-plot` should be configured with options:
 * `x-axis` (mandatory): contains name of the variable which will be used as x-axis on the plot.
 * `facet` (optional): contains name of the variable which will be used to facet (divide into subplots) the plot.
+* `width` (optional, default = 10in): width of resulting image in inches.
+* `height` (optional, default = 9in): height of resulting image in inches.
+* `dpi` (optional, default = 100): DPI of resulting image.
 
 For example, the config above with result with this `plot.png`:
 
