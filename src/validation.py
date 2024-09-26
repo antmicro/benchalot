@@ -48,9 +48,8 @@ def validate_config(config):
                     )
         elif output["format"] == "table-md":
             if "columns" in output:
-                for var in output['columns']:
+                for var in output["columns"]:
                     if var not in config["matrix"]:
                         error(
                             f"Variable `{var}` in the `output.{key}.columns` not found in the `matrix` section."
                         )
-

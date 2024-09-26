@@ -47,10 +47,10 @@ def output_results(results: list, config):
             plot.save(output["filename"], width=width, height=height, dpi=dpi)
         elif output["format"] == "table-md":
             if "columns" in output:
-                output_df = results_df.loc[:,output["columns"] + [results_column]]
+                output_df = results_df.loc[:, output["columns"] + [results_column]]
                 output_df = output_df.groupby(output["columns"]).mean().reset_index()
             else:
-                output_df = results_df.loc[:,:]
+                output_df = results_df.loc[:, :]
             output_df[results_column] = output_df[results_column].apply(
                 lambda x: f"{x:.4f}"
             )
