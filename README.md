@@ -49,8 +49,18 @@ output:
   plot:
     filename: "plot.png"
     format: "bar-chart"
-    x-axis: thread
+    x-axis: input
     facet: commit
+    color: thread
+    width: 10
+    height: 9
+    dpi: 100
+  plot2:
+    filename: "plot2.png"
+    format: "bar-chart"
+    x-axis: input
+    color: commit
+    dpi: 150
 ```
 
 ### Matrix
