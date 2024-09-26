@@ -53,7 +53,7 @@ def validate_config(config):
     if "matrix" in config:
         for section in ["before", "benchmark", "after"]:
             for command in config["run"][section]:
-                variables = findall("\$matrix\.[a-zA-Z0-9]*", command)
+                variables = findall(r"\$matrix\.[a-zA-Z0-9]*", command)
                 for var in variables:
                     var_key = var.split(".")[1]
                     if var_key not in config["matrix"]:
