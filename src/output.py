@@ -33,4 +33,13 @@ def output_results(results: list, config):
                 if "color" in output:
                     plot += aes(fill=f"factor({output['color']})")
                     plot += labs(fill=output["color"])
-                plot.save(output["filename"], width=10, height=9, dpi=100)
+                width = 10
+                height = 9
+                dpi = 100
+                if "width" in output:
+                    width = output["width"]
+                if "height" in output:
+                    height = output["height"]
+                if "dpi" in output:
+                    dpi = output["dpi"]
+                plot.save(output["filename"], width=width, height=height, dpi=dpi)
