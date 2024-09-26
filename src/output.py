@@ -51,7 +51,7 @@ def output_results(results: list, config):
                 output_df = output_df.groupby(output["columns"]).mean().reset_index()
             else:
                 output_df = results_df.loc[:, :]
-            output_df[results_column] = output_df[results_column].apply(
-                lambda x: f"{x:.4f}"
+            output_df[results_column] = (
+                output_df[results_column].apply(lambda x: f"{x:.4f}").astype(str)
             )
             output_df.to_markdown(output["filename"], index=False)
