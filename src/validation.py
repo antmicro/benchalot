@@ -48,6 +48,8 @@ def validate_config(config):
                     )
         elif output["format"] == "table-md":
             if "columns" in output:
+                if output["columns"] is None or len(output["columns"]) == 0:
+                    error("No columns specified in `output.columns`.")
                 for var in output["columns"]:
                     if var not in config["matrix"]:
                         error(
