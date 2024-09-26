@@ -26,4 +26,4 @@ output:
   table:
     format: "table-md"
     filename: "table.md"
-    columns: ["commit","input"]
+    columns: ["commit", "input"]

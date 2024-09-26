@@ -46,3 +46,11 @@ def validate_config(config):
                     error(
                         f"Variable `{output[option]}` in the `output.{key}.{option}` not found in the `matrix` section."
                     )
+        elif output["format"] == "table-md":
+            if "columns" in output:
+                for var in output['columns']:
+                    if var not in config["matrix"]:
+                        error(
+                            f"Variable `{var}` in the `output.{key}.columns` not found in the `matrix` section."
+                        )
+
