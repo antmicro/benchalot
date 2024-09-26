@@ -45,3 +45,10 @@ def output_results(results: list, config):
             if "dpi" in output:
                 dpi = output["dpi"]
             plot.save(output["filename"], width=width, height=height, dpi=dpi)
+        elif output["format"] == "table-md":
+            output_df = results_df[output["columns"] + [results_column]]
+            output_df = output_df.groupby(output["columns"]).mean().reset_index()
+            output_df[results_column] = output_df[results_column].apply(
+                lambda x: f"{x:.4f}"
+            )
+            output_df.to_markdown(output["filename"], index=False)
