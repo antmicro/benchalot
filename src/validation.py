@@ -136,6 +136,6 @@ def validate_config(config):
             },
         },
     }
-    v = Validator(schema=valid_schema, require_all = True)
+    v = Validator(schema=valid_schema, require_all=True)
     if not v.validate(config):
         error_and_exit(v.errors)
