@@ -11,3 +11,10 @@ typecheck:
 	mypy ./src/main.py ./src/validation.py ./src/preparation.py  ./src/execution.py ./src/output.py
 
 sanitize: format lint typecheck
+tuttest:
+	tuttest README.md config.yml > config.yml
+	tuttest README.md install | bash 
+	tuttest README.md run | bash
+	[ -f plot.png ]
+	[ -f result.csv ]
+	[ -f table.md ]

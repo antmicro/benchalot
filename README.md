@@ -9,8 +9,9 @@ User can specify commands to be run before and after taking measurement to prepa
 
 To use the program install and create a Python virtual environment:
 
+<!--name="install"-->
 ```bash
-sudo apt install python3-venv
+apt install python3-venv -y
 python3 -m  venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -19,7 +20,7 @@ pip install -r requirements.txt
 Configure the application by editing the YAML configuration file.
 Then pass configuration file's name as an argument.
 For example, start the benchmark by typing this command:
-
+<!--name="run"-->
 ```bash
 python src/main.py config.yml
 ```
@@ -29,19 +30,22 @@ python src/main.py config.yml
 
 Benchmarker is configured using a YAML file, e.g.:
 
+<!-- name="config.yml" -->
 ```yaml
 ---
 matrix:
   thread: [2, 4, 8]
-  commit: ["04b536d553a21219d1419820e35d8cd703561636", "32d369e077b7330022d8eda68bcbbfcd25b9e56a"]
+  tag: ["slow", "fast"]
   input: ["data1", "data2", "data3"]
 run:
   before:
-    - "cd ~/Documents/sleeper && git checkout $matrix.commit && make build"
+    - "git clone . ~/Documents/sleeper"
+    - "cd ~/Documents/sleeper && git checkout $matrix.tag && make build"
   benchmark:
     - "~/Documents/sleeper/sleeper $matrix.thread $matrix.input"
   after:
     - "cd ~/Documents/sleeper && make clean"
+    - "rm -rf ~/Documents/sleeper"
 output:
   csv:
     filename: "result.csv"
@@ -50,7 +54,7 @@ output:
     filename: "plot.png"
     format: "bar-chart"
     x-axis: input
-    facet: commit
+    facet: tag
     color: thread
     width: 10
     height: 9
@@ -58,7 +62,8 @@ output:
   table:
     format: "table-md"
     filename: "table.md"
-    columns: ["commit", "input"]
+    columns: ["tag", "input"]
+
 ```
 
 ### Matrix
