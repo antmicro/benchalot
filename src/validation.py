@@ -1,5 +1,5 @@
 from sys import stderr
-from schema import Schema, Optional, And, Or
+from cerberus import Validator
 
 
 def error(msg):
@@ -8,27 +8,85 @@ def error(msg):
 
 
 def validate_config(config):
-    reqs_for_commands = And(list, lambda x: len(x) > 0)
-    config_schema = Schema({
-        Optional("matrix"):{ 
-            str: And(list, lambda x: len(x) > 0 ) # if matrix section exists it should contain variables which are non empty lists
+    valid_schema = {
+        "matrix": {
+            "required": False,
+            "type": "dict",
+            "valuesrules": {"type": "list", "empty": False},
+            "empty": False,
         },
         "run": {
-            "benchmark": reqs_for_commands,
-            Optional("before"): reqs_for_commands,
-            Optional("after"): reqs_for_commands
+            "required": True,
+            "type": "dict",
+            "schema": {
+                "before": {"required": False, "type": "list", "empty": False},
+                "benchmark": {"required": True, "type": "list", "empty": False},
+                "after": {"required": False, "type": "list", "empty": False},
+            },
         },
         "output": {
-            str: Or({"format":"csv",
-                        "filename":str},
-                       {"format":"table-md",
-                        "filename":str,
-                        Optional("columns"): And(list, lambda x: len(x) > 0)})
-                        
-        
-        }
-    })
-
-    print(config_schema.validate(config))
-
-    return
+            "required": True,
+            "type": "dict",
+            "valuesrules": {
+                "oneof": [
+                    {
+                        "schema": {
+                            "filename": {"type": "string", "empty": False},
+                            "format": {"type": "string", "allowed": ["csv"]},
+                        }
+                    },
+                    {
+                        "schema": {
+                            "filename": {"type": "string", "empty": False},
+                            "format": {"type": "string", "allowed": ["table-md"]},
+                            "columns": {
+                                "type": "list",
+                                "empty": False,
+                                "required": False,
+                            },
+                        }
+                    },
+                    {
+                        "schema": {
+                            "filename": {"type": "string", "empty": False},
+                            "format": {"type": "string", "allowed": ["bar-chart"]},
+                            "x-axis": {
+                                "type": "string",
+                                "empty": False,
+                                "required": True,
+                            },
+                            "color": {
+                                "type": "string",
+                                "empty": False,
+                                "required": False,
+                            },
+                            "facet": {
+                                "type": "string",
+                                "empty": False,
+                                "required": False,
+                            },
+                            "width": {
+                                "type": "integer",
+                                "min": 1,
+                                "max": 25,
+                                "required": False,
+                            },
+                            "height": {
+                                "type": "integer",
+                                "min": 1,
+                                "max": 25,
+                                "required": False,
+                            },
+                            "dpi": {"type": "integer", "min": 10, "required": False},
+                        }
+                    },
+                ],
+                "empty": False,
+            },
+        },
+    }
+    v = Validator(valid_schema)
+    if not v.validate(config):
+        print(v.errors)
+    else:
+        print("Config file validated successfully")
