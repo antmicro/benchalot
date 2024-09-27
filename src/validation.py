@@ -1,14 +1,24 @@
 from cerberus import Validator
+from re import findall
 
 
 def validate_config(config):
     def variable_exists(field, value, error):
-        if "matrix" not in config or value not in config["matrix"]:
+        if value not in config["matrix"]:
             error(field, f"Variable `{value}` does not exist")
 
     def variables_exist(field, value, error):
         for var in value:
             variable_exists(field, var, error)
+
+    def check_command_variables(field, value, error):
+        if "matrix" not in config:
+            return
+        for command in value:
+            variables = findall(r"\$matrix\.[a-zA-Z0-9]*", command)
+            for var in variables:
+                var_key = var.split(".")[1]
+                variable_exists(field, var_key, error)
 
     valid_schema = {
         "matrix": {
@@ -21,9 +31,24 @@ def validate_config(config):
             "required": True,
             "type": "dict",
             "schema": {
-                "before": {"required": False, "type": "list", "empty": False},
-                "benchmark": {"required": True, "type": "list", "empty": False},
-                "after": {"required": False, "type": "list", "empty": False},
+                "before": {
+                    "required": False,
+                    "type": "list",
+                    "empty": False,
+                    "check_with": check_command_variables,
+                },
+                "benchmark": {
+                    "required": True,
+                    "type": "list",
+                    "empty": False,
+                    "check_with": check_command_variables,
+                },
+                "after": {
+                    "required": False,
+                    "type": "list",
+                    "empty": False,
+                    "check_with": check_command_variables,
+                },
             },
         },
         "output": {
