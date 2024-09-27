@@ -14,7 +14,7 @@ def run_multiple_commands(commands: list):
 
 
 def benchmark_commands(commands: list) -> float:
-    with yaspin(text=f"Benchmarking {commands}..."):
+    with yaspin(text=f"Benchmarking {commands}...", timer=True):
         start = monotonic_ns()
         run_multiple_commands(commands)
         return (monotonic_ns() - start) / 1e9  # convert to seconds
