@@ -89,19 +89,19 @@ Currently there are three supported formats: `csv`, `bar-plot` and `table-md`.
 
 `csv` output will contain columns corresponding to variables and one column with benchmark results.
 
-`bar-plot` will result in `.png` image containing the plot.
-Configure using this options:
+`bar-plot` will result in a `.png` image containing the plot.
+Configure using these options:
 * `x-axis` (mandatory): contains name of the variable which will be used as x-axis on the plot.
 * `facet` (optional): contains name of the variable which will be used to facet (divide into subplots) the plot.
 * `width` (optional, default = 10in): width of resulting image in inches.
 * `height` (optional, default = 9in): height of resulting image in inches.
 * `dpi` (optional, default = 100): DPI of resulting image.
 
-`table-md` will result in plain text file containing a markdown table. 
-Configured using this options:
-* `columns` (optional, default - include all columns): contains array of variable names which will be used to group the results in the table.
+`table-md` will result in a text file containing a markdown table. 
+Configured using these options:
+* `columns` (optional, default - include all columns): contains an array of variable names which will be used to group the results in the table.
 
-For example, the config above with result with this `plot.png`:
+For example, the config above will generate this `plot.png`:
 
 <img src="plot.png" alt="plot created automatically based on configuration file" width="700" height="630"/>
 
