@@ -10,7 +10,7 @@ image:
 black:
   stage: formatting
   before_script:
-    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make -y
+    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make git -y
     - python3 -m venv .venv
     - source .venv/bin/activate
     - pip install -r requirements.txt
@@ -21,7 +21,7 @@ black:
 flake8:
   stage: linting
   before_script:
-    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make -y
+    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make git -y
     - python3 -m venv .venv
     - source .venv/bin/activate
     - pip install -r requirements.txt
@@ -33,6 +33,6 @@ flake8:
 tuttest:
   stage: formatting
   before_script:
-    - apt update -y && apt upgrade -y && apt install python3 make -y
+    - apt update -y && apt upgrade -y && apt install python3 make git -y
   script:
     - make tuttest
