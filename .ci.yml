@@ -29,3 +29,10 @@ flake8:
     - source .venv/bin/activate
     - make lint
     - make typecheck
+
+tuttest:
+  stage: linting
+  before_script:
+    - apt update -y && apt upgrade -y && apt install python3 make -y
+  script:
+    - make tuttest
