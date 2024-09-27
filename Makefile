@@ -1,3 +1,5 @@
+.PHONY: format check_format lint typecheck sanitize tuttest
+
 format:
 	black src/*
 
