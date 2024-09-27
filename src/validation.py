@@ -24,6 +24,10 @@ def validate_config(config):
         if "matrix" not in config:
             error(field, "`matrix` section does not exist")
             return
+        # unfortunately cerberus does not stop checking on first validation error.
+        if value is None:
+            error(field, "no commands")
+            return
         for command in value:
             variables = findall(r"\$matrix\.[a-zA-Z0-9]*", command)
             for var in variables:
@@ -42,40 +46,24 @@ def validate_config(config):
             "type": "dict",
             "schema": {
                 "before": {
-                    "allof": [
-                        {
-                            "required": False,
-                            "type": "list",
-                            "empty": False,
-                        },
-                        {
-                            "check_with": check_command_variables,
-                        },
-                    ]
+                    "required": False,
+                    "type": "list",
+                    "empty": False,
+                    "minlength": 1,
+                    "check_with": check_command_variables,
                 },
                 "benchmark": {
-                    "allof": [
-                        {
-                            "required": True,
-                            "type": "list",
-                            "empty": False,
-                        },
-                        {
-                            "check_with": check_command_variables,
-                        },
-                    ]
+                    "required": True,
+                    "type": "list",
+                    "empty": False,
+                    "minlength": 1,
+                    "check_with": check_command_variables,
                 },
                 "after": {
-                    "allof": [
-                        {
-                            "required": False,
-                            "type": "list",
-                            "empty": False,
-                        },
-                        {
-                            "check_with": check_command_variables,
-                        },
-                    ]
+                    "required": False,
+                    "type": "list",
+                    "empty": False,
+                    "check_with": check_command_variables,
                 },
             },
         },
@@ -95,62 +83,38 @@ def validate_config(config):
                             "filename": {"type": "string", "empty": False},
                             "format": {"type": "string", "allowed": ["table-md"]},
                             "columns": {
-                                "allof": [
-                                    {
-                                        "type": "list",
-                                        "empty": False,
-                                        "required": False,
-                                        "dependencies": "^matrix",
-                                    },
-                                    {
-                                        "check_with": variables_exist,
-                                    },
-                                ]
+                                "type": "list",
+                                "empty": False,
+                                "required": False,
+                                "dependencies": "^matrix",
+                                "check_with": variables_exist,
                             },
-                        }
+                        },
                     },
                     {
                         "schema": {
                             "filename": {"type": "string", "empty": False},
                             "format": {"type": "string", "allowed": ["bar-chart"]},
                             "x-axis": {
-                                "allof": [
-                                    {
-                                        "type": "string",
-                                        "empty": False,
-                                        "required": True,
-                                        "dependencies": "^matrix",
-                                    },
-                                    {
-                                        "check_with": variable_exists,
-                                    },
-                                ]
+                                "type": "string",
+                                "empty": False,
+                                "required": True,
+                                "dependencies": "^matrix",
+                                "check_with": variable_exists,
                             },
                             "color": {
-                                "allof": [
-                                    {
-                                        "type": "string",
-                                        "empty": False,
-                                        "required": False,
-                                        "dependencies": "^matrix",
-                                    },
-                                    {
-                                        "check_with": variable_exists,
-                                    },
-                                ]
+                                "type": "string",
+                                "empty": False,
+                                "required": False,
+                                "dependencies": "^matrix",
+                                "check_with": variable_exists,
                             },
                             "facet": {
-                                "allof": [
-                                    {
-                                        "type": "string",
-                                        "empty": False,
-                                        "required": False,
-                                        "dependencies": "^matrix",
-                                    },
-                                    {
-                                        "check_with": variable_exists,
-                                    },
-                                ]
+                                "type": "string",
+                                "empty": False,
+                                "required": False,
+                                "dependencies": "^matrix",
+                                "check_with": variable_exists,
                             },
                             "width": {
                                 "type": "integer",
@@ -172,6 +136,6 @@ def validate_config(config):
             },
         },
     }
-    v = Validator(schema=valid_schema)
+    v = Validator(schema=valid_schema, require_all = True)
     if not v.validate(config):
         error_and_exit(v.errors)
