@@ -2,12 +2,15 @@ from sys import stderr
 from cerberus import Validator
 
 
-def error(msg):
-    print(f"ERROR: {msg}", file=stderr)
-    exit(1)
-
-
 def validate_config(config):
+    def variable_exists(field, value, error):
+        if "matrix" not in config or value not in config["matrix"]:
+            error(field, f"Variable `{value}` does not exist")
+
+    def variables_exist(field, value, error):
+        for var in value:
+            variable_exists(field, var, error)
+
     valid_schema = {
         "matrix": {
             "required": False,
@@ -43,6 +46,8 @@ def validate_config(config):
                                 "type": "list",
                                 "empty": False,
                                 "required": False,
+                                "dependencies": "^matrix",
+                                "check_with": variables_exist,
                             },
                         }
                     },
@@ -54,16 +59,22 @@ def validate_config(config):
                                 "type": "string",
                                 "empty": False,
                                 "required": True,
+                                "dependencies": "^matrix",
+                                "check_with": variable_exists,
                             },
                             "color": {
                                 "type": "string",
                                 "empty": False,
                                 "required": False,
+                                "dependencies": "^matrix",
+                                "check_with": variable_exists,
                             },
                             "facet": {
                                 "type": "string",
                                 "empty": False,
                                 "required": False,
+                                "dependencies": "^matrix",
+                                "check_with": variable_exists,
                             },
                             "width": {
                                 "type": "integer",
