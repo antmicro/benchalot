@@ -13,7 +13,7 @@ def error_and_exit(error):
 
 def validate_config(config):
     def variable_exists(field, value, error):
-        if value not in config["matrix"]:
+        if "matrix" not in config or value not in config["matrix"]:
             error(field, f"variable `{value}` does not exist")
 
     def variables_exist(field, value, error):
@@ -22,7 +22,6 @@ def validate_config(config):
 
     def check_command_variables(field, value, error):
         if "matrix" not in config:
-            error(field, "`matrix` section does not exist")
             return
         # unfortunately cerberus does not stop checking on first validation error.
         if value is None:
