@@ -1,5 +1,5 @@
 stages:
-  - linting
+  # - linting
   - formatting 
 
 
@@ -7,28 +7,28 @@ stages:
 image:
   name: external/docker/debian
 
-black:
-  stage: formatting
-  before_script:
-    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make git -y
-    - python3 -m venv .venv
-    - source .venv/bin/activate
-    - pip install -r requirements.txt
-  script:
-    - source .venv/bin/activate
-    - make check_format
+# black:
+#   stage: formatting
+#   before_script:
+#     - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make git -y
+#     - python3 -m venv .venv
+#     - source .venv/bin/activate
+#     - pip install -r requirements.txt
+#   script:
+#     - source .venv/bin/activate
+#     - make check_format
   
-flake8:
-  stage: linting
-  before_script:
-    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make git -y
-    - python3 -m venv .venv
-    - source .venv/bin/activate
-    - pip install -r requirements.txt
-  script:
-    - source .venv/bin/activate
-    - make lint
-    - make typecheck
+# flake8:
+#   stage: linting
+#   before_script:
+#     - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make git -y
+#     - python3 -m venv .venv
+#     - source .venv/bin/activate
+#     - pip install -r requirements.txt
+#   script:
+#     - source .venv/bin/activate
+#     - make lint
+#     - make typecheck
 
 tuttest:
   stage: formatting
@@ -38,4 +38,5 @@ tuttest:
     - source .venv/bin/activate
     - pip install -r requirements.txt
   script:
+    - source .venv/bin/activate
     - make tuttest

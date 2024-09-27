@@ -39,13 +39,13 @@ matrix:
   input: ["data1", "data2", "data3"]
 run:
   before:
-    - "git clone . ~/Documents/sleeper"
-    - "cd ~/Documents/sleeper && git checkout $matrix.tag && make build"
+    - "git clone . ../sleeper"
+    - "cd ../sleeper && git checkout $matrix.tag && make build"
   benchmark:
-    - "~/Documents/sleeper/sleeper $matrix.thread $matrix.input"
+    - "../sleeper/sleeper $matrix.thread $matrix.input"
   after:
-    - "cd ~/Documents/sleeper && make clean"
-    - "rm -rf ~/Documents/sleeper"
+    - "cd ../sleeper && make clean"
+    - "rm -rf ../sleeper"
 output:
   csv:
     filename: "result.csv"
