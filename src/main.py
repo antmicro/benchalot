@@ -21,8 +21,8 @@ else:
 
 validate_config(config)
 
-benchmarks = prepare_benchmarks(config)
+# benchmarks = prepare_benchmarks(config)
 
-results = perform_benchmarks(benchmarks)
+# results = perform_benchmarks(benchmarks)
 
-output_results(results, config)
+# output_results(results, config)
