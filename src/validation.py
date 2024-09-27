@@ -1,4 +1,5 @@
-from cerberus import Validator
+# Cerberus does not provide stubs for mypy
+from cerberus import Validator  # type: ignore
 from re import findall
 
 
