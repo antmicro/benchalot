@@ -1,6 +1,6 @@
 stages:
-  - formatting
   - linting
+  - formatting 
 
 
 
@@ -31,8 +31,9 @@ flake8:
     - make typecheck
 
 tuttest:
-  stage: linting
+  stage: formatting
   before_script:
     - apt update -y && apt upgrade -y && apt install python3 make -y
+    - pip install tuttest@git+https://github.com/antmicro/tuttest --break-system-packages
   script:
     - make tuttest
