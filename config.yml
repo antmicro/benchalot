@@ -1,15 +1,17 @@
 ---
 matrix:
   thread: [2, 4, 8]
-  commit: ["04b536d553a21219d1419820e35d8cd703561636", "32d369e077b7330022d8eda68bcbbfcd25b9e56a"]
+  tag: ["slow", "fast"]
   input: ["data1", "data2", "data3"]
 run:
   before:
-    - "cd ~/Documents/sleeper && git checkout $matrix.commit && make build"
+    - "git clone . ~/Documents/sleeper"
+    - "cd ~/Documents/sleeper && git checkout $matrix.tag && make build"
   benchmark:
     - "~/Documents/sleeper/sleeper $matrix.thread $matrix.input"
   after:
     - "cd ~/Documents/sleeper && make clean"
+    - "rm -rf ~/Documents/sleeper"
 output:
   csv:
     filename: "result.csv"
@@ -18,7 +20,7 @@ output:
     filename: "plot.png"
     format: "bar-chart"
     x-axis: input
-    facet: commit
+    facet: tag
     color: thread
     width: 10
     height: 9
@@ -26,4 +28,4 @@ output:
   table:
     format: "table-md"
     filename: "table.md"
-    columns: ["commit", "input"]
+    columns: ["tag", "input"]
