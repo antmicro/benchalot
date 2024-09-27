@@ -1,5 +1,6 @@
 from time import monotonic_ns
 from subprocess import run
+from yaspin import yaspin
 
 
 def run_multiple_commands(commands: list):
@@ -13,9 +14,10 @@ def run_multiple_commands(commands: list):
 
 
 def benchmark_commands(commands: list) -> float:
-    start = monotonic_ns()
-    run_multiple_commands(commands)
-    return (monotonic_ns() - start) / 1e9  # convert to seconds
+    with yaspin(text=f"Benchmarking {commands}..."):
+        start = monotonic_ns()
+        run_multiple_commands(commands)
+        return (monotonic_ns() - start) / 1e9  # convert to seconds
 
 
 def perform_benchmarks(benchmarks: list) -> list:
