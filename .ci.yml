@@ -34,5 +34,7 @@ tuttest:
   stage: formatting
   before_script:
     - apt update -y && apt upgrade -y && apt install python3 make git -y
+    - source .venv/bin/activate
+    - pip install -r requirements.txt
   script:
     - make tuttest
