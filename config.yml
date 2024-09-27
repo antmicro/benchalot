@@ -1,17 +1,17 @@
 ---
 matrix:
   thread: [2, 4, 8]
-  tag: ["slow", "fast"]
+  tag: ["15d80c0757b5df02ff0b13def678ec7969bc8285", "e368bf5f04493508f2adcf55c95d2cb78fa87e8cc"]
   input: ["data1", "data2", "data3"]
 run:
   before:
-    - "git clone . ~/Documents/sleeper"
-    - "cd ~/Documents/sleeper && git checkout $matrix.tag && make build"
+    - "git clone . ../sleeper"
+    - "cd ../sleeper && git checkout $matrix.tag && make build"
   benchmark:
-    - "~/Documents/sleeper/sleeper $matrix.thread $matrix.input"
+    - "../sleeper/sleeper $matrix.thread $matrix.input"
   after:
-    - "cd ~/Documents/sleeper && make clean"
-    - "rm -rf ~/Documents/sleeper"
+    - "cd ../sleeper && make clean"
+    - "rm -rf ../sleeper"
 output:
   csv:
     filename: "result.csv"

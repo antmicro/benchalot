@@ -35,7 +35,7 @@ Benchmarker is configured using a YAML file, e.g.:
 ---
 matrix:
   thread: [2, 4, 8]
-  tag: ["slow", "fast"]
+  tag: ["15d80c0757b5df02ff0b13def678ec7969bc8285", "e368bf5f04493508f2adcf55c95d2cb78fa87e8cc"]
   input: ["data1", "data2", "data3"]
 run:
   before:

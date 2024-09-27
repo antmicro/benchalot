@@ -4,7 +4,12 @@ from subprocess import run
 
 def run_multiple_commands(commands: list):
     for c in commands:
-        run(c, shell=True)
+        result = run(c, shell=True)
+        if result.returncode != 0:
+            print(
+                f"Subprocess `{c}` exited abnormally (exit code: {result.returncode})"
+            )
+            exit(1)
 
 
 def benchmark_commands(commands: list) -> float:
