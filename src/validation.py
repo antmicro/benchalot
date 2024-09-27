@@ -1,4 +1,3 @@
-from sys import stderr
 from cerberus import Validator
 
 
