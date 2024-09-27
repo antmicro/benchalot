@@ -35,7 +35,7 @@ Benchmarker is configured using a YAML file, e.g.:
 ---
 matrix:
   thread: [2, 4, 8]
-  tag: ["15d80c0757b5df02ff0b13def678ec7969bc8285", "e368bf5f04493508f2adcf55c95d2cb78fa87e8c"]
+  tag: ["slow", "fast"]
   input: ["data1", "data2", "data3"]
 run:
   before:
@@ -112,12 +112,12 @@ For example, the config above will generate this `plot.png`:
 
 And this `table.md`:
 ```markdown
-| commit                                   | input   |   time |
-|:-----------------------------------------|:--------|-------:|
-| 04b536d553a21219d1419820e35d8cd703561636 | data1   | 0.2901 |
-| 04b536d553a21219d1419820e35d8cd703561636 | data2   | 0.4389 |
-| 04b536d553a21219d1419820e35d8cd703561636 | data3   | 0.0097 |
-| 32d369e077b7330022d8eda68bcbbfcd25b9e56a | data1   | 0.2929 |
-| 32d369e077b7330022d8eda68bcbbfcd25b9e56a | data2   | 0.1468 |
-| 32d369e077b7330022d8eda68bcbbfcd25b9e56a | data3   | 0.4097 |
+| tag   | input   |   time |
+|:------|:--------|-------:|
+| fast  | data1   | 0.2929 |
+| fast  | data2   | 0.1471 |
+| fast  | data3   | 0.4096 |
+| slow  | data1   | 0.4095 |
+| slow  | data2   | 0.1528 |
+| slow  | data3   | 0.4387 |
 ```
