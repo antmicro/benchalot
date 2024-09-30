@@ -38,6 +38,7 @@ matrix:
   tag: ["slow", "fast"]
   input: ["data1", "data2", "data3"]
 run:
+  repeat: 3
   before:
     - "git clone . ../sleeper"
     - "cd ../sleeper && git checkout $matrix.tag && make build"
@@ -63,7 +64,6 @@ output:
     format: "table-md"
     filename: "table.md"
     columns: ["tag", "input"]
-
 ```
 
 ### Matrix
@@ -112,12 +112,12 @@ For example, the config above will generate this `plot.png`:
 
 And this `table.md`:
 ```markdown
-| tag   | input   |   time |
-|:------|:--------|-------:|
-| fast  | data1   | 0.2929 |
-| fast  | data2   | 0.1471 |
-| fast  | data3   | 0.4096 |
-| slow  | data1   | 0.4095 |
-| slow  | data2   | 0.1528 |
-| slow  | data3   | 0.4387 |
+| tag   | input   |     mean |   median |       std |
+|:------|:--------|---------:|---------:|----------:|
+| fast  | data1   | 0.292805 | 0.251214 | 0.165203  |
+| fast  | data2   | 0.147003 | 0.125923 | 0.0827682 |
+| fast  | data3   | 0.409555 | 0.350952 | 0.231543  |
+| slow  | data1   | 0.409459 | 0.350861 | 0.231534  |
+| slow  | data2   | 0.152782 | 0.130948 | 0.0860583 |
+| slow  | data3   | 0.438692 | 0.376356 | 0.248082  |
 ```
