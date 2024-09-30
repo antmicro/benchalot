@@ -44,6 +44,7 @@ def validate_config(config):
             "required": True,
             "type": "dict",
             "schema": {
+                "repeat": {"type": "integer", "required": False, "min": 1},
                 "before": {
                     "required": False,
                     "type": "list",
