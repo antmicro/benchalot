@@ -20,3 +20,9 @@ tuttest:
 	[ -f plot.png ]
 	[ -f result.csv ]
 	[ -f table.md ]
+	printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
+	tuttest README.md update-output | bash
+	[ -f result2.csv ]
+	rm result2.csv
+	tuttest README.md update-output-csv | bash
+	[ -f result2.csv ]

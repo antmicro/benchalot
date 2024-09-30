@@ -31,8 +31,8 @@ To update or get new output type this command:
 python src/main.py config.yml --update-output
 ```
 
-<!--name="update-output-csv"-->
 You can also specify `.csv` which will be used as source of data to update the output:
+<!--name="update-output-csv"-->
 ```bash
 python src/main.py config.yml --update-output result.csv
 ```

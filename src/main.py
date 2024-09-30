@@ -27,7 +27,7 @@ if len(argv) == 2:
     benchmarks = prepare_benchmarks(config)
     results = perform_benchmarks(benchmarks, config["run"]["samples"])
     output_results_from_list(results, config)
-elif len(argv) == 3 and argv[2] == "--update-output":
+elif (len(argv) == 3 or len(argv) == 4) and argv[2] == "--update-output":
     config = load_configuration_file(argv[1])
     backup_file = ".a.out.csv"
     if len(argv) == 4:
