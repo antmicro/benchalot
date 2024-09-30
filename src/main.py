@@ -23,6 +23,6 @@ validate_config(config)
 
 benchmarks = prepare_benchmarks(config)
 
-results = perform_benchmarks(benchmarks)
+results = perform_benchmarks(benchmarks, config["run"]["repeat"])
 
 output_results(results, config)

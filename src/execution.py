@@ -20,15 +20,16 @@ def benchmark_commands(commands: list) -> float:
         return (monotonic_ns() - start) / 1e9  # convert to seconds
 
 
-def perform_benchmarks(benchmarks: list) -> list:
+def perform_benchmarks(benchmarks: list, repeat: int) -> list:
     results = []
     for benchmark in benchmarks:
-        if "before" in benchmark:
-            run_multiple_commands(benchmark["before"])
-        result = benchmark_commands(benchmark["benchmark"])
-        if "after" in benchmark:
-            run_multiple_commands(benchmark["after"])
-        results.append(
-            [benchmark["matrix"][key] for key in benchmark["matrix"]] + [result]
-        )
+        for i in range(0, repeat):
+            if "before" in benchmark:
+                run_multiple_commands(benchmark["before"])
+            result = benchmark_commands(benchmark["benchmark"])
+            if "after" in benchmark:
+                run_multiple_commands(benchmark["after"])
+            results.append(
+                [benchmark["matrix"][key] for key in benchmark["matrix"]] + [result]
+            )
     return results

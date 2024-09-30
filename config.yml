@@ -1,10 +1,10 @@
 ---
 matrix:
-  thread: [2, 4, 8]
+  thread: [2, 4]
   tag: ["slow", "fast"]
   input: ["data1", "data2", "data3"]
 run:
-  repeat: 10
+  repeat: 3
   before:
     - "git clone . ../sleeper"
     - "cd ../sleeper && git checkout $matrix.tag && make build"
