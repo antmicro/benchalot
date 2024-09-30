@@ -30,6 +30,7 @@ def output_results_from_file(file, config):
 def output_results(results_df: pd.DataFrame, config):
 
     print(results_df.head())
+    results_df.to_csv(".a.out.csv", encoding="utf-8", index=False)
     for key in config["output"]:
         output = config["output"][key]
         logger.debug(f"Creating output for {output}")

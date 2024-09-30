@@ -111,7 +111,6 @@ def validate_config(config) -> dict:
         "output": {
             "required": False,
             "type": "dict",
-            "default": {"a.out": {"filename": "a.out.csv", "format": "csv"}},
             "valuesrules": {
                 "oneof": [
                     {
