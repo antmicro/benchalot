@@ -11,7 +11,7 @@ To use the program install and create a Python virtual environment:
 
 <!--name="install"-->
 ```bash
-apt install python3-venv -y
+apt install python3-venv cpuset sudo -y
 python3 -m  venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -22,7 +22,7 @@ Then pass configuration file's name as an argument.
 For example, start the benchmark by typing this command:
 <!--name="run"-->
 ```bash
-python src/main.py config.yml
+sudo .venv/bin/python src/main.py config.yml
 ```
 
 
@@ -33,6 +33,9 @@ Benchmarker is configured using a YAML file, e.g.:
 <!-- name="config.yml" -->
 ```yaml
 ---
+options:
+  isolate-cpus: [0,1]
+  disable-aslr: True
 matrix:
   thread: [2, 4, 8]
   tag: ["slow", "fast"]
