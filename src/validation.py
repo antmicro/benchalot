@@ -60,6 +60,23 @@ def validate_config(config) -> dict:
             "valuesrules": {"type": "list", "empty": False},
             "empty": False,
         },
+        "options": {
+            "required": False,
+            "type": "dict",
+            "schema": {
+                "isolate-cpus": {
+                    "type": "list",
+                    "empty": False,
+                    "default": [0],
+                    "required": False,
+                },
+                "disable-aslr": {
+                    "type": "boolean",
+                    "required": False,
+                    "default": True,
+                },
+            },
+        },
         "run": {
             "required": True,
             "type": "dict",

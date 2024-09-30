@@ -1,4 +1,7 @@
 ---
+options:
+  isolate-cpus: [0,1]
+  disable-aslr: True
 matrix:
   thread: [2, 4, 8]
   tag: ["slow", "fast"]

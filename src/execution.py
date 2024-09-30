@@ -59,7 +59,9 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
             logger.debug(f"Running benchmark: {benchmark}")
             if "before" in benchmark:
                 run_multiple_commands(benchmark["before"])
+
             result = benchmark_commands(benchmark["benchmark"])
+
             if "after" in benchmark:
                 run_multiple_commands(benchmark["after"])
             results.append(

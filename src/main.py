@@ -23,34 +23,32 @@ if geteuid() != 0:
     print("ERROR: You need root privileges to run.", file=stderr)
     exit(1)
 
-# Disable address space randomization: 
-f = open("/proc/sys/kernel/randomize_va_space", "w")
-f.write(str(0))
-f.close()
+# Disable address space randomization:
 # Shield CPU0
-run("cset shield --cpu=0 --kthread=on", shell = True)
+
+
 config = validate_config(config)
-if "log" in config: 
-    if "benchmarker" in config["log"]:
-        handler = FileHandler(config["benchmarker"])
-        formatter = Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(DEBUG)
-        handler = FileHandler("execution.log")
-    formatter = Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
-    handler.setFormatter(formatter)
-    command_logger = getLogger("execution_logger")
-    command_logger.setLevel(INFO)
-    command_logger.addHandler(handler)
+print(config)
 
 benchmarks = prepare_benchmarks(config)
 
-results = perform_benchmarks(benchmarks, config["run"]["samples"])
+f = open("/proc/sys/kernel/randomize_va_space", "w")
+f.write(str(0))
+f.close()
 
-output_results(results, config)
+cpu_str = ""
+for cpu in config["options"]["isolate-cpus"]:
+    cpu_str += str(cpu) + ","
+    f = open(f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor", "w")
+    f.write("performance")
+    f.close()
+cpu_str = cpu_str[:-1]
+
+run(f"cset shield --cpu={cpu_str} --kthread=on", shell=True)
+results = perform_benchmarks(benchmarks, config["run"]["samples"])
 
 run("cset shield --reset", shell=True)
 f = open("/proc/sys/kernel/randomize_va_space", "w")
 f.write(str(2))
 f.close()
+output_results(results, config)
