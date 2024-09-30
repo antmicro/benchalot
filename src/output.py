@@ -6,19 +6,29 @@ from logging import getLogger
 logger = getLogger("benchmarker_logger")
 
 
-def output_results(results: list, config):
+RESULTS_COLUMN = "time"
 
-    logger.info("Outputting results...")
-    results_column = "time"
+
+def output_results_from_list(results: list, config):
     if "matrix" in config:
         logger.debug("Found `matrix` section, creating columns.")
         results_df = pd.DataFrame(
             data=results,
-            columns=([key for key in config["matrix"].keys()] + [results_column]),
+            columns=([key for key in config["matrix"].keys()] + [RESULTS_COLUMN]),
         )
     else:
-        logger.debug("`matrix` section not found")
-        results_df = pd.DataFrame(data=results, columns=[results_column])
+        results_df = pd.DataFrame(data=results, columns=[RESULTS_COLUMN])
+    output_results(results_df, config)
+
+
+def output_results_from_file(file, config):
+
+    results_df = pd.read_csv(file)
+    output_results(results_df, config)
+
+
+def output_results(results_df: pd.DataFrame, config):
+
     print(results_df.head())
     for key in config["output"]:
         output = config["output"][key]
@@ -33,7 +43,7 @@ def output_results(results: list, config):
                     results_df,
                     aes(
                         x=f"factor({output['x-axis']})",
-                        y=results_column,
+                        y=RESULTS_COLUMN,
                     ),
                 )
                 + geom_bar(position="dodge", stat="identity")
@@ -60,10 +70,10 @@ def output_results(results: list, config):
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             if "columns" in output:
-                output_df = results_df.loc[:, output["columns"] + [results_column]]
+                output_df = results_df.loc[:, output["columns"] + [RESULTS_COLUMN]]
                 output_df = output_df.groupby(output["columns"])
                 output_df = (
-                    output_df[results_column]
+                    output_df[RESULTS_COLUMN]
                     .agg(["mean", "median", "std"])
                     .reset_index()
                 )
@@ -72,7 +82,7 @@ def output_results(results: list, config):
                 if "matrix" in config:
                     output_df = output_df.groupby([var for var in config["matrix"]])
                     output_df = (
-                        output_df[results_column]
+                        output_df[RESULTS_COLUMN]
                         .agg(["mean", "median", "std"])
                         .reset_index()
                     )
