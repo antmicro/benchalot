@@ -54,18 +54,13 @@ def output_results(results: list, config):
                     .agg(["mean", "median", "std"])
                     .reset_index()
                 )
-                output_df["mean"] = (
-                    output_df["mean"].apply(lambda x: f"{x:.4f}").astype(str)
-                )
-                output_df["median"] = (
-                    output_df["median"].apply(lambda x: f"{x:.4f}").astype(str)
-                )
-                output_df["std"] = (
-                    output_df["std"].apply(lambda x: f"{x:.4f}").astype(str)
-                )
             else:
                 output_df = results_df.loc[:, :]
-                output_df[results_column] = (
-                    output_df[results_column].apply(lambda x: f"{x:.4f}").astype(str)
-                )
+                if "matrix" in config:
+                    output_df = output_df.groupby([var for var in config["matrix"]])
+                    output_df = (
+                        output_df[results_column]
+                        .agg(["mean", "median", "std"])
+                        .reset_index()
+                    )
             output_df.to_markdown(output["filename"], index=False)
