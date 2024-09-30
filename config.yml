@@ -4,7 +4,7 @@ matrix:
   tag: ["slow", "fast"]
   input: ["data1", "data2", "data3"]
 run:
-  repeat: 3
+  samples: 3
   before:
     - "git clone . ../sleeper"
     - "cd ../sleeper && git checkout $matrix.tag && make build"

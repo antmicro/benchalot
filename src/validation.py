@@ -44,7 +44,7 @@ def validate_config(config) -> dict:
             "required": True,
             "type": "dict",
             "schema": {
-                "repeat": {
+                "samples": {
                     "type": "integer",
                     "required": False,
                     "min": 1,

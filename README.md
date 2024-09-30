@@ -38,7 +38,7 @@ matrix:
   tag: ["slow", "fast"]
   input: ["data1", "data2", "data3"]
 run:
-  repeat: 3
+  samples: 3
   before:
     - "git clone . ../sleeper"
     - "cd ../sleeper && git checkout $matrix.tag && make build"
@@ -82,7 +82,7 @@ in total performing 27 benchmarks.
 If there is no `matrix` section, Benchmarker will execute the `run` section once.
 
 ### Run
-`repeat` (optional, default = 1) defines how many times repeat each benchmark.
+`samples` (optional, default = 1) defines how many times repeat each benchmark.
 `before` contains the commands to be executed before the benchmark. 
 `benchmark` contains the commands to be benchmarked.
 `after` contains the commands to be executed after the measurement. 
