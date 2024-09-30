@@ -1,6 +1,6 @@
 ---
 matrix:
-  thread: [2, 4]
+  thread: [2, 4, 8]
   tag: ["slow", "fast"]
   input: ["data1", "data2", "data3"]
 run:
