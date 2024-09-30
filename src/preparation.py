@@ -24,9 +24,9 @@ def prepare_commands(commands: list, var_combination) -> list:
 
 
 def prepare_benchmarks(config) -> list:
-
-    for i, c in enumerate(config["run"]["benchmark"]):
-        config["run"]["benchmark"][i] = "cset shield --exec -- " + c
+    if "options" in config and "isolate-cpus" in config["options"]:
+        for i, c in enumerate(config["run"]["benchmark"]):
+            config["run"]["benchmark"][i] = "cset shield --exec -- " + c
     benchmarks = []
     logger.info("Preparing benchmarks...")
     if "matrix" not in config:

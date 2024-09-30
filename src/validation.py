@@ -67,13 +67,11 @@ def validate_config(config) -> dict:
                 "isolate-cpus": {
                     "type": "list",
                     "empty": False,
-                    "default": [0],
                     "required": False,
                 },
                 "disable-aslr": {
                     "type": "boolean",
                     "required": False,
-                    "default": True,
                 },
             },
         },
