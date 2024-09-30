@@ -19,7 +19,7 @@ else:
     with config_file:
         config = yaml.safe_load(config_file)
 
-validate_config(config)
+config = validate_config(config)
 
 benchmarks = prepare_benchmarks(config)
 

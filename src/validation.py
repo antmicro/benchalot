@@ -11,7 +11,7 @@ def error_and_exit(error):
     exit(1)
 
 
-def validate_config(config):
+def validate_config(config) -> dict:
     def variable_exists(field, value, error):
         if "matrix" not in config or value not in config["matrix"]:
             error(field, f"variable `{value}` does not exist")
@@ -44,7 +44,12 @@ def validate_config(config):
             "required": True,
             "type": "dict",
             "schema": {
-                "repeat": {"type": "integer", "required": False, "min": 1},
+                "repeat": {
+                    "type": "integer",
+                    "required": False,
+                    "min": 1,
+                    "default": 1,
+                },
                 "before": {
                     "required": False,
                     "type": "list",
@@ -139,3 +144,4 @@ def validate_config(config):
     v = Validator(schema=valid_schema, require_all=True)
     if not v.validate(config):
         error_and_exit(v.errors)
+    return v.normalized(config)
