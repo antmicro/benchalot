@@ -93,7 +93,7 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 `after` contains the commands to be executed after the measurement. 
 The `before` and `after` sections are optional.
 
-## Options
+### Options
 
 `options` section allows user to enable variance reduction measures.
 All of the options require the Benchmarker to be run with root privileges.
