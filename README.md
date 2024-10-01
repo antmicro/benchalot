@@ -36,6 +36,7 @@ Benchmarker is configured using a YAML file, e.g.:
 options:
   isolate-cpus: [0,1]
   disable-aslr: True
+  governor-performance: False
 matrix:
   thread: [2, 4, 8]
   tag: ["slow", "fast"]
