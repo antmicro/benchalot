@@ -3,6 +3,9 @@ from cerberus import Validator  # type: ignore
 from re import findall
 from sys import stderr
 from pprint import pprint
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 def error_and_exit(error):
@@ -141,7 +144,12 @@ def validate_config(config) -> dict:
             },
         },
     }
+    logger.info("Validating config...")
+    logger.debug(f"Config: {config}")
     v = Validator(schema=valid_schema, require_all=True)
     if not v.validate(config):
         error_and_exit(v.errors)
-    return v.normalized(config)
+    logger.info("Finished validating config.")
+    normalized_config = v.normalized(config)
+    logger.debug(f"Normalized config {normalized_config}")
+    return normalized_config

@@ -1,4 +1,7 @@
 from itertools import product
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 def create_variable_combinations(**kwargs):
@@ -22,11 +25,15 @@ def prepare_commands(commands: list, var_combination) -> list:
 def prepare_benchmarks(config) -> list:
 
     benchmarks = []
+    logger.info("Preparing benchmarks...")
     if "matrix" not in config:
+        logger.debug("`matrix` not found in the config.")
         benchmarks.append(config["run"])
         benchmarks[0]["matrix"] = {}
     else:
+        logger.debug("Creating variable combinations...")
         var_combinations = list(create_variable_combinations(**config["matrix"]))
+        logger.debug(f"Variable combinations {var_combinations}")
         for var_combination in var_combinations:
             benchmark = {"matrix": var_combination}
             if "before" in config["run"]:
@@ -41,4 +48,6 @@ def prepare_benchmarks(config) -> list:
                     config["run"]["after"], var_combination
                 )
             benchmarks.append(benchmark)
+    logger.info("Finished preparing benchmarks.")
+    logger.debug(f"Prepared benchmarks: {benchmarks}")
     return benchmarks

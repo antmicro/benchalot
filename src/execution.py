@@ -1,6 +1,9 @@
 from time import monotonic_ns
 from subprocess import run
 from yaspin import yaspin
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 def run_multiple_commands(commands: list):
@@ -22,8 +25,10 @@ def benchmark_commands(commands: list) -> float:
 
 def perform_benchmarks(benchmarks: list, samples: int) -> list:
     results = []
+    logger.info("Performing benchmarks...")
     for benchmark in benchmarks:
         for i in range(0, samples):
+            logger.debug(f"Running benchmark: {benchmark}")
             if "before" in benchmark:
                 run_multiple_commands(benchmark["before"])
             result = benchmark_commands(benchmark["benchmark"])
@@ -32,4 +37,6 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
             results.append(
                 [benchmark["matrix"][key] for key in benchmark["matrix"]] + [result]
             )
+    logger.info("Finished performing benchmarks.")
+    logger.debug(f"Benchmark results: {results}")
     return results

@@ -1,23 +1,32 @@
 from plotnine import ggplot, aes, geom_bar, facet_grid, theme_classic, labs
 import pandas as pd
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 def output_results(results: list, config):
 
+    logger.info("Outputting results...")
     results_column = "time"
     if "matrix" in config:
+        logger.debug("Found `matrix` section, creating columns.")
         results_df = pd.DataFrame(
             data=results,
             columns=([key for key in config["matrix"].keys()] + [results_column]),
         )
     else:
+        logger.debug("`matrix` section not found")
         results_df = pd.DataFrame(data=results, columns=[results_column])
     print(results_df.head())
     for key in config["output"]:
         output = config["output"][key]
+        logger.debug(f"Creating output for {output}")
         if output["format"] == "csv":
+            logger.debug("Outputting .csv file.")
             results_df.to_csv(output["filename"], encoding="utf-8", index=False)
         elif output["format"] == "bar-chart":
+            logger.debug("Outputting bar chart.")
             plot = (
                 ggplot(
                     results_df,
@@ -44,8 +53,11 @@ def output_results(results: list, config):
                 height = output["height"]
             if "dpi" in output:
                 dpi = output["dpi"]
-            plot.save(output["filename"], width=width, height=height, dpi=dpi)
+            plot.save(
+                output["filename"], width=width, height=height, dpi=dpi, verbose=False
+            )
         elif output["format"] == "table-md":
+            logger.debug("Outputting markdown table.")
             if "columns" in output:
                 output_df = results_df.loc[:, output["columns"] + [results_column]]
                 output_df = output_df.groupby(output["columns"])
@@ -64,3 +76,4 @@ def output_results(results: list, config):
                         .reset_index()
                     )
             output_df.to_markdown(output["filename"], index=False)
+    logger.info("Finished outputting results.")
