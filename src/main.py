@@ -1,10 +1,10 @@
 import yaml
-from sys import stderr, argv
+from sys import stderr, argv, executable
 from validation import validate_config
 from preparation import prepare_benchmarks
 from execution import perform_benchmarks
 from output import output_results
-from os import geteuid
+from os import geteuid, execvp
 from variance import enable_variance_reductions, revert_variance_reductions
 
 
@@ -27,9 +27,10 @@ is_root = geteuid() == 0
 
 if "options" in config and not is_root:
     print(
-        f"ERROR: to use {config['options']} root privileges are required.", file=stderr
+        "To use variance reducing options root privileges are required. Running sudo..."
     )
-    exit(1)
+    print(argv)
+    execvp("sudo", ["sudo", executable] + argv)
 benchmarks = prepare_benchmarks(config)
 
 if is_root:
