@@ -86,11 +86,22 @@ in total performing 27 benchmarks.
 If there is no `matrix` section, Benchmarker will execute the `run` section once.
 
 ### Run
+
 `samples` (optional, default = 1) defines how many times repeat each benchmark.
 `before` contains the commands to be executed before the benchmark. 
 `benchmark` contains the commands to be benchmarked.
 `after` contains the commands to be executed after the measurement. 
 The `before` and `after` sections are optional.
+
+## Options
+
+`options` section allows user to enable variance reduction measures.
+All of the options require the Benchmarker to be run with root privileges.
+The section is optional, if no options are specified program can be run without root.
+
+* `isolate-cpus`: contains a list of CPUs which will be shielded from running processes other than benchmarks.
+* `disable-aslr`: if set to `True`, will disable address space layout randomization. 
+* `governor-performance`: if set to `True`, will set frequency governors of all (or isolated) CPUs to `performance`.
 
 ### Output
 
