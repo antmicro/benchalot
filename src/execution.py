@@ -3,23 +3,24 @@ from subprocess import run
 from yaspin import yaspin
 from logging import getLogger, FileHandler, Formatter, INFO
 
-formatter = Formatter("%(levelname)s:%(message)s")
 
-logger = getLogger(__name__)
+logger = getLogger("benchmarker_logger")
 handler = FileHandler("execution.log")
+formatter = Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
 handler.setFormatter(formatter)
-command_logger = getLogger(__name__)
+command_logger = getLogger("execution logger")
 command_logger.setLevel(INFO)
 command_logger.addHandler(handler)
 
 
 def log_run_results(result):
-    msg = f"Executed: {result.args}"
+    command_logger.info(f"Executed: {result.args}")
     if len(result.stdout) > 0:
-        msg += f"\nstdout:\n{result.stdout}"
+        msg = result.stdout.replace("\n", " ")
+        command_logger.info(f"stdout: {msg}")
     if len(result.stderr) > 0:
-        msg += f"\nstderr:\n{result.stderr}"
-    command_logger.info(msg)
+        msg = result.stderr.replace("\n", " ")
+        command_logger.info(f"stderr: {msg}")
 
 
 def run_multiple_commands(commands: list):

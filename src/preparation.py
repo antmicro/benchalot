@@ -1,7 +1,8 @@
 from itertools import product
 from logging import getLogger
 
-logger = getLogger(__name__)
+
+logger = getLogger("benchmarker_logger")
 
 
 def create_variable_combinations(**kwargs):

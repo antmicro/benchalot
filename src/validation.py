@@ -5,7 +5,8 @@ from sys import stderr
 from pprint import pprint
 from logging import getLogger
 
-logger = getLogger(__name__)
+
+logger = getLogger("benchmarker_logger")
 
 
 def error_and_exit(error):

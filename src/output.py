@@ -2,7 +2,8 @@ from plotnine import ggplot, aes, geom_bar, facet_grid, theme_classic, labs
 import pandas as pd
 from logging import getLogger
 
-logger = getLogger(__name__)
+
+logger = getLogger("benchmarker_logger")
 
 
 def output_results(results: list, config):

@@ -4,10 +4,14 @@ from validation import validate_config
 from preparation import prepare_benchmarks
 from execution import perform_benchmarks
 from output import output_results
-from logging import getLogger, basicConfig, INFO
+from logging import getLogger, DEBUG, FileHandler, Formatter
 
-logger = getLogger(__name__)
-basicConfig(filename="benchmarker.log", level=INFO)
+logger = getLogger("benchmarker_logger")
+handler = FileHandler("benchmarker.log")
+formatter = Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(DEBUG)
 # load configuration file
 if len(argv) != 2:
     print(f"Usage: {argv[0]} <config>", file=stderr)
