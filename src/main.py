@@ -33,12 +33,12 @@ if "options" in config and not is_root:
     execvp("sudo", ["sudo", executable] + argv)
 benchmarks = prepare_benchmarks(config)
 
-if is_root:
+if "options" in config:
     enable_variance_reductions(config["options"])
 
 results = perform_benchmarks(benchmarks, config["run"]["samples"])
 
-if is_root:
+if "options" in config:
     revert_variance_reductions(config["options"])
 
 output_results(results, config)
