@@ -38,12 +38,10 @@ if is_root:
     cpu_str = ""
     for cpu in config["options"]["isolate-cpus"]:
         cpu_str += str(cpu) + ","
-        f = open(f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor", "w")
-        f.write("performance")
-        f.close()
     cpu_str = cpu_str[:-1]
-
     run(f"cset shield --cpu={cpu_str} --kthread=on", shell=True)
+    run(f"cpupower --cpu {cpu_str} frequency-set --governor performance", shell=True)
+
 results = perform_benchmarks(benchmarks, config["run"]["samples"])
 
 if is_root:
