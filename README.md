@@ -11,7 +11,7 @@ To use the program install and create a Python virtual environment:
 
 <!--name="install"-->
 ```bash
-apt install python3-venv cpuset sudo linux-cpupower -y
+apt install python3-venv cpuset linux-cpupower -y
 python3 -m  venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -22,7 +22,7 @@ Then pass configuration file's name as an argument.
 For example, start the benchmark by typing this command:
 <!--name="run"-->
 ```bash
-sudo .venv/bin/python src/main.py config.yml
+python src/main.py config.yml
 ```
 
 
