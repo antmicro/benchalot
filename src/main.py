@@ -6,6 +6,7 @@ from execution import perform_benchmarks
 from output import output_results
 from subprocess import run
 from os import geteuid
+from atexit import register, unregister
 
 
 def enable_variance_reductions(config):
@@ -19,6 +20,7 @@ def enable_variance_reductions(config):
     cpu_str = cpu_str[:-1]
     run(f"cset shield --cpu={cpu_str} --kthread=on", shell=True)
     run(f"cpupower --cpu {cpu_str} frequency-set --governor performance", shell=True)
+    register(revert_variance_reductions, config)
 
 
 def revert_variance_reductions(config):
@@ -27,6 +29,7 @@ def revert_variance_reductions(config):
         f = open("/proc/sys/kernel/randomize_va_space", "w")
         f.write(str(2))
         f.close()
+    unregister(revert_variance_reductions)
 
 
 # load configuration file
