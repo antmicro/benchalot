@@ -1,21 +1,7 @@
 from time import monotonic_ns
 from subprocess import run
 from yaspin import yaspin
-from logging import getLogger, FileHandler, Formatter, INFO
-
-
-logger = getLogger("benchmarker_logger")
-command_logger = getLogger("execution_logger")
-
-
-def log_run_results(result):
-    command_logger.info(f"Executed: {result.args}")
-    if len(result.stdout) > 0:
-        msg = result.stdout.replace("\n", " ")
-        command_logger.info(f"stdout: {msg}")
-    if len(result.stderr) > 0:
-        msg = result.stderr.replace("\n", " ")
-        command_logger.info(f"stderr: {msg}")
+from sys import stderr
 
 
 def run_multiple_commands(commands: list):
@@ -23,7 +9,8 @@ def run_multiple_commands(commands: list):
         result = run(c, shell=True, capture_output=True, text=True)
         if result.returncode != 0:
             print(
-                f"Subprocess `{c}` exited abnormally (exit code: {result.returncode})"
+                f"Subprocess `{c}` exited abnormally (exit code {result.returncode})",
+                file=stderr,
             )
             print(f"stderr: {str(result.stderr)}")
             exit(1)
