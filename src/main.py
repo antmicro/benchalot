@@ -9,23 +9,32 @@ from os import geteuid
 from atexit import register, unregister
 
 
-def enable_variance_reductions(config):
-    if "disable-aslr" in config["options"] and config["options"]["disable-aslr"]:
+def enable_variance_reductions(options):
+    if "disable-aslr" in options and options["disable-aslr"]:
         f = open("/proc/sys/kernel/randomize_va_space", "w")
         f.write(str(0))
         f.close()
-    cpu_str = ""
-    for cpu in config["options"]["isolate-cpus"]:
-        cpu_str += str(cpu) + ","
-    cpu_str = cpu_str[:-1]
-    run(f"cset shield --cpu={cpu_str} --kthread=on", shell=True)
-    run(f"cpupower --cpu {cpu_str} frequency-set --governor performance", shell=True)
-    register(revert_variance_reductions, config)
+
+    if "isolate-cpus" in options:
+        cpu_str = ""
+        for cpu in options["isolate-cpus"]:
+            cpu_str += str(cpu) + ","
+        cpu_str = cpu_str[:-1]
+        run(f"cset shield --cpu={cpu_str} --kthread=on", shell=True)
+        if "governor-performance" in options and options["governor-performance"]:
+            run(
+                f"cpupower --cpu {cpu_str} frequency-set --governor performance",
+                shell=True,
+            )
+    elif "governor-performance" in options and options["governor-performance"]:
+        run("cpupower frequency-set --governor performance", shell=True)
+    register(revert_variance_reductions, options)
 
 
-def revert_variance_reductions(config):
-    run("cset shield --reset", shell=True)
-    if "disable-aslr" in config["options"] and config["options"]["disable-aslr"]:
+def revert_variance_reductions(options):
+    if "isolate-cpus" in options:
+        run("cset shield --reset", shell=True)
+    if "disable-aslr" in options and options["disable-aslr"]:
         f = open("/proc/sys/kernel/randomize_va_space", "w")
         f.write(str(2))
         f.close()
@@ -48,6 +57,7 @@ else:
 
 config = validate_config(config)
 is_root = geteuid() == 0
+
 if "options" in config and not is_root:
     print(
         f"ERROR: to use {config['options']} root privileges are required.", file=stderr
@@ -56,10 +66,11 @@ if "options" in config and not is_root:
 benchmarks = prepare_benchmarks(config)
 
 if is_root:
-    enable_variance_reductions(config)
+    enable_variance_reductions(config["options"])
 
 results = perform_benchmarks(benchmarks, config["run"]["samples"])
 
 if is_root:
-    revert_variance_reductions(config)
+    revert_variance_reductions(config["options"])
+
 output_results(results, config)

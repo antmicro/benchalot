@@ -73,6 +73,7 @@ def validate_config(config) -> dict:
                     "type": "boolean",
                     "required": False,
                 },
+                "governor-performance": {"type": "boolean", "required": False},
             },
         },
         "run": {
