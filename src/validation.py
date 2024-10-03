@@ -160,13 +160,11 @@ def validate_config(config) -> dict:
                             "width": {
                                 "type": "integer",
                                 "min": 1,
-                                "max": 25,
                                 "required": False,
                             },
                             "height": {
                                 "type": "integer",
                                 "min": 1,
-                                "max": 25,
                                 "required": False,
                             },
                             "dpi": {"type": "integer", "min": 10, "required": False},

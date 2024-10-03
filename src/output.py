@@ -54,9 +54,7 @@ def output_results(results: list, config):
                 height = output["height"]
             if "dpi" in output:
                 dpi = output["dpi"]
-            plot.save(
-                output["filename"], width=width, height=height, dpi=dpi, verbose=False
-            )
+            plot.save(output["filename"], width=width, height=height, dpi=dpi, limitsize=False)
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             if "columns" in output:
