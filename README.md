@@ -96,7 +96,7 @@ The `before` and `after` sections are optional.
 ### System
 
 The `system` section allows the user to apply variance reduction measures.
-When benchmarks are run in a regular system environment, external factors such as other processes or randomized memory layout, can affect the execution time and thus the measurements.
+When benchmarking in a regular system environment, external factors such as other processes or randomized memory layout can affect the measurements.
 Options in this section aim to minimize some of the external factors. 
 Using these options require Benchmarker to be run with root privileges.
 The section is optional; if no options are specified, Benchmarker can be run without root.
