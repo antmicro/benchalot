@@ -39,7 +39,7 @@ def validate_config(config) -> dict:
 
     def at_least_one_output_csv(field, value, error):
         if value is None:
-            error(field, "no output")
+            error(field, "no output specified in the `output` section")
             return
         has_csv = False
         for output in value:
