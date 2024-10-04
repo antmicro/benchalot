@@ -9,7 +9,6 @@ from argparse import ArgumentParser
 
 # load configuration file
 def load_configuration_file(filename):
-
     try:
         config_file = open(argv[1], "r")
     except FileNotFoundError:

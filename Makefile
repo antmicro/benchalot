@@ -24,7 +24,7 @@ tuttest:
 	[ -f plot.png ]
 	[ -f result.csv ]
 	[ -f table.md ]
-	cat config.yml > $(TMP_CONFIG)
+	cp config.yml $(TMP_CONFIG)
 	printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> $(TMP_CONFIG)
 	tuttest README.md update-output | sed 's|config.yml|$(TMP_CONFIG)|' | bash
 	[ -f result2.csv ]
