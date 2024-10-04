@@ -10,8 +10,8 @@ def get_and_set(filename: str, value: str):
         ret = file.read()
         file.close()
         set(filename, value)
-    except FileNotFoundError:
-        print(f"ERROR: Failed to set {filename} to {value}")
+    except FileNotFoundError as e:
+        print(f"ERROR: Failed to read {filename} {e.strerror}")
         exit(1)
     return ret
 
