@@ -5,7 +5,7 @@ from preparation import prepare_benchmarks
 from execution import perform_benchmarks
 from output import output_results
 from os import geteuid, execvp
-from variance import enable_variance_reductions, revert_variance_reductions
+from variance import modify_system_state, restore_system_state
 
 
 # load configuration file
@@ -33,11 +33,11 @@ if "system" in config and not is_root:
 benchmarks = prepare_benchmarks(config)
 
 if "system" in config:
-    enable_variance_reductions(config["system"])
+    modify_system_state(config["system"])
 
 results = perform_benchmarks(benchmarks, config["run"]["samples"])
 
 if "system" in config:
-    revert_variance_reductions(config["system"])
+    restore_system_state(config["system"])
 
 output_results(results, config)
