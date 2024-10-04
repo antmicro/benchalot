@@ -1,5 +1,5 @@
 ---
-options:
+system:
   isolate-cpus: [0,1]
   disable-aslr: True
   governor-performance: True
