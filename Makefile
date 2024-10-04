@@ -14,18 +14,12 @@ typecheck:
 
 sanitize: format lint typecheck
 
-
+TMP_OUT_DIR := $(shell mktemp -d)
 TMP_CONFIG := $(shell mktemp)
-
 tuttest:
-	tuttest README.md config.yml > config.yml
+	tuttest README.md config.yml | sed -e 's|filename: "|filename: "$(TMP_OUT_DIR)/|' > $(TMP_CONFIG)
 	tuttest README.md install | bash 
-	tuttest README.md run | bash
-	[ -f plot.png ]
-	[ -f result.csv ]
-	[ -f table.md ]
-	cp config.yml $(TMP_CONFIG)
-	printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> $(TMP_CONFIG)
-	tuttest README.md update-output | sed 's|config.yml|$(TMP_CONFIG)|' | bash
-	[ -f result2.csv ]
-	rm result2.csv
+	tuttest README.md run | sed -e 's|config.yml|$(TMP_CONFIG)|' | bash
+	[ -f $(TMP_OUT_DIR)/plot.png ]
+	[ -f $(TMP_OUT_DIR)/result.csv ]
+	[ -f $(TMP_OUT_DIR)/table.md ]
