@@ -11,7 +11,7 @@ To use the program install and create a Python virtual environment:
 
 <!--name="install"-->
 ```bash
-apt install python3-venv cpuset linux-cpupower -y
+apt install python3-venv cpuset -y
 python3 -m  venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
