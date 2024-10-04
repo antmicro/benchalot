@@ -22,13 +22,11 @@ def output_results_from_list(results: list, config):
 
 
 def output_results_from_file(file, config):
-
     results_df = pd.read_csv(file)
     output_results(results_df, config)
 
 
 def output_results(results_df: pd.DataFrame, config):
-
     print(results_df.head())
     results_df.to_csv(".a.out.csv", encoding="utf-8", index=False)
     if "output" not in config:
