@@ -32,13 +32,12 @@ parser.add_argument(
     "--update-output",
     dest="regenerate_output",
     metavar="OLD_OUTPUT",
-    nargs="?",
     default=False,
     help="regenerate the output without re-running benchmarks",
 )
 
 args = parser.parse_args()
-if not args.regenerate_output and args.regenerate_output is not None:
+if not args.regenerate_output:
     config = load_configuration_file(args.config_filename)
     config = validate_config(config)
     benchmarks = prepare_benchmarks(config)

@@ -37,6 +37,18 @@ def validate_config(config) -> dict:
                 var_key = var.split(".")[1]
                 variable_exists(field, var_key, error)
 
+    def at_least_one_output_csv(field, value, error):
+        if value is None:
+            error(field, "no output")
+            return
+        has_csv = False
+        for output in value:
+            if value[output]["format"] == "csv":
+                has_csv = True
+                break
+        if not has_csv:
+            error(field, "has to have at least one `.csv` output")
+
     valid_schema = {
         "log": {
             "required": False,
@@ -109,7 +121,7 @@ def validate_config(config) -> dict:
             },
         },
         "output": {
-            "required": False,
+            "required": True,
             "type": "dict",
             "valuesrules": {
                 "oneof": [
@@ -117,7 +129,8 @@ def validate_config(config) -> dict:
                         "schema": {
                             "filename": {"type": "string", "empty": False},
                             "format": {"type": "string", "allowed": ["csv"]},
-                        }
+                        },
+                        "required": False,
                     },
                     {
                         "schema": {
@@ -173,6 +186,7 @@ def validate_config(config) -> dict:
                 ],
                 "empty": False,
             },
+            "check_with": at_least_one_output_csv,
         },
     }
     logger.info("Validating config...")
