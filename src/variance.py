@@ -64,18 +64,14 @@ def modify_system_state(system_options):
 def restore_system_state(system_options):
     if "isolate-cpus" in system_options:
         run("cset shield --reset", shell=True)
-        if system_options.get("governor-performance"):
-            for cpu in system_options["isolate-cpus"]:
+    if system_options.get("governor-performance"):
+        for cpu in range(cpu_count()):
+            key = f"governor{cpu}"
+            if key in system_state:
                 set(
                     f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor",
-                    system_state[f"governor{cpu}"],
+                    system_state[key],
                 )
-    elif system_options.get("governor-performance"):
-        for cpu in range(cpu_count()):
-            set(
-                f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor",
-                system_state[f"governor{cpu}"],
-            )
 
     if system_options.get("disable-aslr"):
         try:
