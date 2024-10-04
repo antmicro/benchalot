@@ -130,7 +130,6 @@ def validate_config(config) -> dict:
                             "filename": {"type": "string", "empty": False},
                             "format": {"type": "string", "allowed": ["csv"]},
                         },
-                        "required": False,
                     },
                     {
                         "schema": {
