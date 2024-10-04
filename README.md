@@ -95,9 +95,9 @@ The `before` and `after` sections are optional.
 
 ### System
 
-`system` section allows user to enable variance reduction measures.
-All of the options require the Benchmarker to be run with root privileges.
-The section is optional, if no options are specified the Benchmarker can be run without root.
+The `system` section allows the user to apply variance reduction measures.
+Using these options require Benchmarker to be run with root privileges.
+The section is optional; if no options are specified, Benchmarker can be run without root.
 
 * `isolate-cpus`: contains a list of CPUs which will be shielded from running processes other than benchmarks.
 * `disable-aslr`: if set to `True`, will disable address space layout randomization. 

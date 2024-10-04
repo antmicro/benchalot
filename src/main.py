@@ -27,7 +27,7 @@ is_root = geteuid() == 0
 
 if "system" in config and not is_root:
     print(
-        "To use variance reducing options root privileges are required. Running sudo..."
+        "To perform system configuration, root privileges are required. Running sudo..."
     )
     execvp("sudo", ["sudo", executable] + argv)
 benchmarks = prepare_benchmarks(config)
