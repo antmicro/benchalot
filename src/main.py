@@ -6,6 +6,7 @@ from execution import perform_benchmarks
 from output import output_results_from_list, output_results_from_file
 from argparse import ArgumentParser
 
+
 # load configuration file
 def load_configuration_file(filename):
 
@@ -20,9 +21,21 @@ def load_configuration_file(filename):
 
     return config
 
-parser = ArgumentParser(prog="python src/main.py", description="Benchmarker is a tool used for automatic benchmarking of software.")
-parser.add_argument("config_filename", help="a path to YAML configuration file" )
-parser.add_argument("-u","--update-output", dest="regenerate_output", metavar="OLD_OUTPUT", nargs='?', default=False, help="regenerate the output without re-running benchmarks")
+
+parser = ArgumentParser(
+    prog="python src/main.py",
+    description="Benchmarker is a tool used for automatic benchmarking of software.",
+)
+parser.add_argument("config_filename", help="a path to YAML configuration file")
+parser.add_argument(
+    "-u",
+    "--update-output",
+    dest="regenerate_output",
+    metavar="OLD_OUTPUT",
+    nargs="?",
+    default=False,
+    help="regenerate the output without re-running benchmarks",
+)
 
 args = parser.parse_args()
 if not args.regenerate_output and args.regenerate_output is not None:
