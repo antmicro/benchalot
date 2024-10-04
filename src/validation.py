@@ -60,7 +60,7 @@ def validate_config(config) -> dict:
             "valuesrules": {"type": "list", "empty": False},
             "empty": False,
         },
-        "options": {
+        "system": {
             "required": False,
             "type": "dict",
             "schema": {

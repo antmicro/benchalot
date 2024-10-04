@@ -3,9 +3,9 @@ from subprocess import run
 from sys import stderr
 
 
-def enable_variance_reductions(options):
-    register(revert_variance_reductions, options)
-    if "disable-aslr" in options and options["disable-aslr"]:
+def enable_variance_reductions(system):
+    register(revert_variance_reductions, system)
+    if "disable-aslr" in system and system["disable-aslr"]:
         try:
             aslr_file = open("/proc/sys/kernel/randomize_va_space", "w")
         except FileNotFoundError:
@@ -16,9 +16,9 @@ def enable_variance_reductions(options):
                 aslr_file.write(str(0))
                 aslr_file.close()
 
-    if "isolate-cpus" in options:
+    if "isolate-cpus" in system:
         cpu_str = ""
-        for cpu in options["isolate-cpus"]:
+        for cpu in system["isolate-cpus"]:
             cpu_str += str(cpu) + ","
         cpu_str = cpu_str[:-1]
         result = run(f"cset shield --cpu={cpu_str} --kthread=on", shell=True)
@@ -28,7 +28,7 @@ def enable_variance_reductions(options):
                 file=stderr,
             )
             exit(1)
-        if "governor-performance" in options and options["governor-performance"]:
+        if "governor-performance" in system and system["governor-performance"]:
             result = run(
                 f"cpupower --cpu {cpu_str} frequency-set --governor performance",
                 shell=True,
@@ -41,7 +41,7 @@ def enable_variance_reductions(options):
                 )
                 exit(1)
 
-    elif "governor-performance" in options and options["governor-performance"]:
+    elif "governor-performance" in system and system["governor-performance"]:
         result = run("cpupower frequency-set --governor performance", shell=True)
         if result.returncode != 0:
             print(
@@ -51,10 +51,10 @@ def enable_variance_reductions(options):
             exit(1)
 
 
-def revert_variance_reductions(options):
-    if "isolate-cpus" in options:
+def revert_variance_reductions(system):
+    if "isolate-cpus" in system:
         run("cset shield --reset", shell=True)
-    if "disable-aslr" in options and options["disable-aslr"]:
+    if "disable-aslr" in system and system["disable-aslr"]:
         try:
             aslr_file = open("/proc/sys/kernel/randomize_va_space", "w")
         except FileNotFoundError:

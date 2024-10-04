@@ -25,20 +25,19 @@ else:
 config = validate_config(config)
 is_root = geteuid() == 0
 
-if "options" in config and not is_root:
+if "system" in config and not is_root:
     print(
         "To use variance reducing options root privileges are required. Running sudo..."
     )
-    print(argv)
     execvp("sudo", ["sudo", executable] + argv)
 benchmarks = prepare_benchmarks(config)
 
-if "options" in config:
-    enable_variance_reductions(config["options"])
+if "system" in config:
+    enable_variance_reductions(config["system"])
 
 results = perform_benchmarks(benchmarks, config["run"]["samples"])
 
-if "options" in config:
-    revert_variance_reductions(config["options"])
+if "system" in config:
+    revert_variance_reductions(config["system"])
 
 output_results(results, config)

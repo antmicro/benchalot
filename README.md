@@ -33,7 +33,7 @@ Benchmarker is configured using a YAML file, e.g.:
 <!-- name="config.yml" -->
 ```yaml
 ---
-options:
+system:
   isolate-cpus: [0,1]
   disable-aslr: True
   governor-performance: False
@@ -93,9 +93,9 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 `after` contains the commands to be executed after the measurement. 
 The `before` and `after` sections are optional.
 
-### Options
+### System
 
-`options` section allows user to enable variance reduction measures.
+`system` section allows user to enable variance reduction measures.
 All of the options require the Benchmarker to be run with root privileges.
 The section is optional, if no options are specified the Benchmarker can be run without root.
 
