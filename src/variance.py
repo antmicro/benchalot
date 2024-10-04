@@ -5,16 +5,14 @@ from sys import stderr
 
 def modify_system_state(system_options):
     register(restore_system_state, system_options)
-    if "disable-aslr" in system_options and system_options["disable-aslr"]:
+    if system_options.get("disable-aslr"):
         try:
             aslr_file = open("/proc/sys/kernel/randomize_va_space", "w")
+            aslr_file.write(str(0))
+            aslr_file.close()
         except FileNotFoundError:
             print("ERROR: Failed to disable ASLR.")
             exit(1)
-        else:
-            with aslr_file:
-                aslr_file.write(str(0))
-                aslr_file.close()
 
     if "isolate-cpus" in system_options:
         cpu_str = ""
@@ -60,13 +58,11 @@ def modify_system_state(system_options):
 def restore_system_state(system_options):
     if "isolate-cpus" in system_options:
         run("cset shield --reset", shell=True)
-    if "disable-aslr" in system_options and system_options["disable-aslr"]:
+    if system_options.get("disable-aslr"):
         try:
             aslr_file = open("/proc/sys/kernel/randomize_va_space", "w")
+            aslr_file.write(str(2))
+            aslr_file.close()
         except FileNotFoundError:
-            print("ERROR: Failed to enable ASLR.")
-        else:
-            with aslr_file:
-                aslr_file.write(str(2))
-                aslr_file.close()
+            print("ERROR: Failed to restore state of ASLR.")
     unregister(restore_system_state)
