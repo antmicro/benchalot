@@ -27,5 +27,5 @@ endif
 	[ -f $(TMP_OUT_DIR)/result.csv ]
 	[ -f $(TMP_OUT_DIR)/table.md ]
 	printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> $(TMP_CONFIG)
-	tuttest README.md update-output | sed 's|config.yml|$(TMP_CONFIG)|' | bash
+	tuttest README.md update-output | sed 's|config.yml|$(TMP_CONFIG)|' | sed -e 's|result.csv|$(TMP_OUT_DIR)/result.csv|' | bash
 	[ -f $(TMP_OUT_DIR)/result2.csv ]
