@@ -18,6 +18,9 @@ TMP_OUT_DIR := $(shell mktemp -d)
 TMP_CONFIG := $(shell mktemp)
 tuttest:
 	tuttest README.md config.yml | sed -e 's|filename: "|filename: "$(TMP_OUT_DIR)/|' > $(TMP_CONFIG)
+ifdef ($(CI))
+	tuttest README.md dependencies | bash 
+endif
 	tuttest README.md install | bash 
 	tuttest README.md run | sed -e 's|config.yml|$(TMP_CONFIG)|' | bash
 	[ -f $(TMP_OUT_DIR)/plot.png ]

@@ -7,11 +7,14 @@ User can specify commands to be run before and after taking measurement to prepa
 
 # Usage
 
-To use the program install and create a Python virtual environment:
-
+To use the program, first install dependencies:
+<!--name="dependencies"-->
+```bash
+apt install python3-venv -y
+```
+and then create a Python virtual environment:
 <!--name="install"-->
 ```bash
-apt install python3-venv cpuset -y
 python3 -m  venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
