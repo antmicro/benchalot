@@ -45,9 +45,7 @@ if not args.regenerate_output:
     output_results_from_list(results, config)
 else:
     config = load_configuration_file(args.config_filename)
-    backup_file = ".a.out.csv"
-    if args.regenerate_output is not None:
-        backup_file = args.regenerate_output
+    backup_file = args.regenerate_output
     try:
         csv_file = open(backup_file, "r")
     except FileNotFoundError:

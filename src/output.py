@@ -28,7 +28,6 @@ def output_results_from_file(file, config):
 
 def output_results(results_df: pd.DataFrame, config):
     print(results_df.head())
-    results_df.to_csv(".a.out.csv", encoding="utf-8", index=False)
     if "output" not in config:
         return
     for key in config["output"]:
