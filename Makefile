@@ -13,6 +13,10 @@ typecheck:
 	mypy ./src/main.py ./src/validation.py ./src/preparation.py  ./src/execution.py ./src/output.py
 
 sanitize: format lint typecheck
+
+
+TMP_CONFIG := $(shell mktemp)
+
 tuttest:
 	tuttest README.md config.yml > config.yml
 	tuttest README.md install | bash 
@@ -20,9 +24,10 @@ tuttest:
 	[ -f plot.png ]
 	[ -f result.csv ]
 	[ -f table.md ]
-	printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
-	tuttest README.md update-output | bash
+	cat config.yml > $(TMP_CONFIG)
+	printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> $(TMP_CONFIG)
+	tuttest README.md update-output | sed 's|config.yml|$(TMP_CONFIG)|' | bash
 	[ -f result2.csv ]
 	rm result2.csv
-	tuttest README.md update-output-csv | bash
+	tuttest README.md update-output | sed 's|config.yml|$(TMP_CONFIG)|' | bash
 	[ -f result2.csv ]
