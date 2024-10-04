@@ -1,6 +1,6 @@
 stages:
-  - linting
-  # - formatting 
+  # - linting
+  - formatting 
 
 
 image:
