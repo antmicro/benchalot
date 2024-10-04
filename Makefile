@@ -29,5 +29,3 @@ tuttest:
 	tuttest README.md update-output | sed 's|config.yml|$(TMP_CONFIG)|' | bash
 	[ -f result2.csv ]
 	rm result2.csv
-	tuttest README.md update-output | sed 's|config.yml|$(TMP_CONFIG)|' | bash
-	[ -f result2.csv ]
