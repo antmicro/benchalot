@@ -1,5 +1,5 @@
 stages:
-  # - linting
+  - linting
   - formatting 
 
 
