@@ -5,12 +5,7 @@ from logging import getLogger, FileHandler, Formatter, INFO
 
 
 logger = getLogger("benchmarker_logger")
-handler = FileHandler("execution.log")
-formatter = Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
-handler.setFormatter(formatter)
-command_logger = getLogger("execution logger")
-command_logger.setLevel(INFO)
-command_logger.addHandler(handler)
+command_logger = getLogger("execution_logger")
 
 
 def log_run_results(result):

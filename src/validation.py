@@ -38,6 +38,22 @@ def validate_config(config) -> dict:
                 variable_exists(field, var_key, error)
 
     valid_schema = {
+        "log": {
+            "required": False,
+            "type": "dict",
+            "empty": False,
+            "schema": {
+                "benchmarker": {
+                    "required": False,
+                    "type":"string",
+                    "empty": False
+                },
+                "run": {
+                    "required": False,
+                    "type":"string"
+                },
+            }
+        },
         "matrix": {
             "required": False,
             "type": "dict",
