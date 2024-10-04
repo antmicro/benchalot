@@ -1,7 +1,10 @@
 stages:
-  # - linting
-  - formatting 
+  - linting
+  # - formatting 
 
+
+image:
+  name: external/docker/debian
 
 # black:
 #   stage: formatting
