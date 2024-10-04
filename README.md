@@ -25,13 +25,13 @@ For example, start the benchmark by typing this command:
 python src/main.py config.yml
 ```
 
-To update or get new output type this command:
+To regenerate the output without re-running benchmarks, use `--update-output`:
 <!--name="update-output"-->
 ```bash
 python src/main.py config.yml --update-output
 ```
 
-You can also specify `.csv` which will be used as source of data to update the output:
+You can also specify a `.csv` file which will be used as the source of data to generate the output:
 <!--name="update-output-csv"-->
 ```bash
 python src/main.py config.yml --update-output result.csv
