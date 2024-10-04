@@ -18,7 +18,7 @@ TMP_OUT_DIR := $(shell mktemp -d)
 TMP_CONFIG := $(shell mktemp)
 tuttest:
 	tuttest README.md config.yml | sed -e 's|filename: "|filename: "$(TMP_OUT_DIR)/|' > $(TMP_CONFIG)
-ifdef ($(CI))
+ifeq ($(CI), true)
 	tuttest README.md dependencies | bash 
 endif
 	tuttest README.md install | bash 
@@ -26,3 +26,6 @@ endif
 	[ -f $(TMP_OUT_DIR)/plot.png ]
 	[ -f $(TMP_OUT_DIR)/result.csv ]
 	[ -f $(TMP_OUT_DIR)/table.md ]
+	printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> $(TMP_CONFIG)
+	tuttest README.md update-output | sed 's|config.yml|$(TMP_CONFIG)|' | bash
+	[ -f $(TMP_OUT_DIR)/result2.csv ]
