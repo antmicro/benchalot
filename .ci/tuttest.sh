@@ -21,7 +21,6 @@ if [[ "$CI" == 'true' ]]; then
 fi
 eval "$INSTALL"
 
-rm plot.png
 rm config.yml
 echo "$CONFIG" > config.yml
 
@@ -29,7 +28,14 @@ eval "$RUN"
 var_exsts plot.png
 var_exsts table.md
 var_exsts result.csv
+mv plot.png previous.png
 
 printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
 eval "$RUN_UPDATE"
 var_exsts result2.csv
+cmp plot.png previous.png
+ret=$?
+if [ $ret -ne 0 ]; then
+    echo "Plots are not the same."
+    exit 1
+fi
