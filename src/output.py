@@ -27,7 +27,8 @@ def output_results_from_file(file, config):
 
 
 def output_results(results_df: pd.DataFrame, config):
-    print(results_df.head())
+    logger.info("Outputting results...")
+    logger.info(results_df.head())
     if "output" not in config:
         return
     for key in config["output"]:

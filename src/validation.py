@@ -1,8 +1,6 @@
 # Cerberus does not provide stubs for mypy
 from cerberus import Validator  # type: ignore
 from re import findall
-from sys import stderr
-from pprint import pprint
 from logging import getLogger
 
 
@@ -10,8 +8,8 @@ logger = getLogger(f"benchmarker.{__name__}")
 
 
 def error_and_exit(error):
-    print("ERROR: config validation failed:", file=stderr)
-    pprint(error, stream=stderr, indent=1, compact=False, width=120)
+    logger.critical("Config validation failed:")
+    logger.critical(error)
     exit(1)
 
 
@@ -50,31 +48,17 @@ def validate_config(config) -> dict:
             error(field, "has to have at least one `.csv` output")
 
     valid_schema = {
-        "log": {
+        "log-output": {
             "required": False,
             "type": "dict",
             "empty": False,
             "schema": {
-                "benchmarker": {
-                    "schema": {
-                        "filename": {
-                            "type": "string",
-                            "empty": False,
-                            "required": True,
-                        },
-                        "level": {"allowed": ["INFO", "DEBUG"], "required": False},
-                    }
+                "filename": {
+                    "type": "string",
+                    "empty": False,
+                    "required": True,
                 },
-                "run": {
-                    "schema": {
-                        "filename": {
-                            "type": "string",
-                            "empty": False,
-                            "required": True,
-                        },
-                        "level": {"allowed": ["INFO", "DEBUG"], "required": False},
-                    }
-                },
+                "level": {"allowed": ["INFO", "DEBUG"], "required": False},
             },
         },
         "matrix": {
