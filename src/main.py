@@ -36,11 +36,28 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
+config = load_configuration_file(args.config_filename)
+config = validate_config(config)
+if "log" in config: 
+    if "benchmarker" in config["log"]:
+        handler = FileHandler(config["log"]["benchmarker"])
+        formatter = Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(DEBUG)
+        handler = FileHandler("execution.log")
+    formatter = Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
+    handler.setFormatter(formatter)
+    command_logger = getLogger("execution_logger")
+    command_logger.setLevel(INFO)
+    command_logger.addHandler(handler)
 if not args.regenerate_output:
     config = load_configuration_file(args.config_filename)
     config = validate_config(config)
     benchmarks = prepare_benchmarks(config)
     results = perform_benchmarks(benchmarks, config["run"]["samples"])
+    if "system" in config:
+        restore_system_state(config["system"])
     output_results_from_list(results, config)
 else:
     config = load_configuration_file(args.config_filename)
