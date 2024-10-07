@@ -6,7 +6,7 @@ from pprint import pprint
 from logging import getLogger
 
 
-logger = getLogger("benchmarker_logger")
+logger = getLogger(f"benchmarker.{__name__}")
 
 
 def error_and_exit(error):
@@ -56,15 +56,26 @@ def validate_config(config) -> dict:
             "empty": False,
             "schema": {
                 "benchmarker": {
-                    "required": False,
-                    "type":"string",
-                    "empty": False
+                    "schema": {
+                        "filename": {
+                            "type": "string",
+                            "empty": False,
+                            "required": True,
+                        },
+                        "level": {"allowed": ["INFO", "DEBUG"], "required": False},
+                    }
                 },
                 "run": {
-                    "required": False,
-                    "type":"string"
+                    "schema": {
+                        "filename": {
+                            "type": "string",
+                            "empty": False,
+                            "required": True,
+                        },
+                        "level": {"allowed": ["INFO", "DEBUG"], "required": False},
+                    }
                 },
-            }
+            },
         },
         "matrix": {
             "required": False,

@@ -2,7 +2,7 @@ from itertools import product
 from logging import getLogger
 
 
-logger = getLogger("benchmarker_logger")
+logger = getLogger(f"benchmarker.{__name__}")
 
 
 def create_variable_combinations(**kwargs):

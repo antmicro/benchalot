@@ -1,4 +1,11 @@
 ---
+log:
+  benchmarker: 
+    filename: "benchmarker.log"
+    level: DEBUG
+  run:
+    filename: "run.log"
+    level: INFO
 system:
   isolate-cpus: [0,1]
   disable-aslr: True

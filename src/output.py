@@ -3,7 +3,7 @@ import pandas as pd
 from logging import getLogger
 
 
-logger = getLogger("benchmarker_logger")
+logger = getLogger(f"benchmarker.{__name__}")
 
 
 RESULTS_COLUMN = "time"

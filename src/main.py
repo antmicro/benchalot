@@ -3,6 +3,9 @@ from sys import stderr, argv, executable
 from validation import validate_config
 from preparation import prepare_benchmarks
 from execution import perform_benchmarks
+from logging import getLogger, FileHandler, Formatter, getLevelNamesMapping, INFO
+from os import geteuid, execvp
+from variance import modify_system_state, restore_system_state
 from output import output_results_from_list, output_results_from_file
 from argparse import ArgumentParser
 
@@ -36,21 +39,37 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-config = load_configuration_file(args.config_filename)
-config = validate_config(config)
-if "log" in config: 
+config_file = load_configuration_file(args.config_filename)
+config = validate_config(config_file)
+#  configure loggers
+if "log" in config:
+    formatter = Formatter(
+        "[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S"
+    )
     if "benchmarker" in config["log"]:
-        handler = FileHandler(config["log"]["benchmarker"])
-        formatter = Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
+        handler = FileHandler(config["log"]["benchmarker"]["filename"])
         handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(DEBUG)
-        handler = FileHandler("execution.log")
-    formatter = Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
-    handler.setFormatter(formatter)
-    command_logger = getLogger("execution_logger")
-    command_logger.setLevel(INFO)
-    command_logger.addHandler(handler)
+        benchmarker_logger = getLogger("benchmarker")
+        benchmarker_logger.addHandler(handler)
+        if "level" in config["log"]["benchmarker"]:
+            benchmarker_logger.setLevel(
+                getLevelNamesMapping()[config["log"]["benchmarker"]["level"]]
+            )
+        else:
+            benchmarker_logger.setLevel(INFO)
+    if "run" in config["log"]:
+        handler = FileHandler(config["log"]["run"]["filename"])
+        handler.setFormatter(formatter)
+        command_logger = getLogger("run")
+        if "level" in config["log"]["run"]:
+            command_logger.setLevel(
+                getLevelNamesMapping()[config["log"]["run"]["level"]]
+            )
+        else:
+            command_logger.setLevel(INFO)
+        command_logger.addHandler(handler)
+
+logger = getLogger(f"benchmarker.{__name__}")
 if not args.regenerate_output:
     config = load_configuration_file(args.config_filename)
     config = validate_config(config)
