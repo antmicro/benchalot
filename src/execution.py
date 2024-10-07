@@ -5,18 +5,14 @@ from logging import getLogger
 
 
 logger = getLogger(f"benchmarker.{__name__}")
-command_logger = getLogger(f"run.{__name__}")
+command_logger = getLogger("run")
 
 
 def log_run_results(result):
     if len(result.stdout) > 0:
-        command_logger.info(
-            f"Process '{result.args}' stdout: {str(result.stdout).strip()}"
-        )
+        command_logger.info(str(result.stdout))
     if len(result.stderr) > 0:
-        command_logger.warning(
-            f"Process '{result.args}' stderr: '{str(result.stderr).strip()}'"
-        )
+        command_logger.warning(str(result.stderr))
 
 
 def run_multiple_commands(commands: list):

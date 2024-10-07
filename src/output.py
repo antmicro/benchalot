@@ -69,7 +69,7 @@ def output_results(results_df: pd.DataFrame, config):
                 output["filename"], width=width, height=height, dpi=dpi, limitsize=False
             )
         elif output["format"] == "table-md":
-            logger.debug(f"Outputting markdown table.")
+            logger.debug("Outputting markdown table.")
             if "columns" in output:
                 output_df = results_df.loc[:, output["columns"] + [RESULTS_COLUMN]]
                 output_df = output_df.groupby(output["columns"])

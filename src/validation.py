@@ -48,19 +48,6 @@ def validate_config(config) -> dict:
             error(field, "has to have at least one `.csv` output")
 
     valid_schema = {
-        "log-output": {
-            "required": False,
-            "type": "dict",
-            "empty": False,
-            "schema": {
-                "filename": {
-                    "type": "string",
-                    "empty": False,
-                    "required": True,
-                },
-                "level": {"allowed": ["INFO", "DEBUG"], "required": False},
-            },
-        },
         "matrix": {
             "required": False,
             "type": "dict",
@@ -112,6 +99,11 @@ def validate_config(config) -> dict:
                     "type": "list",
                     "empty": False,
                     "check_with": check_command_variables,
+                },
+                "log-terminal-output": {
+                    "required": False,
+                    "type": "string",
+                    "empty": False,
                 },
             },
         },
