@@ -24,7 +24,7 @@ def set(filename: str, value: str):
         file.write(value)
         file.close()
     except FileNotFoundError as e:
-        logger.critical(f"Failed to set {filename} to {value} {e.strerror}")
+        logger.critical(f"Failed to set {value} to {filename} {e.strerror}")
         exit(1)
     value_str = value.replace("\n", " ")
     logger.debug(f"Wrote  '{value_str}' to '{filename}'.")
