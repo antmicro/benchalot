@@ -1,10 +1,7 @@
 #!/bin/bash
 
-var_exsts() {
-    if [ ! -f "$1" ]; then
-        echo "$1 does not exist."
-        exit 1
-    fi
+assert_file_exists() {
+    [ -f "$1" ] || exit 1
 }
 
 TMP_DIR=$(mktemp -d)
@@ -21,18 +18,17 @@ if [[ "$CI" == 'true' ]]; then
 fi
 eval "$INSTALL"
 
-rm config.yml
 echo "$CONFIG" > config.yml
 
 eval "$RUN"
-var_exsts plot.png
-var_exsts table.md
-var_exsts result.csv
+assert_file_exists plot.png
+assert_file_exists table.md
+assert_file_exists result.csv
 mv plot.png previous.png
 
 printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
 eval "$RUN_UPDATE"
-var_exsts result2.csv
+assert_file_exists result2.csv
 cmp plot.png previous.png
 ret=$?
 if [ $ret -ne 0 ]; then
