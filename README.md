@@ -48,6 +48,7 @@ matrix:
   input: ["data1", "data2", "data3"]
 run:
   samples: 3
+  log-terminal-output: "run.log"
   before:
     - "git clone . ../sleeper"
     - "cd ../sleeper && git checkout $matrix.tag && make build"
@@ -93,6 +94,7 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 ### Run
 
 `samples` (optional, default = 1) defines how many times repeat each benchmark.
+`log-terminal-output` (optional, default = None) defines filename of a file where stdout and stderr of commands run in `run` section will be saved.
 `before` contains the commands to be executed before the benchmark. 
 `benchmark` contains the commands to be benchmarked.
 `after` contains the commands to be executed after the measurement. 
