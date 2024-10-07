@@ -10,7 +10,7 @@ command_logger = getLogger(f"run.{__name__}")
 
 
 def log_run_results(result):
-    command_logger.info(f"Executed: {result.args}")
+    command_logger.info(f"Run: {result.args}")
     if len(result.stdout) > 0:
         msg = result.stdout.replace("\n", " ")
         command_logger.info(f"stdout: {msg}")

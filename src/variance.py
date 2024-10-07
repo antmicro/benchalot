@@ -20,6 +20,8 @@ def get_and_set(filename: str, value: str):
 
 
 def set(filename: str, value: str):
+    value_str = value.replace('\n',' ')
+    logger.debug(f"Writing  \'{value_str}\' to \'{filename}\'...")
     try:
         file = open(filename, "w")
         file.write(value)
@@ -36,28 +38,39 @@ def modify_system_state(system_options):
     logger.info("Modifying system state...")
     register(restore_system_state, system_options)
     if system_options.get("disable-aslr"):
+        logger.debug("Disabling ASLR...")
         system_state["aslr"] = get_and_set(
             "/proc/sys/kernel/randomize_va_space", str(0)
         )
+        logger.debug("Disabled ASLR.")
     if "isolate-cpus" in system_options:
         cpu_str = ""
         for cpu in system_options["isolate-cpus"]:
             cpu_str += str(cpu) + ","
         cpu_str = cpu_str[:-1]
-        result = run(f"cset shield --cpu={cpu_str} --kthread=on", shell=True)
+        logger.debug(f"Shielding CPUs {cpu_str}...")
+        result = run(f"cset shield --cpu={cpu_str} --kthread=on", shell=True, capture_output=True)
+        logger.debug(f"stdout: {result.stdout}")
+        logger.error(f"stderr: {result.stderr}")
         if result.returncode != 0:
             print(
                 f"ERROR: Failed to isolate CPUs {cpu_str} (exit code {result.returncode})",
                 file=stderr,
             )
+            print(
+                result.stderr,
+                file=stderr,
+            )
             exit(1)
         if system_options.get("governor-performance"):
+            logger.debug(f"Setting CPU governor for CPUs {cpu_str}...")
             for cpu in system_options["isolate-cpus"]:
                 system_state[f"governor{cpu}"] = get_and_set(
                     f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor",
                     "performance",
                 )
     elif system_options.get("governor-performance"):
+        logger.debug(f"Setting CPU governor for all CPUs...")
         for cpu in range(cpu_count()):
             system_state[f"governor{cpu}"] = get_and_set(
                 f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor",
@@ -69,7 +82,7 @@ def modify_system_state(system_options):
 def restore_system_state(system_options):
     logger.info("Restoring system state...")
     if "isolate-cpus" in system_options:
-        run("cset shield --reset", shell=True)
+        run("cset shield --reset", shell=True, capture_output=True)
     if system_options.get("governor-performance"):
         for cpu in range(cpu_count()):
             key = f"governor{cpu}"
