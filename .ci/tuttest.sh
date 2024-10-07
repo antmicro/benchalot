@@ -13,7 +13,7 @@ DEPENDENCIES=$(tuttest README.md dependencies)
 RUN=$(tuttest README.md run)
 RUN_UPDATE=$(tuttest README.md update-output)
 
-if [[ "$CI" == 'true' ]]; then
+if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
 eval "$INSTALL"
