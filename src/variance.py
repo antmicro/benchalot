@@ -51,8 +51,6 @@ def modify_system_state(system_options):
         result = run(
             f"cset shield --cpu={cpu_str} --kthread=on", shell=True, capture_output=True
         )
-        logger.debug(f"stdout: {result.stdout}")
-        logger.error(f"stderr: {result.stderr}")
         if result.returncode != 0:
             logger.critical(
                 f"ERROR: Failed to isolate CPUs {cpu_str} (exit code {result.returncode})"

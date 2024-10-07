@@ -74,5 +74,5 @@ else:
     else:
         with csv_file:
             output_results_from_file(csv_file, config)
-logger.info("Exiting Benchmarker.")
+logger.info("Exiting Benchmarker...")
 unregister(msg_log_file)

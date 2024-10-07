@@ -28,7 +28,7 @@ def output_results_from_file(file, config):
 
 def output_results(results_df: pd.DataFrame, config):
     logger.info("Outputting results...")
-    logger.info(results_df.head())
+    logger.debug(results_df.head())
     if "output" not in config:
         return
     for key in config["output"]:
@@ -66,7 +66,12 @@ def output_results(results_df: pd.DataFrame, config):
             if "dpi" in output:
                 dpi = output["dpi"]
             plot.save(
-                output["filename"], width=width, height=height, dpi=dpi, limitsize=False
+                output["filename"],
+                width=width,
+                height=height,
+                dpi=dpi,
+                limitsize=False,
+                verbose=False,
             )
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
