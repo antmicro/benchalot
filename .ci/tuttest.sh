@@ -1,9 +1,5 @@
 #!/bin/bash
 
-assert_file_exists() {
-    [ -f "$1" ] || exit 1
-}
-
 TMP_DIR=$(mktemp -d)
 git clone . $TMP_DIR
 cd $TMP_DIR
@@ -21,17 +17,14 @@ eval "$INSTALL"
 echo "$CONFIG" > config.yml
 
 eval "$RUN"
-assert_file_exists plot.png
-assert_file_exists table.md
-assert_file_exists result.csv
+[ -f "plot.png" ] || exit 1
+[ -f "table.md" ] || exit 1
+[ -f "result.csv" ] || exit 1
 mv plot.png previous.png
 
 printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
 eval "$RUN_UPDATE"
-assert_file_exists result2.csv
+[ -f "result2.csv" ] || exit 1
 cmp plot.png previous.png
-ret=$?
-if [ $ret -ne 0 ]; then
-    echo "Plots are not the same."
-    exit 1
-fi
+
+[ $? -ne 0 ] || exit 1
