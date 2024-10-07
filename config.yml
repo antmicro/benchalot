@@ -2,7 +2,7 @@
 log:
   benchmarker: 
     filename: "benchmarker.log"
-    level: DEBUG
+    level: INFO
   run:
     filename: "run.log"
     level: INFO
