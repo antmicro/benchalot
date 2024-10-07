@@ -43,11 +43,11 @@ config_file = load_configuration_file(args.config_filename)
 config = validate_config(config_file)
 #  configure loggers
 if "log" in config:
-    formatter = Formatter(
-        "[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S"
-    )
     if "benchmarker" in config["log"]:
         handler = FileHandler(config["log"]["benchmarker"]["filename"])
+        formatter = Formatter(
+            "[%(asctime)s][%(name)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S"
+        )
         handler.setFormatter(formatter)
         benchmarker_logger = getLogger("benchmarker")
         benchmarker_logger.addHandler(handler)
@@ -58,6 +58,9 @@ if "log" in config:
         else:
             benchmarker_logger.setLevel(INFO)
     if "run" in config["log"]:
+        formatter = Formatter(
+            "[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S"
+        )
         handler = FileHandler(config["log"]["run"]["filename"])
         handler.setFormatter(formatter)
         command_logger = getLogger("run")
