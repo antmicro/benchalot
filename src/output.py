@@ -33,18 +33,29 @@ def output_results_from_file(file, config):
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
 
+    old_outputs = {}
+    for key in config["output"]:
+        output = config["output"][key]
+        if "include" in output:
+            logger.debug(f"Loading files {output['include']}...")
+            files = []
+            for file in output["include"]:
+                if file in old_outputs:
+                    continue
+                files.append(file)
+                logger.debug(f"Reading file '{file}'")
+                old_outputs[file] = pd.read_csv(file)
+                logger.debug(old_outputs[file].head())
+            logger.info(f"Loaded files {files}")
+
     for key in config["output"]:
         output = config["output"][key]
         logger.debug(f"Creating output for {output}")
         output_df = results_df
         if "include" in output:
-            logger.info("Including old outputs...")
+            logger.debug(f"Concatenating {output['include']}")
             for file in output["include"]:
-                logger.debug(f"Reading file '{file}'")
-                old_output = pd.read_csv(file)
-                logger.debug(old_output.head())
-                output_df = pd.concat([results_df, old_output], ignore_index=True)
-        logger.info("Included old outputs.")
+                output_df = pd.concat([output_df, old_outputs[file]], ignore_index=True)
         logger.debug(output_df.head())
         if output["format"] == "csv":
             logger.debug("Outputting .csv file.")
