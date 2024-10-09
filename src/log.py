@@ -35,7 +35,9 @@ def setup_benchmarker_logging(verbose, debug):
         "[%(asctime)s][%(name)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S"
     )
     benchmarker_logger = getLogger("benchmarker")
-    temp_log_file = NamedTemporaryFile(delete=False)
+    temp_log_file = NamedTemporaryFile(
+        prefix="benchmarker-", suffix=".log", delete=False
+    )
     benchmarker_handler = FileHandler(temp_log_file.name)
     benchmarker_handler.setFormatter(benchmarker_formatter)
     benchmarker_logger.addHandler(benchmarker_handler)
