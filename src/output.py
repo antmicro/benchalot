@@ -1,12 +1,12 @@
 from plotnine import ggplot, aes, geom_bar, facet_grid, theme_classic, labs
 import pandas as pd
 from logging import getLogger
-
+from datetime import timezone, datetime
 
 logger = getLogger(f"benchmarker.{__name__}")
 
-
 RESULTS_COLUMN = "time"
+TIME_STAMP_COLUMN = "benchmark_utc"
 
 
 def output_results_from_list(results: list, config):
@@ -16,8 +16,10 @@ def output_results_from_list(results: list, config):
             data=results,
             columns=([key for key in config["matrix"].keys()] + [RESULTS_COLUMN]),
         )
+
     else:
         results_df = pd.DataFrame(data=results, columns=[RESULTS_COLUMN])
+    results_df.insert(0, TIME_STAMP_COLUMN, datetime.now(timezone.utc))
     output_results(results_df, config)
 
 
