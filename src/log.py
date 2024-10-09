@@ -40,7 +40,7 @@ def setup_benchmarker_logging(verbose, debug):
     benchmarker_handler.setFormatter(benchmarker_formatter)
     benchmarker_logger.addHandler(benchmarker_handler)
     benchmarker_logger.setLevel(DEBUG)
-    register(msg_log_file, temp_log_file.name)
+    register(crash_msg_log_file, temp_log_file.name)
 
 
 def setup_terminal_output_logging(output_filename):
@@ -58,5 +58,5 @@ def setup_terminal_output_logging(output_filename):
     command_logger.setLevel(INFO)
 
 
-def msg_log_file(filename):
+def crash_msg_log_file(filename):
     logger.critical(f"Benchmarker exited abnormally! Log files generated: {filename}.")

@@ -7,7 +7,11 @@ from os import geteuid, execvp
 from variance import modify_system_state, restore_system_state
 from output import output_results_from_list, output_results_from_file
 from argparse import ArgumentParser
-from log import setup_benchmarker_logging, setup_terminal_output_logging, msg_log_file
+from log import (
+    setup_benchmarker_logging,
+    setup_terminal_output_logging,
+    crash_msg_log_file,
+)
 from logging import getLogger
 from atexit import unregister
 
@@ -86,4 +90,4 @@ else:
         with csv_file:
             output_results_from_file(csv_file, config)
 logger.info("Exiting Benchmarker...")
-unregister(msg_log_file)
+unregister(crash_msg_log_file)
