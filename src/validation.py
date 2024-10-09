@@ -120,89 +120,94 @@ def validate_config(config) -> dict:
         "output": {
             "required": True,
             "type": "dict",
-            "schema": {
-                "include": {
-                    "type": "list",
-                    "empty": False,
-                    "check_with": check_file_exists,
-                    "required": False,
-                },
-                "files": {
-                    "valuesrules": {
-                        "oneof": [
-                            {
-                                "schema": {
-                                    "filename": {"type": "string", "empty": False},
-                                    "format": {"type": "string", "allowed": ["csv"]},
-                                },
+            "valuesrules": {
+                "oneof": [
+                    {
+                        "schema": {
+                            "filename": {"type": "string", "empty": False},
+                            "format": {"type": "string", "allowed": ["csv"]},
+                            "include": {
+                                "type": "list",
+                                "check_with": check_file_exists,
+                                "required": False,
                             },
-                            {
-                                "schema": {
-                                    "filename": {"type": "string", "empty": False},
-                                    "format": {
-                                        "type": "string",
-                                        "allowed": ["table-md"],
-                                    },
-                                    "columns": {
-                                        "type": "list",
-                                        "empty": False,
-                                        "required": False,
-                                        "dependencies": "^matrix",
-                                        "check_with": variables_exist,
-                                    },
-                                },
-                            },
-                            {
-                                "schema": {
-                                    "filename": {"type": "string", "empty": False},
-                                    "format": {
-                                        "type": "string",
-                                        "allowed": ["bar-chart"],
-                                    },
-                                    "x-axis": {
-                                        "type": "string",
-                                        "empty": False,
-                                        "required": True,
-                                        "dependencies": "^matrix",
-                                        "check_with": variable_exists,
-                                    },
-                                    "color": {
-                                        "type": "string",
-                                        "empty": False,
-                                        "required": False,
-                                        "dependencies": "^matrix",
-                                        "check_with": variable_exists,
-                                    },
-                                    "facet": {
-                                        "type": "string",
-                                        "empty": False,
-                                        "required": False,
-                                        "dependencies": "^matrix",
-                                        "check_with": variable_exists,
-                                    },
-                                    "width": {
-                                        "type": "integer",
-                                        "min": 1,
-                                        "required": False,
-                                    },
-                                    "height": {
-                                        "type": "integer",
-                                        "min": 1,
-                                        "required": False,
-                                    },
-                                    "dpi": {
-                                        "type": "integer",
-                                        "min": 10,
-                                        "required": False,
-                                    },
-                                }
-                            },
-                        ],
-                        "empty": False,
+                        },
                     },
-                    "check_with": at_least_one_output_csv,
-                },
+                    {
+                        "schema": {
+                            "filename": {"type": "string", "empty": False},
+                            "format": {
+                                "type": "string",
+                                "allowed": ["table-md"],
+                            },
+                            "include": {
+                                "type": "list",
+                                "check_with": check_file_exists,
+                                "required": False,
+                            },
+                            "columns": {
+                                "type": "list",
+                                "empty": False,
+                                "required": False,
+                                "dependencies": "^matrix",
+                                "check_with": variables_exist,
+                            },
+                        },
+                    },
+                    {
+                        "schema": {
+                            "filename": {"type": "string", "empty": False},
+                            "format": {
+                                "type": "string",
+                                "allowed": ["bar-chart"],
+                            },
+                            "include": {
+                                "type": "list",
+                                "check_with": check_file_exists,
+                                "required": False,
+                            },
+                            "x-axis": {
+                                "type": "string",
+                                "empty": False,
+                                "required": True,
+                                "dependencies": "^matrix",
+                                "check_with": variable_exists,
+                            },
+                            "color": {
+                                "type": "string",
+                                "empty": False,
+                                "required": False,
+                                "dependencies": "^matrix",
+                                "check_with": variable_exists,
+                            },
+                            "facet": {
+                                "type": "string",
+                                "empty": False,
+                                "required": False,
+                                "dependencies": "^matrix",
+                                "check_with": variable_exists,
+                            },
+                            "width": {
+                                "type": "integer",
+                                "min": 1,
+                                "required": False,
+                            },
+                            "height": {
+                                "type": "integer",
+                                "min": 1,
+                                "required": False,
+                            },
+                            "dpi": {
+                                "type": "integer",
+                                "min": 10,
+                                "required": False,
+                            },
+                        }
+                    },
+                ],
+                "empty": False,
             },
+            "check_with": at_least_one_output_csv,
         },
     }
     logger.info("Validating config...")

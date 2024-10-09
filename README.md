@@ -61,25 +61,22 @@ run:
     - "cd ../sleeper && make clean"
     - "rm -rf ../sleeper"
 output:
-  include:
-    "result.csv"
-  files:
-    csv:
-      filename: "result.csv"
-      format: "csv"
-    plot:
-      filename: "plot.png"
-      format: "bar-chart"
-      x-axis: input
-      facet: tag
-      color: thread
-      width: 10
-      height: 9
-      dpi: 100
-    table:
-      format: "table-md"
-      filename: "table.md"
-      columns: ["tag", "input"]
+  csv:
+    filename: "result.csv"
+    format: "csv"
+  plot:
+    filename: "plot.png"
+    format: "bar-chart"
+    x-axis: input
+    facet: tag
+    color: thread
+    width: 10
+    height: 9
+    dpi: 100
+  table:
+    format: "table-md"
+    filename: "table.md"
+    columns: ["tag", "input"]
 ```
 
 ### Matrix
@@ -121,6 +118,7 @@ The section is optional; if no options are specified, Benchmarker can be run wit
 ### Output
 
 In the `output` section user can specify desired output of the program.
+
 Each subsection of the `output` corresponds to one output file described by `filename` and `format`.
 Currently there are three supported formats: `csv`, `bar-plot` and `table-md`.
 

@@ -31,28 +31,29 @@ def output_results_from_file(file, config):
 
 
 def output_results(results_df: pd.DataFrame, config: dict):
-    if "include" in config["output"]:
-        logger.info("Including old outputs...")
-        for file in config["output"]["include"]:
-            logger.debug(f"Reading file '{file}'")
-            old_output = pd.read_csv(file)
-            logger.debug(old_output.head())
-            results_df = pd.concat([results_df, old_output], ignore_index=True)
-        logger.info("Included old outputs.")
     logger.info("Outputting results...")
-    logger.debug(results_df.head())
 
-    for key in config["output"]["files"]:
-        output = config["output"]["files"][key]
+    for key in config["output"]:
+        output = config["output"][key]
         logger.debug(f"Creating output for {output}")
+        output_df = results_df
+        if "include" in output:
+            logger.info("Including old outputs...")
+            for file in output["include"]:
+                logger.debug(f"Reading file '{file}'")
+                old_output = pd.read_csv(file)
+                logger.debug(old_output.head())
+                output_df = pd.concat([results_df, old_output], ignore_index=True)
+        logger.info("Included old outputs.")
+        logger.debug(output_df.head())
         if output["format"] == "csv":
             logger.debug("Outputting .csv file.")
-            results_df.to_csv(output["filename"], encoding="utf-8", index=False)
+            output_df.to_csv(output["filename"], encoding="utf-8", index=False)
         elif output["format"] == "bar-chart":
             logger.debug("Outputting bar chart.")
             plot = (
                 ggplot(
-                    results_df,
+                    output_df,
                     aes(
                         x=f"factor({output['x-axis']})",
                         y=RESULTS_COLUMN,
@@ -87,21 +88,21 @@ def output_results(results_df: pd.DataFrame, config: dict):
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             if "columns" in output:
-                output_df = results_df.loc[:, output["columns"] + [RESULTS_COLUMN]]
-                output_df = output_df.groupby(output["columns"])
-                output_df = (
-                    output_df[RESULTS_COLUMN]
+                table_df = output_df.loc[:, output["columns"] + [RESULTS_COLUMN]]
+                table_df = table_df.groupby(output["columns"])
+                table_df = (
+                    table_df[RESULTS_COLUMN]
                     .agg(["mean", "median", "std"])
                     .reset_index()
                 )
             else:
-                output_df = results_df.loc[:, :]
+                table_df = output_df.loc[:, :]
                 if "matrix" in config:
-                    output_df = output_df.groupby([var for var in config["matrix"]])
-                    output_df = (
+                    table_df = table_df.groupby([var for var in config["matrix"]])
+                    table_df = (
                         output_df[RESULTS_COLUMN]
                         .agg(["mean", "median", "std"])
                         .reset_index()
                     )
-            output_df.to_markdown(output["filename"], index=False)
+            table_df.to_markdown(output["filename"], index=False)
     logger.info("Finished outputting results.")
