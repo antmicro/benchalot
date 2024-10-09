@@ -43,8 +43,11 @@ def setup_benchmarker_logging(verbose, debug):
 
 
 def setup_terminal_output_logging(output_filename):
+    if output_filename == "STDIO":
+        handler = StreamHandler()
+    else:
+        handler = FileHandler(output_filename)
     formatter = Formatter("%(message)s")
-    handler = FileHandler(output_filename)
     handler.setFormatter(formatter)
     command_logger = getLogger("run")
     command_logger.addHandler(handler)
