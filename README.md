@@ -61,22 +61,25 @@ run:
     - "cd ../sleeper && make clean"
     - "rm -rf ../sleeper"
 output:
-  csv:
-    filename: "result.csv"
-    format: "csv"
-  plot:
-    filename: "plot.png"
-    format: "bar-chart"
-    x-axis: input
-    facet: tag
-    color: thread
-    width: 10
-    height: 9
-    dpi: 100
-  table:
-    format: "table-md"
-    filename: "table.md"
-    columns: ["tag", "input"]
+  include:
+    "result.csv"
+  files:
+    csv:
+      filename: "result.csv"
+      format: "csv"
+    plot:
+      filename: "plot.png"
+      format: "bar-chart"
+      x-axis: input
+      facet: tag
+      color: thread
+      width: 10
+      height: 9
+      dpi: 100
+    table:
+      format: "table-md"
+      filename: "table.md"
+      columns: ["tag", "input"]
 ```
 
 ### Matrix

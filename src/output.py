@@ -31,9 +31,9 @@ def output_results_from_file(file, config):
 
 
 def output_results(results_df: pd.DataFrame, config: dict):
-    if "include-output" in config:
+    if "include" in config["output"]:
         logger.info("Including old outputs...")
-        for file in config["include-output"]:
+        for file in config["output"]["include"]:
             logger.debug(f"Reading file '{file}'")
             old_output = pd.read_csv(file)
             logger.debug(old_output.head())
@@ -41,10 +41,9 @@ def output_results(results_df: pd.DataFrame, config: dict):
         logger.info("Included old outputs.")
     logger.info("Outputting results...")
     logger.debug(results_df.head())
-    if "output" not in config:
-        return
-    for key in config["output"]:
-        output = config["output"][key]
+
+    for key in config["output"]["files"]:
+        output = config["output"]["files"][key]
         logger.debug(f"Creating output for {output}")
         if output["format"] == "csv":
             logger.debug("Outputting .csv file.")
