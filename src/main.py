@@ -63,7 +63,6 @@ setup_benchmarker_logging(args.verbose, args.debug)
 config_file = load_configuration_file(args.config_filename)
 config = validate_config(config_file)
 
-#  configure loggers
 
 if not args.regenerate_output:
     config = load_configuration_file(args.config_filename)
