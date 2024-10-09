@@ -11,13 +11,11 @@ from tempfile import NamedTemporaryFile
 from atexit import register
 from sys import stderr, stdout
 
-# setup critical logging
 
 logger = getLogger(f"benchmarker.{__name__}")
 
 
 def setup_benchmarker_logging(verbose, debug):
-
     console = StreamHandler()
     console.setFormatter(
         Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
