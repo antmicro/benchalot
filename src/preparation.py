@@ -71,6 +71,5 @@ def prepare_metrics(config):
             module = module.removesuffix(".py")
             module = "plugins." + module
             metric_constructor = getattr(import_module(module), class_name)
-            print(metric_constructor)
         metrics.append(metric_constructor)
     return metrics
