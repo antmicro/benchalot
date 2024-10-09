@@ -1,7 +1,7 @@
 from itertools import product
 from logging import getLogger
 from metrics import BaseMetric, TimeMetric, StdOutMetric
-
+from importlib import import_module
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -66,5 +66,11 @@ def prepare_metrics(config):
             metric_constructor = TimeMetric
         elif metric == "stdout":
             metric_constructor = StdOutMetric
+        else:
+            class_name, module = metric.split("@")
+            module = module.removesuffix(".py")
+            module = "plugins." + module
+            metric_constructor = getattr(import_module(module), class_name)
+            print(metric_constructor)
         metrics.append(metric_constructor)
     return metrics
