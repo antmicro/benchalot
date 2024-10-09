@@ -41,9 +41,21 @@ parser.add_argument(
     default=False,
     help="regenerate the output without re-running benchmarks",
 )
-parser.add_argument("-d", "--debug", dest="debug", default=False, action="store_true")
 parser.add_argument(
-    "-v", "--verbose", default=False, action="store_true", dest="verbose"
+    "-d",
+    "--debug",
+    dest="debug",
+    default=False,
+    action="store_true",
+    help="print debug information during Benchmarker execution",
+)
+parser.add_argument(
+    "-v",
+    "--verbose",
+    default=False,
+    action="store_true",
+    dest="verbose",
+    help="print basic information during Benchmarker execution",
 )
 
 args = parser.parse_args()
