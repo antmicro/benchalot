@@ -17,7 +17,7 @@ def log_run_results(result):
 
 def run_multiple_commands(commands: list):
     for c in commands:
-        result = run(c, shell=True, capture_output=True, text=True)
+        result = run(c, shell=True, capture_output=True)
         log_run_results(result)
         if result.returncode != 0:
             logger.critical(
