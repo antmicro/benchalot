@@ -2,7 +2,7 @@
 from cerberus import Validator  # type: ignore
 from re import findall
 from logging import getLogger
-
+from os import path
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -46,6 +46,14 @@ def validate_config(config) -> dict:
                 break
         if not has_csv:
             error(field, "has to have at least one `.csv` output")
+
+    def check_file_exists(field, value, error):
+        if value is None:
+            error(field, "no outputs specified")
+        for file in value:
+            if not path.isfile(file):
+                error(field, f"file '{file}' does not exist")
+                return
 
     valid_schema = {
         "matrix": {
@@ -106,6 +114,11 @@ def validate_config(config) -> dict:
                     "empty": False,
                 },
             },
+        },
+        "include-output": {
+            "type": "list",
+            "empty": False,
+            "check_with": check_file_exists,
         },
         "output": {
             "required": True,
