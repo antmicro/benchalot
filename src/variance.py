@@ -56,6 +56,7 @@ def modify_system_state(system_options):
                 f"ERROR: Failed to isolate CPUs {cpu_str} (exit code {result.returncode})"
             )
             logger.critical(str(result.stderr))
+            logger.critical(str(result.stdout))
             exit(1)
         if system_options.get("governor-performance"):
             logger.debug(f"Setting CPU governor for CPUs {cpu_str}...")

@@ -6,7 +6,7 @@ from datetime import timezone, datetime
 logger = getLogger(f"benchmarker.{__name__}")
 
 RESULTS_COLUMN = "time"
-TIME_STAMP_COLUMN = "benchmark_utc"
+TIME_STAMP_COLUMN = "benchmark_date"
 
 
 def output_results_from_list(results: list, config):
@@ -19,7 +19,9 @@ def output_results_from_list(results: list, config):
 
     else:
         results_df = pd.DataFrame(data=results, columns=[RESULTS_COLUMN])
-    results_df.insert(0, TIME_STAMP_COLUMN, datetime.now(timezone.utc))
+    results_df.insert(
+        0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y/%m/%d %H:%M")
+    )
     output_results(results_df, config)
 
 

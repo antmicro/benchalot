@@ -15,7 +15,9 @@ def error_and_exit(error):
 
 def validate_config(config) -> dict:
     def variable_exists(field, value, error):
-        if "matrix" not in config or value not in config["matrix"]:
+        if (
+            "matrix" not in config or value not in config["matrix"]
+        ) and value != "benchmark_date":
             error(field, f"variable `{value}` does not exist")
 
     def variables_exist(field, value, error):
