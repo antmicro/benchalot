@@ -9,6 +9,7 @@ from logging import (
 )
 from tempfile import NamedTemporaryFile
 from atexit import register
+from sys import stderr, stdout
 
 # setup critical logging
 
@@ -43,8 +44,10 @@ def setup_benchmarker_logging(verbose, debug):
 
 
 def setup_terminal_output_logging(output_filename):
-    if output_filename == "STDIO":
-        handler = StreamHandler()
+    if output_filename == "STDERR":
+        handler = StreamHandler(stream=stderr)
+    elif output_filename == "STDOUT":
+        handler = StreamHandler(stream=stdout)
     else:
         handler = FileHandler(output_filename)
     formatter = Formatter("%(message)s")

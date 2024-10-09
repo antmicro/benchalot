@@ -96,11 +96,11 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 
 ### Run
 
-`samples` (optional, default = 1) defines how many times repeat each benchmark.
-`log-terminal-output` (optional, default = None) defines filename of a file where stdout and stderr of commands run in `run` section will be saved.
-`before` contains the commands to be executed before the benchmark. 
-`benchmark` contains the commands to be benchmarked.
-`after` contains the commands to be executed after the measurement. 
+* `samples` (optional, default = 1) defines how many times repeat each benchmark.
+* `log-terminal-output` (optional, default = None) defines a file where benchmarked commands' stdout and stderr will be saved. If set to `"STDERR"` or `"STDOUT"` the output will printed to standard error or standard output respectively.
+* `before` contains the commands to be executed before the benchmark. 
+* `benchmark` contains the commands to be benchmarked.
+* `after` contains the commands to be executed after the measurement. 
 The `before` and `after` sections are optional.
 
 ### System
