@@ -28,7 +28,15 @@ def output_results_from_file(file, config):
     output_results(results_df, config)
 
 
-def output_results(results_df: pd.DataFrame, config):
+def output_results(results_df: pd.DataFrame, config: dict):
+    if "include-output" in config:
+        logger.info("Including old outputs...")
+        for file in config["include-output"]:
+            logger.debug(f"Reading file '{file}'")
+            old_output = pd.read_csv(file)
+            logger.debug(old_output.head())
+            results_df = pd.concat([results_df, old_output], ignore_index=True)
+        logger.info("Included old outputs.")
     logger.info("Outputting results...")
     logger.debug(results_df.head())
     if "output" not in config:

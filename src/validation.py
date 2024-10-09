@@ -119,6 +119,7 @@ def validate_config(config) -> dict:
             "type": "list",
             "empty": False,
             "check_with": check_file_exists,
+            "required": False,
         },
         "output": {
             "required": True,
