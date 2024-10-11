@@ -54,7 +54,6 @@ def setup_command_logging(output_filename):
     handler.setFormatter(formatter)
     command_logger = getLogger("run")
     command_logger.addHandler(handler)
-    command_logger.propagate = False
     command_logger.setLevel(INFO)
 
 
