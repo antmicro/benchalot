@@ -98,6 +98,7 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 
 * `samples` (optional, default = 1) defines how many times repeat each benchmark.
 * `log-terminal-output` (optional, default = None) defines a file where benchmarked commands' stdout and stderr will be saved. If set to `"STDERR"` or `"STDOUT"` the output will printed to standard error or standard output respectively.
+* `suppress-output` (optional, default = False) if set to `True` pipes stdout and stderr of executed commands to `/dev/null`.
 * `before` contains the commands to be executed before the benchmark. 
 * `benchmark` contains the commands to be benchmarked.
 * `after` contains the commands to be executed after the measurement. 
