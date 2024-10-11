@@ -32,7 +32,8 @@ def run_multiple_commands(commands: list, suppress_output: bool):
             logger.critical(
                 f"Subprocess '{c}' exited abnormally (exit code {result.returncode})"
             )
-            logger.critical(str(result.stderr).strip())
+            if not suppress_output:
+                logger.critical(str(result.stderr).strip())
             exit(1)
 
 
@@ -55,7 +56,8 @@ def benchmark_commands(commands: list, suppress_output: bool) -> float:
                 logger.critical(
                     f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
                 )
-                logger.critical(str(result.stderr).strip())
+                if not suppress_output:
+                    logger.critical(str(result.stderr).strip())
             total += time
     return total / 1e9  # convert to seconds
 
