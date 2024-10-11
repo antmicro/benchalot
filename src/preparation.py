@@ -1,6 +1,13 @@
 from itertools import product
 from logging import getLogger
-from metrics import measure_time, gather_stdout, gather_stderr, gather_exit_codes
+from metrics import (
+    measure_time,
+    gather_stdout,
+    gather_stderr,
+    gather_exit_codes,
+    custom_metric,
+)
+from functools import partial
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -58,7 +65,7 @@ def prepare_benchmarks(config) -> list:
                 elif metric == "exit-codes":
                     metrics.append(gather_exit_codes)
                 else:
-                    logger.critical(f"Unknown metric '{metric}'")
+                    metrics.append(partial(custom_metric, metric))
             benchmark["metrics"] = metrics
             if "after" in config["run"]:
                 benchmark["after"] = prepare_commands(

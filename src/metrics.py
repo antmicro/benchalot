@@ -16,6 +16,7 @@ def measure_time(commands):
                 f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
             )
             logger.critical(result.stderr.decode("utf-8").strip())
+            exit(1)
     return total / 1e9
 
 
@@ -28,6 +29,7 @@ def gather_stdout(commands):
                 f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
             )
             logger.critical(result.stderr.decode("utf-8").strip())
+            exit(1)
         total += result.stdout.decode("utf-8").strip()
     return total
 
@@ -41,6 +43,7 @@ def gather_stderr(commands):
                 f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
             )
             logger.critical(result.stderr.decode("utf-8").strip())
+            exit(1)
         total += result.stderr.decode("utf-8").strip()
     return total
 
@@ -53,3 +56,17 @@ def gather_exit_codes(commands):
     if len(commands) == 1:
         return exit_codes[0]
     return tuple(exit_codes)
+
+
+def custom_metric(metric, commands):
+    args = '" "'.join(commands)
+    args = ' "' + args
+    args += '"'
+    result = run(metric + args, shell=True, capture_output=True)
+    if result.returncode != 0:
+        logger.critical(
+            f"Subprocess '{metric}' exited abnormally (exit code {result.returncode})"
+        )
+        logger.critical(result.stderr.decode("utf-8").strip())
+        exit(1)
+    return result.stdout.decode("utf-8")
