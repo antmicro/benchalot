@@ -101,7 +101,7 @@ def validate_config(config) -> dict:
                     "empty": False,
                     "check_with": check_command_variables,
                 },
-                "log-terminal-output": {
+                "save-output": {
                     "required": False,
                     "type": "string",
                     "empty": False,

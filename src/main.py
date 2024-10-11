@@ -89,8 +89,8 @@ if not args.regenerate_output:
     config = load_configuration_file(args.config_filename)
     config = validate_config(config)
     benchmarks = prepare_benchmarks(config)
-    if "log-terminal-output" in config["run"]:
-        setup_command_logging(config["run"]["log-terminal-output"])
+    if "save-output" in config["run"]:
+        setup_command_logging(config["run"]["save-output"])
     results = perform_benchmarks(benchmarks, config["run"]["samples"])
     if "system" in config:
         restore_system_state(config["system"])

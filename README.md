@@ -57,7 +57,7 @@ matrix:
   input: ["data1", "data2", "data3"]
 run:
   samples: 3
-  log-terminal-output: "run.log"
+  save-output: "run.log"
   before:
     - "git clone . ../sleeper"
     - "cd ../sleeper && git checkout $matrix.tag && make build"
