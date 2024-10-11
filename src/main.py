@@ -79,6 +79,7 @@ setup_benchmarker_logging(args.verbose, args.debug)
 for file in args.include:
     if not isfile(file):
         logger.critical(f"File '{file}' not found")
+        exit(1)
 
 config_file = load_configuration_file(args.config_filename)
 config = validate_config(config_file)
