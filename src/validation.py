@@ -105,6 +105,12 @@ def validate_config(config) -> dict:
                     "type": "string",
                     "empty": False,
                 },
+                "suppress-output": {
+                    "required": False,
+                    "type": "boolean",
+                    "empty": False,
+                    "default": False,
+                },
             },
         },
         "output": {

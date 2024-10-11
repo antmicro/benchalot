@@ -74,7 +74,9 @@ if not args.regenerate_output:
     benchmarks = prepare_benchmarks(config)
     if "log-terminal-output" in config["run"]:
         setup_command_logging(config["run"]["log-terminal-output"])
-    results = perform_benchmarks(benchmarks, config["run"]["samples"])
+    results = perform_benchmarks(
+        benchmarks, config["run"]["samples"], config["run"]["suppress-output"]
+    )
     if "system" in config:
         restore_system_state(config["system"])
     output_results_from_list(results, config)
