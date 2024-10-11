@@ -7,6 +7,7 @@ from os import geteuid, execvp
 from variance import modify_system_state, restore_system_state
 from output import output_results_from_list, output_results_from_file
 from argparse import ArgumentParser
+from os.path import isfile
 from log import (
     setup_benchmarker_logging,
     setup_command_logging,
@@ -67,12 +68,18 @@ parser.add_argument(
     "--include",
     nargs="+",
     dest="include",
+    metavar="CSV_FILE",
     default=[],
+    help="append previous results to the new output",
 )
 
 args = parser.parse_args()
-print(args.include)
 setup_benchmarker_logging(args.verbose, args.debug)
+
+for file in args.include:
+    if not isfile(file):
+        logger.critical(f"File '{file}' not found")
+
 config_file = load_configuration_file(args.config_filename)
 config = validate_config(config_file)
 
