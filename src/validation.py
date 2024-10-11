@@ -2,7 +2,6 @@
 from cerberus import Validator  # type: ignore
 from re import findall
 from logging import getLogger
-from os import path
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -48,14 +47,6 @@ def validate_config(config) -> dict:
                 break
         if not has_csv:
             error(field, "has to have at least one `.csv` output")
-
-    def check_file_exists(field, value, error):
-        if value is None:
-            error(field, "no outputs specified")
-        for file in value:
-            if not path.isfile(file):
-                error(field, f"file '{file}' does not exist")
-                return
 
     valid_schema = {
         "matrix": {
@@ -126,11 +117,6 @@ def validate_config(config) -> dict:
                         "schema": {
                             "filename": {"type": "string", "empty": False},
                             "format": {"type": "string", "allowed": ["csv"]},
-                            "include": {
-                                "type": "list",
-                                "check_with": check_file_exists,
-                                "required": False,
-                            },
                         },
                     },
                     {
@@ -139,11 +125,6 @@ def validate_config(config) -> dict:
                             "format": {
                                 "type": "string",
                                 "allowed": ["table-md"],
-                            },
-                            "include": {
-                                "type": "list",
-                                "check_with": check_file_exists,
-                                "required": False,
                             },
                             "columns": {
                                 "type": "list",
@@ -160,11 +141,6 @@ def validate_config(config) -> dict:
                             "format": {
                                 "type": "string",
                                 "allowed": ["bar-chart"],
-                            },
-                            "include": {
-                                "type": "list",
-                                "check_with": check_file_exists,
-                                "required": False,
                             },
                             "x-axis": {
                                 "type": "string",

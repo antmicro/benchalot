@@ -9,7 +9,18 @@ RESULTS_COLUMN = "time"
 TIME_STAMP_COLUMN = "benchmark_date"
 
 
-def output_results_from_list(results: list, config):
+def read_old_outputs(include: list) -> pd.DataFrame:
+    logger.debug(f"Include list for output: {include}")
+    results_df = pd.DataFrame()
+    for file in include:
+        logger.debug(f"Reading file '{file}'")
+        old_output = pd.read_csv(file)
+        logger.debug(old_output.head())
+        results_df = pd.concat([results_df, old_output], ignore_index=True)
+    return results_df
+
+
+def output_results_from_list(results: list, config, include: list):
     if "matrix" in config:
         logger.debug("Found `matrix` section, creating columns.")
         results_df = pd.DataFrame(
@@ -22,40 +33,24 @@ def output_results_from_list(results: list, config):
     results_df.insert(
         0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y/%m/%d %H:%M")
     )
+    old_outputs = read_old_outputs(include)
+    results_df = pd.concat([old_outputs, results_df], ignore_index=True)
     output_results(results_df, config)
 
 
-def output_results_from_file(file, config):
+def output_results_from_file(file, config, include):
     results_df = pd.read_csv(file)
+    old_outputs = read_old_outputs(include)
+    results_df = pd.concat([old_outputs, results_df], ignore_index=True)
     output_results(results_df, config)
 
 
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
-
-    old_outputs = {}
-    for key in config["output"]:
-        output = config["output"][key]
-        if "include" in output:
-            logger.debug(f"Loading files {output['include']}...")
-            files = []
-            for file in output["include"]:
-                if file in old_outputs:
-                    continue
-                files.append(file)
-                logger.debug(f"Reading file '{file}'")
-                old_outputs[file] = pd.read_csv(file)
-                logger.debug(old_outputs[file].head())
-            logger.info(f"Loaded files {files}")
-
     for key in config["output"]:
         output = config["output"][key]
         logger.debug(f"Creating output for {output}")
         output_df = results_df
-        if "include" in output:
-            logger.debug(f"Concatenating {output['include']}")
-            for file in output["include"]:
-                output_df = pd.concat([output_df, old_outputs[file]], ignore_index=True)
         logger.debug(output_df.head())
         if output["format"] == "csv":
             logger.debug("Outputting .csv file.")

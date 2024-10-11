@@ -62,7 +62,16 @@ parser.add_argument(
     help="print basic information during Benchmarker execution",
 )
 
+parser.add_argument(
+    "-i",
+    "--include",
+    nargs="+",
+    dest="include",
+    default=[],
+)
+
 args = parser.parse_args()
+print(args.include)
 setup_benchmarker_logging(args.verbose, args.debug)
 config_file = load_configuration_file(args.config_filename)
 config = validate_config(config_file)
@@ -77,7 +86,7 @@ if not args.regenerate_output:
     results = perform_benchmarks(benchmarks, config["run"]["samples"])
     if "system" in config:
         restore_system_state(config["system"])
-    output_results_from_list(results, config)
+    output_results_from_list(results, config, args.include)
 else:
     config = load_configuration_file(args.config_filename)
     backup_file = args.regenerate_output
@@ -88,6 +97,6 @@ else:
         exit(1)
     else:
         with csv_file:
-            output_results_from_file(csv_file, config)
+            output_results_from_file(csv_file, config, args.include)
 logger.info("Exiting Benchmarker...")
 unregister(crash_msg_log_file)
