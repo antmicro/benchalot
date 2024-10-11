@@ -15,7 +15,8 @@ INSTALL=$(tuttest README.md install)
 DEPENDENCIES=$(tuttest README.md dependencies)
 RUN=$(tuttest README.md run)
 RUN_UPDATE=$(tuttest README.md update-output)
-
+HELP_INFORMATION=$(tuttest README.md help-information)
+eval "$HELP_INFORMATION"
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi

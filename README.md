@@ -34,6 +34,12 @@ To regenerate the output without re-running benchmarks, use `--update-output`:
 python src/main.py config.yml --update-output result.csv
 ```
 
+To see available command line arguments type:
+<!--name="help-information"-->
+```
+python src/main.py --help
+```
+
 ## Configuration
 
 Benchmarker is configured using a YAML file, e.g.:
@@ -118,9 +124,7 @@ The section is optional; if no options are specified, Benchmarker can be run wit
 ### Output
 
 In the `output` section user can specify desired output of the program.
-
 Each subsection of the `output` corresponds to one output file described by `filename` and `format`.
-Additionally for each output you can specify which older `.csv` files you want to include by listing them in `include` attribute.
 Currently there are three supported formats: `csv`, `bar-plot` and `table-md`.
 
 `csv` output will contain columns corresponding to variables and one column with benchmark results.
