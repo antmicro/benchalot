@@ -103,7 +103,7 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 ### Run
 
 * `samples` (optional, default = 1) defines how many times repeat each benchmark.
-* `save-output` (optional, default = None) defines where to save the stdout and stderr of the benchmarked commands. If set to `"STDERR"` or `"STDOUT", the output will be printed to standard error or standard output respectively.
+* `save-output` (optional, default = None) defines where to save the stdout and stderr of the benchmarked commands. If set to `"STDERR"` or `"STDOUT"`, the output will be printed to standard error or standard output respectively.
 * `before` contains the commands to be executed before the benchmark. 
 * `benchmark` contains the commands to be benchmarked.
 * `after` contains the commands to be executed after the measurement. 
