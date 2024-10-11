@@ -17,3 +17,16 @@ def measure_time(commands):
             )
             logger.critical(result.stderr.decode("utf-8").strip())
     return total / 1e9
+
+
+def gather_stdout(commands):
+    total = ""
+    for command in commands:
+        result = run(command, shell=True, capture_output=True)
+        if result.returncode != 0:
+            logger.critical(
+                f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
+            )
+            logger.critical(result.stderr.decode("utf-8").strip())
+        total += result.stdout.decode("utf-8").strip()
+    return total
