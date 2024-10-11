@@ -1,6 +1,6 @@
 from itertools import product
 from logging import getLogger
-from metrics import measure_time, gather_stdout
+from metrics import measure_time, gather_stdout, gather_stderr
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -53,6 +53,8 @@ def prepare_benchmarks(config) -> list:
                     metrics.append(measure_time)
                 elif metric == "stdout":
                     metrics.append(gather_stdout)
+                elif metric == "stderr":
+                    metrics.append(gather_stderr)
                 else:
                     logger.critical(f"Unknown metric '{metric}'")
             benchmark["metrics"] = metrics
