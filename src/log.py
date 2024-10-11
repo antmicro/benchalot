@@ -43,7 +43,7 @@ def setup_benchmarker_logging(verbose, debug):
     register(crash_msg_log_file, temp_log_file.name)
 
 
-def setup_terminal_output_logging(output_filename):
+def setup_command_logging(output_filename):
     if output_filename == "STDERR":
         handler = StreamHandler(stream=stderr)
     elif output_filename == "STDOUT":

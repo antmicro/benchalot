@@ -9,7 +9,7 @@ from output import output_results_from_list, output_results_from_file
 from argparse import ArgumentParser
 from log import (
     setup_benchmarker_logging,
-    setup_terminal_output_logging,
+    setup_command_logging,
     crash_msg_log_file,
 )
 from logging import getLogger
@@ -73,7 +73,7 @@ if not args.regenerate_output:
     config = validate_config(config)
     benchmarks = prepare_benchmarks(config)
     if "log-terminal-output" in config["run"]:
-        setup_terminal_output_logging(config["run"]["log-terminal-output"])
+        setup_command_logging(config["run"]["log-terminal-output"])
     results = perform_benchmarks(benchmarks, config["run"]["samples"])
     if "system" in config:
         restore_system_state(config["system"])
