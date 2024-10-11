@@ -1,5 +1,5 @@
 from time import monotonic_ns
-from subprocess import run, DEVNULL
+from subprocess import Popen, PIPE, STDOUT
 from yaspin import yaspin
 from logging import getLogger
 
@@ -8,73 +8,61 @@ logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
 
 
-def log_run_results(result):
-    if len(result.stdout) > 0:
-        command_logger.info(str(result.stdout))
-    if len(result.stderr) > 0:
-        command_logger.warning(str(result.stderr))
+def log_program_output(pipe):
+    for line in pipe:
+        if len(line) > 0:
+            command_logger.info(line.decode("utf-8").strip())
 
 
-def execute_command(command: str, suppress_output: bool):
-    if suppress_output:
-        result = run(command, shell=True, stdout=DEVNULL, stderr=DEVNULL, text=True)
-    else:
-        result = run(command, shell=True, capture_output=True, text=True)
-    return result
+def execute_command(command: str):
+    process = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
+    with process.stdout as output:  # type: ignore
+        log_program_output(output)
+    return process.wait()
 
 
-def run_multiple_commands(commands: list, suppress_output: bool):
+def run_multiple_commands(commands: list):
     for c in commands:
-        result = execute_command(c, suppress_output)
-        if not suppress_output:
-            log_run_results(result)
-        if result.returncode != 0:
-            logger.critical(
-                f"Subprocess '{c}' exited abnormally (exit code {result.returncode})"
-            )
-            if not suppress_output:
-                logger.critical(str(result.stderr).strip())
+        result = execute_command(c)
+        if result != 0:
+            logger.critical(f"Subprocess '{c}' exited abnormally (exit code {result})")
             exit(1)
 
 
-def measure_time_command(command: str, suppress_output: bool) -> tuple:
+def measure_time_command(command: str) -> tuple:
     start = monotonic_ns()
-    result = execute_command(command, suppress_output)
+    result = execute_command(command)
     time = monotonic_ns() - start
 
     return time, result
 
 
-def benchmark_commands(commands: list, suppress_output: bool) -> float:
+def benchmark_commands(commands: list) -> float:
     total = 0
     with yaspin(text=f"Benchmarking {commands}...", timer=True):
         for command in commands:
-            time, result = measure_time_command(command, suppress_output)
-            if not suppress_output:
-                log_run_results(result)
-            if result.returncode != 0:
+            time, result = measure_time_command(command)
+            if result != 0:
                 logger.critical(
-                    f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
+                    f"Subprocess '{command}' exited abnormally (exit code {result})"
                 )
-                if not suppress_output:
-                    logger.critical(str(result.stderr).strip())
             total += time
     return total / 1e9  # convert to seconds
 
 
-def perform_benchmarks(benchmarks: list, samples: int, suppress_output: bool) -> list:
+def perform_benchmarks(benchmarks: list, samples: int) -> list:
     results = []
     logger.info("Performing benchmarks...")
     for benchmark in benchmarks:
         for i in range(0, samples):
             logger.debug(f"Running benchmark: {benchmark}")
             if "before" in benchmark:
-                run_multiple_commands(benchmark["before"], suppress_output)
+                run_multiple_commands(benchmark["before"])
 
-            result = benchmark_commands(benchmark["benchmark"], suppress_output)
+            result = benchmark_commands(benchmark["benchmark"])
 
             if "after" in benchmark:
-                run_multiple_commands(benchmark["after"], suppress_output)
+                run_multiple_commands(benchmark["after"])
             results.append(
                 [benchmark["matrix"][key] for key in benchmark["matrix"]] + [result]
             )
