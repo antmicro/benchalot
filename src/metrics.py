@@ -1,9 +1,10 @@
 from time import monotonic_ns
-from subprocess import run
+from subprocess import run, PIPE, Popen
 from logging import getLogger
 from execution import execute_command
 
 logger = getLogger(f"benchmarker.{__name__}")
+command_logger = getLogger("run")
 
 
 def measure_time(commands):
@@ -15,29 +16,48 @@ def measure_time(commands):
     return total / 1e9
 
 
+def gather_output(process, stdout=False, stderr=False):
+    total = ""
+    with process.stdout as output:  # type: ignore
+        for line in output:
+            if len(line) > 0:
+                command_logger.info(line.decode("utf-8").strip())
+                if stdout:
+                    total += line.decode("utf-8").strip()
+    with process.stderr as output:  # type: ignore
+        for line in output:
+            if len(line) > 0:
+                command_logger.info(line.decode("utf-8").strip())
+                if stderr:
+                    total += line.decode("utf-8").strip()
+    return total
+
+
 def gather_stdout(commands):
     total = ""
     for command in commands:
-        result = run(command, capture_output=True, shell=True)
-        if result.returncode != 0:
+        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+        total += gather_output(process, stdout=True)
+        result = process.wait()
+        if result != 0:
             logger.critical(
-                f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
+                f"Subprocess '{command}' exited abnormally (exit code {result})"
             )
             exit(1)
-        total += result.stdout.decode("utf-8").strip()
     return total
 
 
 def gather_stderr(commands):
     total = ""
     for command in commands:
-        result = run(command, shell=True, capture_output=True)
-        if result.returncode != 0:
+        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+        total += gather_output(process, stderr=True)
+        result = process.wait()
+        if result != 0:
             logger.critical(
-                f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
+                f"Subprocess '{command}' exited abnormally (exit code {result})"
             )
             exit(1)
-        total += result.stderr.decode("utf-8").strip()
     return total
 
 
