@@ -68,7 +68,7 @@ group.add_argument(
 group.add_argument(
     "-u",
     "--update-output",
-    dest="regenerate_output",
+    dest="update_output",
     metavar="CSV_FILE",
     default=False,
     help="regenerate the output without re-running benchmarks",
@@ -87,9 +87,15 @@ config_file = load_configuration_file(args.config_filename)
 config = validate_config(config_file)
 
 
-if not args.regenerate_output:
-    config = load_configuration_file(args.config_filename)
-    config = validate_config(config)
+if not args.update_output:
+    is_root = geteuid() == 0
+    if "system" in config and not is_root:
+        print(
+            "To perform system configuration, root privileges are required. Running sudo..."
+        )
+        execvp("sudo", ["sudo", executable] + argv)
+    if "system" in config:
+        modify_system_state(config["system"])
     benchmarks = prepare_benchmarks(config)
     if "save-output" in config["run"]:
         setup_command_logging(config["run"]["save-output"])
@@ -98,8 +104,11 @@ if not args.regenerate_output:
         restore_system_state(config["system"])
     output_results_from_list(results, config, args.include)
 else:
-    config = load_configuration_file(args.config_filename)
-    backup_file = args.regenerate_output
-    output_results_from_file(config, args.regenerate_output)
+    old_outputs = args.update_output
+    for file in old_outputs:
+        if not isfile(file):
+            logger.critical(f"File '{file}' not found")
+            exit(1)
+    output_results_from_file(config, old_outputs)
 logger.info("Exiting Benchmarker...")
 unregister(crash_msg_log_file)
