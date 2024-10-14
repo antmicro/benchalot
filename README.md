@@ -110,6 +110,7 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 The `before` and `after` sections are optional.
 * `metrics` (optional, default = `["time"]`) a list of metrics to be gathered from benchmarked commands.
 Built-in are: `time`, `stderr`, `stdout` and `exit-codes`.
+Each metric is gathered independently.
 User can also specify their own metric using `metric_name@command` syntax.
 See: [Custom Metrics](#custom-metrics)
 
@@ -136,14 +137,15 @@ Currently there are three supported formats: `csv`, `bar-plot` and `table-md`.
 `bar-plot` will result in a `.png` image containing the plot.
 Configure using these options:
 * `x-axis` (mandatory): contains name of the variable which will be used as x-axis on the plot.
+* `y-axis` (optional, default = `time`): contains name of metrics which will be used as y-axis on the plot.
 * `facet` (optional): contains name of the variable which will be used to facet (divide into subplots) the plot.
 * `width` (optional, default = 10in): width of resulting image in inches.
 * `height` (optional, default = 9in): height of resulting image in inches.
 * `dpi` (optional, default = 100): DPI of resulting image.
-
 `table-md` will result in a text file containing a markdown table. 
 Configured using these options:
 * `columns` (optional, default - include all columns): contains an array of variable names which will be used to group the results in the table.
+* `result-column` (optional, default = `"time"`): name of a metric which will be included in the resulting table.
 
 For example, the config above will generate this `plot.png`:
 
@@ -165,19 +167,23 @@ And this `table.md`:
 
 Benchmarker allows usage of custom metrics.
 To use a custom metric specify metric name and command in `run.metrics` using syntax `metric_name@command`.
-`command` must be an executable which should accept benchmark commands as arguments.
- e.g.:
+`command` must be a path to executable which accepts benchmark commands as arguments.
+`command` should output results by printing them to standard output.
+
+Example: Let's say we want to measure size difference between files compressed by `gzip` and `bzip2`.
+We can start by specifying configuration file:
+ <!--name="size-config"-->
 ```yaml
 ---
 matrix:
-  size: ["5M", "10M", "15M"]
+  file: ["tux.svg", "gnu.svg"]
 run:
   benchmark:
-  - "truncate -s $matrix.size bar"
-  - "fallocate -l $matrix.size foo"
+  - "bzip2 -c $matrix.file > foo.gz"
+  - "gzip -c $matrix.file > foo.bz2"
   after:
-  - "rm foo bar"
-  metrics: ["time","size_diff@./measure_size_diff"]
+  - "rm foo.gz foo.bz2"
+  metrics: ["size_diff@./measure_size_diff"]
 output:
   csv:
     filename: "file_sizes.csv"
@@ -186,26 +192,28 @@ output:
     format: "table-md"
     filename: "size_diff_table.md"
     result-column: "size_diff"
+    columns: ["file"]
 ```
-where `./measure_size_diff` is path to executable written in C:
+where `./measure_size_diff` is path to an executable with source code:
+<!--name="size-c"-->
 ```C
 #include <stdio.h>
 #include <stdlib.h>
 int main(int argc, char**argv) {
-  system(argv[1]); // run `truncate -s $matrix.size bar`
-  system(argv[2]); //run `fallocate -l $matrix.size foo`
-  FILE* bar = fopen("bar","r");
-  FILE* foo = fopen("foo","r");
-  fseek(foo, 0L, SEEK_END);
-  int foo_size = ftell(foo);
-  fseek(bar, 0L, SEEK_END);
-  int bar_size = ftell(bar);
-  printf("%d", foo_size - bar_size); // pass the result to the Benchmarker
-  fclose(bar);
-  fclose(foo);
+  system(argv[1]); 
+  system(argv[2]); 
+  FILE* gzip = fopen("foo.gz","r");
+  FILE* bzip2 = fopen("foo.bz2","r");
+  fseek(gzip, 0L, SEEK_END);
+  int gzip_size = ftell(gzip);
+  fseek(bzip2, 0L, SEEK_END);
+  int bzip2_size = ftell(bzip2);
+  printf("%d", gzip_size - bzip2_size); // pass the result to the Benchmarker
+  fclose(gzip);
+  fclose(bzip2);
   return 0;
 }
 ```
-The Benchmarker will pass commands `truncate -s $matrix.size bar` and `fallocate -l $matrix.size foo` as arguments to `./measure_size_diff`.
+The Benchmarker will pass commands `bzip2 -c $matrix.file > foo.gz` and `gzip -c $matrix.file > foo.bz2` as arguments to `./measure_size_diff`.
 `./measure_size_diff` then executes commands and compares the size of created files, printing result to `stdout`.
-The result is then stored in column `sie_diff` and can be accessed under that name when generating output.
+The result is then stored in column `size_diff` and can be accessed under that name when generating output.

@@ -19,14 +19,14 @@ def handle_output(process, capture_stdout=False, capture_stderr=False):
             if len(line) > 0:
                 command_logger.info(line.decode("utf-8").strip())
                 if capture_stdout:
-                    total += line.decode("utf-8").strip()
+                    total += line.decode("utf-8")
     with process.stderr as output:  # type: ignore
         for line in output:
             if len(line) > 0:
                 command_logger.info(line.decode("utf-8").strip())
                 if capture_stderr:
-                    total += line.decode("utf-8").strip()
-    return total
+                    total += line.decode("utf-8")
+    return total.strip()
 
 
 def execute_and_handle_output(command, capture_stdout=False, capture_stderr=False):
@@ -76,13 +76,12 @@ def gather_exit_codes(commands):
 
 
 def custom_metric(metric, commands):
-    args = '" "'.join(commands)
-    args = ' "' + args
-    args += '"'
-    process = Popen(metric + args, shell=True, stdout=PIPE, stderr=PIPE)
+    for command in commands:
+        execute_and_handle_output(command)
+    process = Popen(metric, shell=True, stdout=PIPE, stderr=PIPE)
     output = handle_output(process, capture_stdout=True)
     result = process.wait()
-    check_return_code(metric + args, result)
+    check_return_code(metric, result)
     try:
         output = float(output)
     except ValueError:

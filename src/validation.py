@@ -59,6 +59,12 @@ def validate_config(config) -> dict:
             error(field, f"did not find metric '{value}'")
             return
 
+    def supported_metrics(field, value, error):
+        for metric in value:
+            if metric not in ["time", "exit-codes", "stdout", "stderr"]:
+                if "@" not in metric:
+                    error(field, f"invalid metric {metric}")
+
     valid_schema = {
         "matrix": {
             "required": False,
@@ -122,6 +128,7 @@ def validate_config(config) -> dict:
                     "empty": False,
                     "required": False,
                     "default": ["time"],
+                    "check_with": supported_metrics,
                 },
             },
         },
@@ -230,11 +237,15 @@ def validate_config(config) -> dict:
         output = normalized_config["output"][key]
         if output["format"] == "table-md" and "result-column" not in output:
             if "time" not in normalized_config["run"]["metrics"]:
-                logger.critical(f"'{key}' no metric specified for 'y-axis'")
+                output["result-column"] = normalized_config["run"]["metrics"][0].split(
+                    "@"
+                )[0]
+                continue
             output["result-column"] = "time"
         if output["format"] == "bar-chart" and "y-axis" not in output:
             if "time" not in normalized_config["run"]["metrics"]:
-                logger.critical(f"'{key}' no metric specified for 'result-column'")
+                output["y-axis"] = normalized_config["run"]["metrics"][0].split("@")[0]
+                continue
             output["y-axis"] = "time"
     logger.debug(f"Normalized config {normalized_config}")
     return normalized_config
