@@ -22,7 +22,7 @@ logger = getLogger(f"benchmarker.{__name__}")
 # load configuration file
 def load_configuration_file(filename):
     try:
-        config_file = open(argv[1], "r")
+        config_file = open(filename, "r")
     except FileNotFoundError:
         logger.critical(f"File '{filename}' not found.")
         exit(1)
@@ -39,14 +39,6 @@ parser = ArgumentParser(
 )
 parser.add_argument("config_filename", help="a path to YAML configuration file")
 parser.add_argument(
-    "-u",
-    "--update-output",
-    dest="regenerate_output",
-    metavar="OLD_OUTPUT",
-    default=False,
-    help="regenerate the output without re-running benchmarks",
-)
-parser.add_argument(
     "-d",
     "--debug",
     dest="debug",
@@ -62,8 +54,8 @@ parser.add_argument(
     dest="verbose",
     help="print basic information during Benchmarker execution",
 )
-
-parser.add_argument(
+group = parser.add_mutually_exclusive_group()
+group.add_argument(
     "-i",
     "--include",
     nargs="+",
@@ -71,6 +63,16 @@ parser.add_argument(
     metavar="CSV_FILE",
     default=[],
     help="append previous results to the new output",
+)
+
+group.add_argument(
+    "-u",
+    "--update-output",
+    dest="regenerate_output",
+    metavar="CSV_FILE",
+    default=False,
+    help="regenerate the output without re-running benchmarks",
+    nargs="+",
 )
 
 args = parser.parse_args()
@@ -98,13 +100,6 @@ if not args.regenerate_output:
 else:
     config = load_configuration_file(args.config_filename)
     backup_file = args.regenerate_output
-    try:
-        csv_file = open(backup_file, "r")
-    except FileNotFoundError:
-        logger.critical(f"File '{backup_file}' not found.")
-        exit(1)
-    else:
-        with csv_file:
-            output_results_from_file(csv_file, config, args.include)
+    output_results_from_file(config, args.regenerate_output)
 logger.info("Exiting Benchmarker...")
 unregister(crash_msg_log_file)

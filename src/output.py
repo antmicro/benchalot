@@ -39,11 +39,9 @@ def output_results_from_list(results: list, config, include: list):
     output_results(results_df, config)
 
 
-def output_results_from_file(file, config, include):
-    results_df = pd.read_csv(file)
+def output_results_from_file(config, include):
     old_outputs = read_old_outputs(include)
-    results_df = pd.concat([old_outputs, results_df], ignore_index=True)
-    output_results(results_df, config)
+    output_results(old_outputs, config)
 
 
 def output_results(results_df: pd.DataFrame, config: dict):
