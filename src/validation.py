@@ -226,14 +226,14 @@ def validate_config(config) -> dict:
     normalized_config = v.normalized(config)
 
     # Default values do not work correctly in valuesrules
-    for key in config["output"]:
-        output = config["output"][key]
+    for key in normalized_config["output"]:
+        output = normalized_config["output"][key]
         if output["format"] == "table-md" and "result-column" not in output:
-            if "time" not in config["run"]["metrics"]:
+            if "time" not in normalized_config["run"]["metrics"]:
                 logger.critical(f"'{key}' no metric specified for 'y-axis'")
             output["result-column"] = "time"
         if output["format"] == "bar-chart" and "y-axis" not in output:
-            if "time" not in config["run"]["metrics"]:
+            if "time" not in normalized_config["run"]["metrics"]:
                 logger.critical(f"'{key}' no metric specified for 'result-column'")
             output["y-axis"] = "time"
     logger.debug(f"Normalized config {normalized_config}")
