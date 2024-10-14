@@ -1,5 +1,5 @@
 from time import monotonic_ns
-from subprocess import run, PIPE, Popen
+from subprocess import PIPE, Popen
 from logging import getLogger
 from execution import execute_command
 
@@ -33,31 +33,29 @@ def gather_output(process, stdout=False, stderr=False):
     return total
 
 
+def execute_and_gather_output(command, stdout=False, stderr=False):
+    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+    total = gather_output(process, stdout, stderr)
+    result = process.wait()
+    if result != 0:
+        logger.critical(
+            f"Subprocess '{command}' exited abnormally (exit code {result})"
+        )
+        exit(1)
+    return total
+
+
 def gather_stdout(commands):
     total = ""
     for command in commands:
-        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-        total += gather_output(process, stdout=True)
-        result = process.wait()
-        if result != 0:
-            logger.critical(
-                f"Subprocess '{command}' exited abnormally (exit code {result})"
-            )
-            exit(1)
+        total += execute_and_gather_output(command, stdout=True)
     return total
 
 
 def gather_stderr(commands):
     total = ""
     for command in commands:
-        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-        total += gather_output(process, stderr=True)
-        result = process.wait()
-        if result != 0:
-            logger.critical(
-                f"Subprocess '{command}' exited abnormally (exit code {result})"
-            )
-            exit(1)
+        total += execute_and_gather_output(command, stderr=True)
     return total
 
 
@@ -75,11 +73,14 @@ def custom_metric(metric, commands):
     args = '" "'.join(commands)
     args = ' "' + args
     args += '"'
-    result = run(metric + args, shell=True, capture_output=True)
-    if result.returncode != 0:
-        logger.critical(
-            f"Subprocess '{metric}' exited abnormally (exit code {result.returncode})"
-        )
-        logger.critical(result.stderr.decode("utf-8").strip())
+    process = Popen(metric + args, shell=True, stdout=PIPE, stderr=PIPE)
+    output = gather_output(process, True)
+    result = process.wait()
+    if result != 0:
+        logger.critical(f"Subprocess '{metric}' exited abnormally (exit code {result})")
         exit(1)
-    return result.stdout.decode("utf-8").strip()
+    try:
+        output = float(output)
+    except ValueError:
+        pass
+    return output
