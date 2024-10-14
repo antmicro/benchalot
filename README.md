@@ -108,6 +108,10 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 * `benchmark` contains the commands to be benchmarked.
 * `after` contains the commands to be executed after the measurement. 
 The `before` and `after` sections are optional.
+* `metrics` (optional, default = `["time"]`) a list of metrics to be gathered from benchmarked commands.
+Built-in are: `time`, `stderr`, `stdout` and `exit-codes`.
+User can also specify their own metric using `metric_name@command` syntax.
+See: [Custom Metrics](#custom-metrics)
 
 ### System
 
@@ -156,3 +160,52 @@ And this `table.md`:
 | slow  | data2   | 0.152782 | 0.130948 | 0.0860583 |
 | slow  | data3   | 0.438692 | 0.376356 | 0.248082  |
 ```
+
+### Custom Metrics
+
+Benchmarker allows usage of custom metrics.
+To use a custom metric specify metric name and command in `run.metrics` using syntax `metric_name@command`.
+`command` must be an executable which should accept benchmark commands as arguments.
+ e.g.:
+```yaml
+---
+matrix:
+  size: ["5M", "10M", "15M"]
+run:
+  benchmark:
+  - "truncate -s $matrix.size bar"
+  - "fallocate -l $matrix.size foo"
+  after:
+  - "rm foo bar"
+  metrics: ["time","size_diff@./measure_size_diff"]
+output:
+  csv:
+    filename: "file_sizes.csv"
+    format: "csv"
+  table:
+    format: "table-md"
+    filename: "size_diff_table.md"
+    result-column: "size_diff"
+```
+where `./measure_size_diff` is path to executable written in C:
+```C
+#include <stdio.h>
+#include <stdlib.h>
+int main(int argc, char**argv) {
+  system(argv[1]); // run `truncate -s $matrix.size bar`
+  system(argv[2]); //run `fallocate -l $matrix.size foo`
+  FILE* bar = fopen("bar","r");
+  FILE* foo = fopen("foo","r");
+  fseek(foo, 0L, SEEK_END);
+  int foo_size = ftell(foo);
+  fseek(bar, 0L, SEEK_END);
+  int bar_size = ftell(bar);
+  printf("%d", foo_size - bar_size); // pass the result to the Benchmarker
+  fclose(bar);
+  fclose(foo);
+  return 0;
+}
+```
+The Benchmarker will pass commands `truncate -s $matrix.size bar` and `fallocate -l $matrix.size foo` as arguments to `./measure_size_diff`.
+`./measure_size_diff` then executes commands and compares the size of created files, printing result to `stdout`.
+The result is then stored in column `sie_diff` and can be accessed under that name when generating output.
