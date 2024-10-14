@@ -41,7 +41,6 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
         total=(len(benchmarks) * samples * len(benchmarks[0]["metrics"])),
         unit=" benchmarks",
     )
-    bar.set_description("Performing benchmarks")
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
