@@ -230,8 +230,12 @@ def validate_config(config) -> dict:
     for key in config["output"]:
         output = config["output"][key]
         if output["format"] == "table-md" and "result-column" not in output:
+            if "time" not in config["run"]["metrics"]:
+                logger.critical(f"'{key}' no metric specified for 'y-axis'")
             output["result-column"] = "time"
         if output["format"] == "bar-chart" and "y-axis" not in output:
+            if "time" not in config["run"]["metrics"]:
+                logger.critical(f"'{key}' no metric specified for 'result-column'")
             output["y-axis"] = "time"
     logger.debug(f"Normalized config {normalized_config}")
     return normalized_config
