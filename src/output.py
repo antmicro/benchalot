@@ -29,13 +29,17 @@ def output_results_from_list(results: list, config, include: list):
         results_df = pd.DataFrame(
             data=results,
             columns=(
-                [key for key in config["matrix"].keys()] + config["run"]["metrics"]
+                [key for key in config["matrix"].keys()]
+                + [metric.split("@")[0] for metric in config["run"]["metrics"]]
             ),
         )
 
     else:
         logger.debug("`matrix` section not found")
-        results_df = pd.DataFrame(data=results, columns=config["run"]["metrics"])
+        results_df = pd.DataFrame(
+            data=results,
+            columns=[metric.split("@")[0] for metric in config["run"]["metrics"]],
+        )
     results_df.insert(
         0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y/%m/%d %H:%M")
     )

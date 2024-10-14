@@ -69,4 +69,4 @@ def custom_metric(metric, commands):
         )
         logger.critical(result.stderr.decode("utf-8").strip())
         exit(1)
-    return result.stdout.decode("utf-8")
+    return result.stdout.decode("utf-8").strip()

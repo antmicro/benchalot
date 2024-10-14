@@ -8,6 +8,7 @@ from metrics import (
     custom_metric,
 )
 from functools import partial
+from copy import deepcopy
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -31,6 +32,18 @@ def prepare_commands(commands: list, var_combination) -> list:
 
 
 def prepare_benchmarks(config) -> list:
+    metrics = []
+    for metric in config["run"]["metrics"]:
+        if metric == "time":
+            metrics.append(measure_time)
+        elif metric == "stdout":
+            metrics.append(gather_stdout)
+        elif metric == "stderr":
+            metrics.append(gather_stderr)
+        elif metric == "exit-codes":
+            metrics.append(gather_exit_codes)
+        else:
+            metrics.append(partial(custom_metric, metric.split("@")[1]))
     if "options" in config and "isolate-cpus" in config["options"]:
         for i, c in enumerate(config["run"]["benchmark"]):
             config["run"]["benchmark"][i] = "cset shield --exec -- " + c
@@ -38,8 +51,9 @@ def prepare_benchmarks(config) -> list:
     logger.info("Preparing benchmarks...")
     if "matrix" not in config:
         logger.debug("`matrix` not found in the config.")
-        benchmarks.append(config["run"])
+        benchmarks.append(deepcopy(config["run"]))
         benchmarks[0]["matrix"] = {}
+        benchmarks[0]["metrics"] = metrics
     else:
         logger.debug("Creating variable combinations...")
         var_combinations = list(create_variable_combinations(**config["matrix"]))
@@ -54,18 +68,6 @@ def prepare_benchmarks(config) -> list:
             benchmark["benchmark"] = prepare_commands(
                 config["run"]["benchmark"], var_combination
             )
-            metrics = []
-            for metric in config["run"]["metrics"]:
-                if metric == "time":
-                    metrics.append(measure_time)
-                elif metric == "stdout":
-                    metrics.append(gather_stdout)
-                elif metric == "stderr":
-                    metrics.append(gather_stderr)
-                elif metric == "exit-codes":
-                    metrics.append(gather_exit_codes)
-                else:
-                    metrics.append(partial(custom_metric, metric))
             benchmark["metrics"] = metrics
             if "after" in config["run"]:
                 benchmark["after"] = prepare_commands(
