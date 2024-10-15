@@ -31,31 +31,21 @@ def run_multiple_commands(commands: list):
         execute_command(c)
 
 
-def benchmark_commands(commands: list, metric_constructor) -> float:
-    metric = metric_constructor(commands)
-    with yaspin(text=f"Benchmarking {commands}...", timer=True):
-        for command in commands:
-            metric.before_command(command)
-            execute_command(command)
-            metric.after_command(command, None)
-    return metric.get_result()
 
-
-def perform_benchmarks(benchmarks: list, samples: int, metrics: list) -> list:
+def perform_benchmarks(benchmarks: list, samples: int) -> list:
     results = []
     logger.info("Performing benchmarks...")
     for benchmark in benchmarks:
         try:
-            for i in range(0, samples):
+            for _ in range(0, samples):
                 partial_results = []
-                for metric_constructor in metrics:
+                for metric in benchmark["metrics"]:
                     logger.debug(f"Running benchmark: {benchmark}")
                     if "before" in benchmark:
                         run_multiple_commands(benchmark["before"])
-                    result = benchmark_commands(
-                        benchmark["benchmark"], metric_constructor
-                    )
-                    partial_results.append(result)
+                    with yaspin(text="Benchmarking"):
+                        partial_result = metric(benchmark["benchmark"])
+                    partial_results.append(partial_result)
                     if "after" in benchmark:
                         run_multiple_commands(benchmark["after"])
                 results.append(

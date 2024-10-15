@@ -1,7 +1,6 @@
 from itertools import product
 from logging import getLogger
-from metrics import BaseMetric, TimeMetric, StdOutMetric
-from importlib import import_module
+from metrics import measure_time
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -44,10 +43,14 @@ def prepare_benchmarks(config) -> list:
                 benchmark["before"] = prepare_commands(
                     config["run"]["before"], var_combination
                 )
+
             benchmark["benchmark"] = prepare_commands(
                 config["run"]["benchmark"], var_combination
             )
-
+            benchmark["metrics"] = []
+            for metric in config["run"]["metrics"]:
+                if metric == "time":
+                    benchmark["metrics"].append(measure_time)
             if "after" in config["run"]:
                 benchmark["after"] = prepare_commands(
                     config["run"]["after"], var_combination
@@ -56,20 +59,3 @@ def prepare_benchmarks(config) -> list:
     logger.info("Finished preparing benchmarks.")
     logger.debug(f"Prepared benchmarks: {benchmarks}")
     return benchmarks
-
-
-def prepare_metrics(config):
-    metrics = []
-    for metric in config["run"]["metrics"]:
-        metric_constructor = BaseMetric
-        if metric == "time":
-            metric_constructor = TimeMetric
-        elif metric == "stdout":
-            metric_constructor = StdOutMetric
-        else:
-            class_name, module = metric.split("@")
-            module = module.removesuffix(".py")
-            module = "plugins." + module
-            metric_constructor = getattr(import_module(module), class_name)
-        metrics.append(metric_constructor)
-    return metrics

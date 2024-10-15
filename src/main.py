@@ -1,7 +1,7 @@
 import yaml
 from sys import argv, executable
 from validation import validate_config
-from preparation import prepare_benchmarks, prepare_metrics
+from preparation import prepare_benchmarks
 from execution import perform_benchmarks
 from os import geteuid, execvp
 from variance import modify_system_state, restore_system_state
@@ -99,10 +99,9 @@ if not args.update_output:
         modify_system_state(config["system"])
 
     benchmarks = prepare_benchmarks(config)
-    metrics = prepare_metrics(config)
     if "save-output" in config["run"]:
         setup_command_logging(config["run"]["save-output"])
-    results = perform_benchmarks(benchmarks, config["run"]["samples"], metrics)
+    results = perform_benchmarks(benchmarks, config["run"]["samples"])
 
     if "system" in config:
         restore_system_state(config["system"])

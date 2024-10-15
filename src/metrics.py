@@ -1,46 +1,19 @@
 from time import monotonic_ns
+from subprocess import run, DEVNULL
+from logging import getLogger
+
+logger = getLogger(f"benchmarker.{__name__}")
 
 
-class BaseMetric:
-    def __init__(self, commands):
-        self.commands = commands
-
-    def before_command(self, command):
-        pass
-
-    def after_command(self, command, result):
-        pass
-
-    def get_result(self):
-        pass
-
-
-class TimeMetric(BaseMetric):
-    def __init__(self, commands):
-        super().__init__(commands)
-        self.total = 0
-
-    def before_command(self, command):
-        self.start = monotonic_ns()
-
-    def after_command(self, command, result):
-        time_elapsed = monotonic_ns() - self.start
-        self.total += time_elapsed
-
-    def get_result(self):
-        return self.total / 1e9
-
-
-class StdOutMetric(BaseMetric):
-    def __init__(self, commands):
-        super().__init__(commands)
-        self.stdout = ""
-
-    def before_command(self, command):
-        pass
-
-    def after_command(self, command, result):
-        self.stdout += result.stdout.decode("utf-8").strip()
-
-    def get_result(self):
-        return self.stdout
+def measure_time(commands):
+    total = 0
+    for command in commands:
+        start = monotonic_ns()
+        result = run(command, shell=True, stdout=DEVNULL, stderr=DEVNULL)
+        total += monotonic_ns() - start
+        if result.returncode != 0:
+            logger.critical(
+                f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
+            )
+            logger.critical(result.stderr.decode("utf-8").strip())
+    return total / 1e9

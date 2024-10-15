@@ -155,7 +155,6 @@ def validate_config(config) -> dict:
                                 "type": "string",
                                 "empty": False,
                                 "required": False,
-                                "dependencies": "^run.metrics",
                                 "check_with": metric_exists,
                                 "default": "time",
                             },
@@ -179,9 +178,8 @@ def validate_config(config) -> dict:
                                 "type": "string",
                                 "empty": False,
                                 "required": False,
-                                "default": "time",
-                                "dependencies": "^run.metrics",
                                 "check_with": metric_exists,
+                                "default": "time",
                             },
                             "color": {
                                 "type": "string",
