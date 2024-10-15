@@ -46,7 +46,6 @@ def benchmark_commands(commands: list) -> float:
                 logger.critical(
                     f"Subprocess '{command}' exited abnormally (exit code {result})"
                 )
-                exit(1)
             total += time
     return total / 1e9  # convert to seconds
 
