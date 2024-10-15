@@ -111,7 +111,7 @@ The `before` and `after` sections are optional.
 * `metrics` (optional, default = `["time"]`) a list of metrics to be gathered from benchmarked commands.
 Built-in are: `time`, `stderr`, `stdout` and `exit-codes`.
 Each metric is gathered independently.
-User can also specify their own metric using `metric_name@command` syntax.
+User can also specify their own metric using `metric_name: command` syntax.
 See: [Custom Metrics](#custom-metrics)
 
 ### System
@@ -137,7 +137,7 @@ Currently there are three supported formats: `csv`, `bar-plot` and `table-md`.
 `bar-plot` will result in a `.png` image containing the plot.
 Configure using these options:
 * `x-axis` (mandatory): contains name of the variable which will be used as x-axis on the plot.
-* `y-axis` (optional, default = `time`): contains name of metrics which will be used as y-axis on the plot.
+* `y-axis` (optional, default = `time`): contains name of metric to be used as y-axis on the plot.
 * `facet` (optional): contains name of the variable which will be used to facet (divide into subplots) the plot.
 * `width` (optional, default = 10in): width of resulting image in inches.
 * `height` (optional, default = 9in): height of resulting image in inches.
@@ -188,5 +188,10 @@ output:
   csv:
     filename: "file_size.csv"
     format: "csv"
+  table:
+    filename: "file_table.md"
+    format: "table-md"
+    result-column: size
 ```
 Benchmarker will then execute `stat -c %s compressed` after commands in benchmark section and store stdout as the result. 
+The size measurements are accessible under `size` name and can be specified for `table-md` as `result-colum`.

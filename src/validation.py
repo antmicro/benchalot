@@ -55,7 +55,10 @@ def validate_config(config) -> dict:
             if value != "time":
                 error(field, f"did not find metric '{value}'")
             return
-        if value not in [metric.split("@")[0] for metric in config["run"]["metrics"]]:
+        if value not in [
+            metric if type(metric) is not dict else list(metric.keys())[0]
+            for metric in config["run"]["metrics"]
+        ]:
             error(field, f"did not find metric '{value}'")
             return
 
