@@ -5,7 +5,7 @@ from logging import (
     INFO,
     DEBUG,
     StreamHandler,
-    CRITICAL,
+    WARNING,
 )
 from tempfile import NamedTemporaryFile
 from atexit import register
@@ -20,8 +20,8 @@ def setup_benchmarker_logging(verbose, debug):
     console.setFormatter(
         Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
     )
-    console.setLevel(CRITICAL)
-    getLogger().setLevel(CRITICAL)
+    console.setLevel(WARNING)
+    getLogger().setLevel(WARNING)
     if verbose:
         console.setLevel(INFO)
         getLogger().setLevel(INFO)

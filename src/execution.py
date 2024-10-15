@@ -2,6 +2,7 @@ from time import monotonic_ns
 from subprocess import Popen, PIPE, STDOUT
 from yaspin import yaspin
 from logging import getLogger
+from signal import signal, SIGINT, getsignal
 
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -24,9 +25,10 @@ def execute_command(command: str):
 def run_multiple_commands(commands: list):
     for c in commands:
         result = execute_command(c)
-        if result != 0:
+        if result != 0 and not should_exit:
             logger.critical(f"Subprocess '{c}' exited abnormally (exit code {result})")
-            exit(1)
+            if not should_exit:
+                exit(1)
 
 
 def measure_time_command(command: str) -> tuple:
@@ -46,11 +48,23 @@ def benchmark_commands(commands: list) -> float:
                 logger.critical(
                     f"Subprocess '{command}' exited abnormally (exit code {result})"
                 )
+                if not should_exit:
+                    exit(1)
             total += time
     return total / 1e9  # convert to seconds
 
 
+should_exit = False
+
+
 def perform_benchmarks(benchmarks: list, samples: int) -> list:
+    def sigint_handler(signum, frame):
+        global should_exit
+        should_exit = True
+        logger.warning("Finishing execution...")
+
+    original_handler = getsignal(SIGINT)
+    signal(SIGINT, sigint_handler)
     results = []
     logger.info("Performing benchmarks...")
     for benchmark in benchmarks:
@@ -60,12 +74,17 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
                 run_multiple_commands(benchmark["before"])
 
             result = benchmark_commands(benchmark["benchmark"])
-
+            if should_exit:
+                logger.warning("Finished benchmarking. Creating output...")
+                break
             if "after" in benchmark:
                 run_multiple_commands(benchmark["after"])
             results.append(
                 [benchmark["matrix"][key] for key in benchmark["matrix"]] + [result]
             )
+        if should_exit:
+            break
     logger.info("Finished performing benchmarks.")
     logger.debug(f"Benchmark results: {results}")
+    signal(SIGINT, original_handler)
     return results
