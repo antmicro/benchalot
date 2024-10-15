@@ -166,54 +166,27 @@ And this `table.md`:
 ### Custom Metrics
 
 Benchmarker allows usage of custom metrics.
-To use a custom metric specify metric name and command in `run.metrics` using syntax `metric_name@command`.
-`command` must be a path to executable which accepts benchmark commands as arguments.
+To use a custom metric specify metric name and command in `run.metrics` using syntax `metric_name: command`.
+`command` will be executed after each run of `benchmark` section.
 `command` should output results by printing them to standard output.
 
-Example: Let's say we want to measure size difference between files compressed by `gzip` and `bzip2`.
+Example: Let's say we want to measure size difference between files compressed by `gzip`, `bzip2` and `xz`.
 We can start by specifying configuration file:
  <!--name="size-config"-->
 ```yaml
 ---
 matrix:
-  file: ["tux.svg", "gnu.svg"]
+  compression: ["bzip2", "gzip", "xz"]
 run:
   benchmark:
-  - "bzip2 -c $matrix.file > foo.gz"
-  - "gzip -c $matrix.file > foo.bz2"
+    - "$matrix.compression -c plot.png > compressed"
   after:
-  - "rm foo.gz foo.bz2"
-  metrics: ["size_diff@./measure_size_diff"]
+    - "rm compressed"
+  metrics: 
+    - "size": "stat -c %s compressed"
 output:
   csv:
-    filename: "file_sizes.csv"
+    filename: "file_size.csv"
     format: "csv"
-  table:
-    format: "table-md"
-    filename: "size_diff_table.md"
-    result-column: "size_diff"
-    columns: ["file"]
 ```
-where `./measure_size_diff` is path to an executable with source code:
-<!--name="size-c"-->
-```C
-#include <stdio.h>
-#include <stdlib.h>
-int main(int argc, char**argv) {
-  system(argv[1]); 
-  system(argv[2]); 
-  FILE* gzip = fopen("foo.gz","r");
-  FILE* bzip2 = fopen("foo.bz2","r");
-  fseek(gzip, 0L, SEEK_END);
-  int gzip_size = ftell(gzip);
-  fseek(bzip2, 0L, SEEK_END);
-  int bzip2_size = ftell(bzip2);
-  printf("%d", gzip_size - bzip2_size); // pass the result to the Benchmarker
-  fclose(gzip);
-  fclose(bzip2);
-  return 0;
-}
-```
-The Benchmarker will pass commands `bzip2 -c $matrix.file > foo.gz` and `gzip -c $matrix.file > foo.bz2` as arguments to `./measure_size_diff`.
-`./measure_size_diff` then executes commands and compares the size of created files, printing result to `stdout`.
-The result is then stored in column `size_diff` and can be accessed under that name when generating output.
+Benchmarker will then execute `stat -c %s compressed` after commands in benchmark section and store stdout as the result. 

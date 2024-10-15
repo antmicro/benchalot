@@ -17,7 +17,6 @@ RUN=$(tuttest README.md run)
 RUN_UPDATE=$(tuttest README.md update-output)
 HELP_INFORMATION=$(tuttest README.md help-information)
 SIZE_CONFIG=$(tuttest README.md size-config)
-SIZE_C=$(tuttest README.md size-c)
 eval "$HELP_INFORMATION"
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
@@ -42,14 +41,8 @@ if [ $ret -ne 0 ]; then
     exit 1
 fi
 
-wget https://github.com/garrett/Tux/blob/main/tux-large.png -O tux.svg
-wget https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg -O gnu.svg
-echo "$SIZE_C" > measure_size_diff.c
-gcc measure_size_diff.c  -o measure_size_diff
+
 
 echo "$SIZE_CONFIG" > size_config.yml
-
 python src/main.py size_config.yml
-
-assert_file_exists file_sizes.csv
-assert_file_exists size_diff_table.md
+assert_file_exists file_size.csv
