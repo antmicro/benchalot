@@ -1,51 +1,50 @@
 from time import monotonic_ns
 from subprocess import Popen, PIPE, STDOUT
 from yaspin import yaspin
-from logging import getLogger
+from logging import getLogger, INFO, CRITICAL
 
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
 
 
-def log_program_output(pipe):
+def log_program_output(pipe, level=INFO):
     for line in pipe:
         if len(line) > 0:
-            command_logger.info(line.decode("utf-8").strip())
+            command_logger.log(msg=line.decode("utf-8").strip(), level=level)
 
 
 def execute_command(command: str):
     process = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
+    result = process.wait()
+    if result != 0:
+        logger.critical(
+            f"Subprocess '{command}' exited abnormally (exit code {result})"
+        )
+        with process.stdout as output:  # type: ignore
+            log_program_output(output, level=CRITICAL)
+        exit(1)
     with process.stdout as output:  # type: ignore
         log_program_output(output)
-    return process.wait()
 
 
 def run_multiple_commands(commands: list):
     for c in commands:
-        result = execute_command(c)
-        if result != 0:
-            logger.critical(f"Subprocess '{c}' exited abnormally (exit code {result})")
-            exit(1)
+        execute_command(c)
 
 
-def measure_time_command(command: str) -> tuple:
+def measure_time_command(command: str) -> int:
     start = monotonic_ns()
-    result = execute_command(command)
+    execute_command(command)
     time = monotonic_ns() - start
-
-    return time, result
+    return time
 
 
 def benchmark_commands(commands: list) -> float:
     total = 0
     with yaspin(text=f"Benchmarking {commands}...", timer=True):
         for command in commands:
-            time, result = measure_time_command(command)
-            if result != 0:
-                logger.critical(
-                    f"Subprocess '{command}' exited abnormally (exit code {result})"
-                )
+            time = measure_time_command(command)
             total += time
     return total / 1e9  # convert to seconds
 
