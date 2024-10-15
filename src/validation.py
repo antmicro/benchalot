@@ -106,6 +106,12 @@ def validate_config(config) -> dict:
                     "type": "string",
                     "empty": False,
                 },
+                "metric": {
+                    "type": "string",
+                    "empty": False,
+                    "required": False,
+                    "default": "time",
+                },
             },
         },
         "output": {

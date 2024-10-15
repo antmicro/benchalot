@@ -99,7 +99,9 @@ if not args.update_output:
     benchmarks = prepare_benchmarks(config)
     if "save-output" in config["run"]:
         setup_command_logging(config["run"]["save-output"])
-    results = perform_benchmarks(benchmarks, config["run"]["samples"])
+    results = perform_benchmarks(
+        benchmarks, config["run"]["samples"], config["run"]["metric"]
+    )
     if "system" in config:
         restore_system_state(config["system"])
     output_results_from_list(results, config, args.include)

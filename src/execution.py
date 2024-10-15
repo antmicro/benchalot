@@ -1,8 +1,9 @@
-from time import monotonic_ns
 from subprocess import Popen, PIPE, STDOUT
 from yaspin import yaspin
 from logging import getLogger, INFO, CRITICAL
-
+from metrics.time import StopWatch
+from metrics.stdout import StdOutCatcher
+from metrics.base_metric import BaseMetric
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
@@ -33,23 +34,17 @@ def run_multiple_commands(commands: list):
         execute_command(c)
 
 
-def measure_time_command(command: str) -> int:
-    start = monotonic_ns()
-    execute_command(command)
-    time = monotonic_ns() - start
-    return time
-
-
-def benchmark_commands(commands: list) -> float:
-    total = 0
+def benchmark_commands(commands: list, metric_constructor) -> float:
+    metric = metric_constructor(commands)
     with yaspin(text=f"Benchmarking {commands}...", timer=True):
         for command in commands:
-            time = measure_time_command(command)
-            total += time
-    return total / 1e9  # convert to seconds
+            metric.before_command(command)
+            execute_command(command)
+            metric.after_command(command, None)
+    return metric.get_result()
 
 
-def perform_benchmarks(benchmarks: list, samples: int) -> list:
+def perform_benchmarks(benchmarks: list, samples: int, metric: str) -> list:
     results = []
     logger.info("Performing benchmarks...")
     for benchmark in benchmarks:
@@ -58,8 +53,14 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
                 logger.debug(f"Running benchmark: {benchmark}")
                 if "before" in benchmark:
                     run_multiple_commands(benchmark["before"])
+                metric_constructor = BaseMetric
+                if metric == "time":
+                    metric_constructor = StopWatch
+                elif metric == "stdout":
+                    metric_constructor = StdOutCatcher
 
-                result = benchmark_commands(benchmark["benchmark"])
+                result = benchmark_commands(benchmark["benchmark"], metric_constructor)
+
                 if "after" in benchmark:
                     run_multiple_commands(benchmark["after"])
                 results.append(
