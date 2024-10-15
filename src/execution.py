@@ -65,6 +65,7 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
                     if "before" in benchmark:
                         run_multiple_commands(benchmark["before"])
                         bar.refresh(nolock=True)
+                    bar.set_description(f"Benchmarking `{benchmark['benchmark']}`")
                     partial_result = metric(benchmark["benchmark"])
                     bar.refresh(nolock=True)
                     partial_results.append(partial_result)
