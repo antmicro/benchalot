@@ -1,6 +1,7 @@
 from subprocess import Popen, PIPE, STDOUT
-from yaspin import yaspin
 from logging import getLogger, INFO, CRITICAL
+from tqdm import tqdm
+
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
@@ -34,6 +35,8 @@ def run_multiple_commands(commands: list):
 def perform_benchmarks(benchmarks: list, samples: int) -> list:
     results = []
     logger.info("Performing benchmarks...")
+    bar = tqdm(total=(len(benchmarks) * samples * len(benchmarks[0]["metrics"])))
+    bar.set_description("Performing benchmarks")
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
@@ -42,11 +45,11 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
                     logger.debug(f"Running benchmark: {benchmark}")
                     if "before" in benchmark:
                         run_multiple_commands(benchmark["before"])
-                    with yaspin(text="Benchmarking"):
-                        partial_result = metric(benchmark["benchmark"])
+                    partial_result = metric(benchmark["benchmark"])
                     partial_results.append(partial_result)
                     if "after" in benchmark:
                         run_multiple_commands(benchmark["after"])
+                    bar.update(1)
                 results.append(
                     [benchmark["matrix"][key] for key in benchmark["matrix"]]
                     + partial_results
@@ -55,6 +58,7 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
             logger.warning("Stopped benchmarks.")
             logger.warning("Creating output...")
             break
+    bar.close()
     logger.info("Finished performing benchmarks.")
     logger.debug(f"Benchmark results: {results}")
     return results
