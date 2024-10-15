@@ -25,7 +25,7 @@ def execute_command(command: str):
 def run_multiple_commands(commands: list):
     for c in commands:
         result = execute_command(c)
-        if result != 0 and not should_exit:
+        if result != 0:
             logger.critical(f"Subprocess '{c}' exited abnormally (exit code {result})")
             if not should_exit:
                 exit(1)
@@ -61,30 +61,32 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
     def sigint_handler(signum, frame):
         global should_exit
         should_exit = True
-        logger.warning("Finishing execution...")
+        logger.warning("Received keyboard interrupt")
+        logger.warning("Stopping benchmarks...")
+        signal(SIGINT, original_handler)
 
     original_handler = getsignal(SIGINT)
     signal(SIGINT, sigint_handler)
     results = []
     logger.info("Performing benchmarks...")
     for benchmark in benchmarks:
+        if should_exit:
+            logger.warning("Stopped benchmarks.")
+            logger.warning("Creating output...")
+            break
         for i in range(0, samples):
             logger.debug(f"Running benchmark: {benchmark}")
             if "before" in benchmark:
                 run_multiple_commands(benchmark["before"])
 
             result = benchmark_commands(benchmark["benchmark"])
-            if should_exit:
-                logger.warning("Finished benchmarking. Creating output...")
-                break
             if "after" in benchmark:
                 run_multiple_commands(benchmark["after"])
+            if should_exit:
+                break
             results.append(
                 [benchmark["matrix"][key] for key in benchmark["matrix"]] + [result]
             )
-        if should_exit:
-            break
     logger.info("Finished performing benchmarks.")
     logger.debug(f"Benchmark results: {results}")
-    signal(SIGINT, original_handler)
     return results
