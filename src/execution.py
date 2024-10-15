@@ -1,9 +1,6 @@
 from subprocess import Popen, PIPE, STDOUT
 from yaspin import yaspin
 from logging import getLogger, INFO, CRITICAL
-from metrics.time import StopWatch
-from metrics.stdout import StdOutCatcher
-from metrics.base_metric import BaseMetric
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
@@ -44,27 +41,26 @@ def benchmark_commands(commands: list, metric_constructor) -> float:
     return metric.get_result()
 
 
-def perform_benchmarks(benchmarks: list, samples: int, metric: str) -> list:
+def perform_benchmarks(benchmarks: list, samples: int, metrics: list) -> list:
     results = []
     logger.info("Performing benchmarks...")
     for benchmark in benchmarks:
         try:
             for i in range(0, samples):
-                logger.debug(f"Running benchmark: {benchmark}")
-                if "before" in benchmark:
-                    run_multiple_commands(benchmark["before"])
-                metric_constructor = BaseMetric
-                if metric == "time":
-                    metric_constructor = StopWatch
-                elif metric == "stdout":
-                    metric_constructor = StdOutCatcher
-
-                result = benchmark_commands(benchmark["benchmark"], metric_constructor)
-
-                if "after" in benchmark:
-                    run_multiple_commands(benchmark["after"])
+                partial_results = []
+                for metric_constructor in metrics:
+                    logger.debug(f"Running benchmark: {benchmark}")
+                    if "before" in benchmark:
+                        run_multiple_commands(benchmark["before"])
+                    result = benchmark_commands(
+                        benchmark["benchmark"], metric_constructor
+                    )
+                    partial_results.append(result)
+                    if "after" in benchmark:
+                        run_multiple_commands(benchmark["after"])
                 results.append(
-                    [benchmark["matrix"][key] for key in benchmark["matrix"]] + [result]
+                    [benchmark["matrix"][key] for key in benchmark["matrix"]]
+                    + partial_results
                 )
         except KeyboardInterrupt:
             logger.warning("Stopped benchmarks.")

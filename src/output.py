@@ -27,11 +27,14 @@ def output_results_from_list(results: list, config, include: list):
         logger.debug("Found `matrix` section, creating columns.")
         results_df = pd.DataFrame(
             data=results,
-            columns=([key for key in config["matrix"].keys()] + [RESULTS_COLUMN]),
+            columns=(
+                [key for key in config["matrix"].keys()] + config["run"]["metrics"]
+            ),
         )
 
     else:
-        results_df = pd.DataFrame(data=results, columns=[RESULTS_COLUMN])
+        logger.debug("`matrix` section not found")
+        results_df = pd.DataFrame(data=results, columns=config["run"]["metrics"])
     results_df.insert(
         0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y/%m/%d %H:%M")
     )

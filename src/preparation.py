@@ -1,5 +1,8 @@
 from itertools import product
 from logging import getLogger
+from metrics.time import StopWatch
+from metrics.stdout import StdOutCatcher
+from metrics.base_metric import BaseMetric
 
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -55,3 +58,15 @@ def prepare_benchmarks(config) -> list:
     logger.info("Finished preparing benchmarks.")
     logger.debug(f"Prepared benchmarks: {benchmarks}")
     return benchmarks
+
+
+def prepare_metrics(config):
+    metrics = []
+    for metric in config["run"]["metrics"]:
+        metric_constructor = BaseMetric
+        if metric == "time":
+            metric_constructor = StopWatch
+        elif metric == "stdout":
+            metric_constructor = StdOutCatcher
+        metrics.append(metric_constructor)
+    return metrics

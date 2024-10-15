@@ -1,7 +1,7 @@
 import yaml
 from sys import argv, executable
 from validation import validate_config
-from preparation import prepare_benchmarks
+from preparation import prepare_benchmarks, prepare_metrics
 from execution import perform_benchmarks
 from os import geteuid, execvp
 from variance import modify_system_state, restore_system_state
@@ -94,16 +94,19 @@ if not args.update_output:
             "To perform system configuration, root privileges are required. Running sudo..."
         )
         execvp("sudo", ["sudo", executable] + argv)
+
     if "system" in config:
         modify_system_state(config["system"])
+
     benchmarks = prepare_benchmarks(config)
+    metrics = prepare_metrics(config)
     if "save-output" in config["run"]:
         setup_command_logging(config["run"]["save-output"])
-    results = perform_benchmarks(
-        benchmarks, config["run"]["samples"], config["run"]["metric"]
-    )
+    results = perform_benchmarks(benchmarks, config["run"]["samples"], metrics)
+
     if "system" in config:
         restore_system_state(config["system"])
+
     output_results_from_list(results, config, args.include)
 else:
     old_outputs = args.update_output
