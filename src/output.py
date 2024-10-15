@@ -92,6 +92,11 @@ def output_results(results_df: pd.DataFrame, config: dict):
             output_df.to_csv(output["filename"], encoding="utf-8", index=False)
         elif output["format"] == "bar-chart":
             logger.debug("Outputting bar chart.")
+            if not is_numeric_dtype(output["y-axis"]):
+                logger.error(
+                    f"y-axis of output {key} has non-numeric type; bar-chart will not be generated"
+                )
+                continue
             plot = (
                 ggplot(
                     output_df,

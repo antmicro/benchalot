@@ -31,7 +31,6 @@ def run_multiple_commands(commands: list):
         execute_command(c)
 
 
-
 def perform_benchmarks(benchmarks: list, samples: int) -> list:
     results = []
     logger.info("Performing benchmarks...")

@@ -43,3 +43,13 @@ def gather_stderr(commands):
             logger.critical(result.stderr.decode("utf-8").strip())
         total += result.stderr.decode("utf-8").strip()
     return total
+
+
+def gather_exit_codes(commands):
+    exit_codes = []
+    for command in commands:
+        result = run(command, shell=True, stdout=DEVNULL, stderr=DEVNULL)
+        exit_codes.append(result.returncode)
+    if len(commands) == 1:
+        return exit_codes[0]
+    return tuple(exit_codes)
