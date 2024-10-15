@@ -2,7 +2,7 @@ from plotnine import ggplot, aes, geom_bar, facet_grid, theme_classic, labs
 import pandas as pd
 from logging import getLogger
 from datetime import timezone, datetime
-from numpy import mean
+from numpy import median
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -66,7 +66,7 @@ def output_results(results_df: pd.DataFrame, config: dict):
                         y=RESULTS_COLUMN,
                     ),
                 )
-                + geom_bar(position="dodge", stat="summary", fun_y=mean)
+                + geom_bar(position="dodge", stat="summary", fun_y=median)
                 + theme_classic()
                 + labs(x=output["x-axis"])
             )
