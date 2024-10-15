@@ -1,40 +1,10 @@
 from time import monotonic_ns
 from subprocess import PIPE, Popen
 from logging import getLogger
+from execution import execute_and_handle_output, handle_output, check_return_code
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
-
-
-def check_return_code(command, code):
-    if code != 0:
-        logger.critical(f"Subprocess '{command}' exited abnormally (exit code {code})")
-        exit(1)
-
-
-def handle_output(process, capture_stdout=False, capture_stderr=False):
-    total = ""
-    with process.stdout as output:  # type: ignore
-        for line in output:
-            if len(line) > 0:
-                command_logger.info(line.decode("utf-8").strip())
-                if capture_stdout:
-                    total += line.decode("utf-8")
-    with process.stderr as output:  # type: ignore
-        for line in output:
-            if len(line) > 0:
-                command_logger.info(line.decode("utf-8").strip())
-                if capture_stderr:
-                    total += line.decode("utf-8")
-    return total.strip()
-
-
-def execute_and_handle_output(command, capture_stdout=False, capture_stderr=False):
-    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-    total = handle_output(process, capture_stdout, capture_stderr)
-    result = process.wait()
-    check_return_code(command, result)
-    return total
 
 
 def measure_time(commands):
@@ -42,10 +12,9 @@ def measure_time(commands):
     for command in commands:
         start = monotonic_ns()
         process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-        result = process.wait()
+        process.wait()
         total += monotonic_ns() - start
         handle_output(process)
-        check_return_code(command, result)
     return total / 1e9
 
 

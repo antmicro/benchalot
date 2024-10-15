@@ -1,36 +1,50 @@
-from subprocess import Popen, PIPE, STDOUT
-from logging import getLogger, INFO, CRITICAL
+from subprocess import Popen, PIPE
+from logging import getLogger, INFO, ERROR
 from tqdm import tqdm
-
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
 
 
-def log_program_output(pipe, level=INFO):
-    for line in pipe:
-        if len(line) > 0:
-            command_logger.log(msg=line.decode("utf-8").strip(), level=level)
-
-
-def execute_command(command: str):
-    process = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
-    result = process.wait()
-    if result != 0:
-        logger.critical(
-            f"Subprocess '{command}' exited abnormally (exit code {result})"
-        )
-        with process.stdout as output:  # type: ignore
-            log_program_output(output, level=CRITICAL)
+def check_return_code(command, code):
+    if code != 0:
+        logger.error(f"Subprocess '{command}' exited abnormally (exit code {code})")
         exit(1)
+
+
+def handle_output(process, capture_stdout=False, capture_stderr=False):
+    total = ""
+    level = INFO
     with process.stdout as output:  # type: ignore
-        log_program_output(output)
-    return result
+        for line in output:
+            if len(line) > 0:
+                if process.poll() is not None and process.poll() != 0:
+                    level = ERROR
+                command_logger.log(msg=line.decode("utf-8").strip(), level=level)
+                if capture_stdout:
+                    total += line.decode("utf-8")
+    with process.stderr as output:  # type: ignore
+        for line in output:
+            if len(line) > 0:
+                if process.poll() is not None and process.poll() != 0:
+                    level = ERROR
+                command_logger.log(msg=line.decode("utf-8").strip(), level=level)
+                if capture_stderr:
+                    total += line.decode("utf-8")
+    return total.strip()
+
+
+def execute_and_handle_output(command, capture_stdout=False, capture_stderr=False):
+    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+    total = handle_output(process, capture_stdout, capture_stderr)
+    result = process.wait()
+    check_return_code(command, result)
+    return total
 
 
 def run_multiple_commands(commands: list):
     for c in commands:
-        execute_command(c)
+        execute_and_handle_output(c)
 
 
 def perform_benchmarks(benchmarks: list, samples: int) -> list:
@@ -40,6 +54,7 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
         desc="Performing benchmarks...",
         total=(len(benchmarks) * samples * len(benchmarks[0]["metrics"])),
         unit=" benchmarks",
+        leave=False,
     )
     for benchmark in benchmarks:
         try:
