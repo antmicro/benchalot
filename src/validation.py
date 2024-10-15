@@ -240,6 +240,10 @@ def validate_config(config) -> dict:
             output["format"] in defaultable_fields
             and defaultable_fields[output["format"]] not in output
         ):
+            if len(config["run"]["metrics"]) > 1:
+                error_and_exit(
+                    f"'{key}': no '{defaultable_fields[output['format']]}' specified."
+                )
             metric = normalized_config["run"]["metrics"][0]
             if type(metric) is dict:
                 metric = list(metric.keys())[0]
