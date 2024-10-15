@@ -55,17 +55,17 @@ def benchmark_commands(commands: list) -> float:
 
 
 should_exit = False
+original_handler = getsignal(SIGINT)
 
 
 def perform_benchmarks(benchmarks: list, samples: int) -> list:
     def sigint_handler(signum, frame):
-        global should_exit
+        global should_exit, original_handler
         should_exit = True
         logger.warning("Received keyboard interrupt")
         logger.warning("Stopping benchmarks...")
         signal(SIGINT, original_handler)
 
-    original_handler = getsignal(SIGINT)
     signal(SIGINT, sigint_handler)
     results = []
     logger.info("Performing benchmarks...")
