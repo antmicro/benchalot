@@ -3,7 +3,6 @@ import pandas as pd
 from logging import getLogger
 from datetime import timezone, datetime
 from numpy import median
-from sys import stderr
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -44,25 +43,28 @@ def output_results_from_file(config, include):
     old_outputs = read_old_outputs(include)
     output_results(old_outputs, config)
 
-def get_printable_table(results_df: pd.DataFrame, columns = None):
-    stats = ["mean", "median", "std", "min", "max"]
+
+def get_printable_table(results_df: pd.DataFrame, columns=None):
     if columns is not None:
         table_df = results_df.loc[:, columns + [RESULTS_COLUMN]]
         table_df = table_df.groupby(columns)
         table_df = (
             table_df[RESULTS_COLUMN]
-            .agg(stats)
+            .agg(["mean", "median", "std", "min", "max"])
             .reset_index()
         )
     else:
         table_df = results_df.loc[:, :]
-        table_df = table_df.groupby([col for col in results_df.columns if col != RESULTS_COLUMN])
+        table_df = table_df.groupby(
+            [col for col in results_df.columns if col != RESULTS_COLUMN]
+        )
         table_df = (
             results_df[RESULTS_COLUMN]
-            .agg(stats)
+            .agg(["mean", "median", "std", "min", "max"])
             .reset_index()
         )
     return table_df
+
 
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
@@ -114,7 +116,11 @@ def output_results(results_df: pd.DataFrame, config: dict):
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             if "columns" in output:
-                get_printable_table(results_df,columns=output["columns"]).to_markdown(output["filename"], index=False)
+                get_printable_table(results_df, columns=output["columns"]).to_markdown(
+                    output["filename"], index=False
+                )
             else:
-                get_printable_table(results_df).to_markdown(output["filename"], index=False)
+                get_printable_table(results_df).to_markdown(
+                    output["filename"], index=False
+                )
     logger.info("Finished outputting results.")
