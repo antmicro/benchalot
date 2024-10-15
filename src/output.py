@@ -44,25 +44,29 @@ def output_results_from_file(config, include):
     old_outputs = read_old_outputs(include)
     output_results(old_outputs, config)
 
+def get_printable_table(results_df: pd.DataFrame, columns = None):
+    stats = ["mean", "median", "std", "min", "max"]
+    if columns is not None:
+        table_df = results_df.loc[:, columns + [RESULTS_COLUMN]]
+        table_df = table_df.groupby(columns)
+        table_df = (
+            table_df[RESULTS_COLUMN]
+            .agg(stats)
+            .reset_index()
+        )
+    else:
+        table_df = results_df.loc[:, :]
+        table_df = table_df.groupby([col for col in results_df.columns if col != RESULTS_COLUMN])
+        table_df = (
+            results_df[RESULTS_COLUMN]
+            .agg(stats)
+            .reset_index()
+        )
+    return table_df
 
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
-    if "matrix" in config:
-        print(
-            results_df.groupby([var for var in config["matrix"]])[RESULTS_COLUMN]
-            .agg(["mean", "min", "median", "max"])
-            .reset_index()
-            .to_markdown(),
-            file=stderr,  # to stderr since yaspin sits in stdout (and cannot be moved)
-        )
-    else:
-        print(
-            results_df[[RESULTS_COLUMN]]
-            .agg(["mean", "min", "median", "max"])
-            .reset_index()
-            .to_markdown(),
-            file=stderr,
-        )  # to stderr since yaspin sits in stdout (and cannot be moved)
+    print(get_printable_table(results_df).to_markdown())
     for key in config["output"]:
         output = config["output"][key]
         logger.debug(f"Creating output for {output}")
@@ -110,21 +114,7 @@ def output_results(results_df: pd.DataFrame, config: dict):
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             if "columns" in output:
-                table_df = output_df.loc[:, output["columns"] + [RESULTS_COLUMN]]
-                table_df = table_df.groupby(output["columns"])
-                table_df = (
-                    table_df[RESULTS_COLUMN]
-                    .agg(["mean", "median", "std"])
-                    .reset_index()
-                )
+                get_printable_table(results_df,columns=output["columns"]).to_markdown(output["filename"], index=False)
             else:
-                table_df = output_df.loc[:, :]
-                if "matrix" in config:
-                    table_df = table_df.groupby([var for var in config["matrix"]])
-                    table_df = (
-                        output_df[RESULTS_COLUMN]
-                        .agg(["mean", "median", "std"])
-                        .reset_index()
-                    )
-            table_df.to_markdown(output["filename"], index=False)
+                get_printable_table(results_df).to_markdown(output["filename"], index=False)
     logger.info("Finished outputting results.")
