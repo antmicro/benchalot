@@ -10,13 +10,8 @@ def measure_time(commands):
     total = 0
     for command in commands:
         start = monotonic_ns()
-        result = execute_command(command)
+        execute_command(command)
         total += monotonic_ns() - start
-        if result != 0:
-            logger.critical(
-                f"Subprocess '{command}' exited abnormally (exit code {result})"
-            )
-            exit(1)
     return total / 1e9
 
 

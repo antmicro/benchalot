@@ -25,6 +25,7 @@ def execute_command(command: str):
         exit(1)
     with process.stdout as output:  # type: ignore
         log_program_output(output)
+    return result
 
 
 def run_multiple_commands(commands: list):
@@ -35,7 +36,11 @@ def run_multiple_commands(commands: list):
 def perform_benchmarks(benchmarks: list, samples: int) -> list:
     results = []
     logger.info("Performing benchmarks...")
-    bar = tqdm(total=(len(benchmarks) * samples * len(benchmarks[0]["metrics"])))
+    bar = tqdm(
+        desc="Performing benchmarks...",
+        total=(len(benchmarks) * samples * len(benchmarks[0]["metrics"])),
+        unit=" benchmarks",
+    )
     bar.set_description("Performing benchmarks")
     for benchmark in benchmarks:
         try:
@@ -45,10 +50,13 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
                     logger.debug(f"Running benchmark: {benchmark}")
                     if "before" in benchmark:
                         run_multiple_commands(benchmark["before"])
+                        bar.refresh(nolock=True)
                     partial_result = metric(benchmark["benchmark"])
+                    bar.refresh(nolock=True)
                     partial_results.append(partial_result)
                     if "after" in benchmark:
                         run_multiple_commands(benchmark["after"])
+                        bar.refresh(nolock=True)
                     bar.update(1)
                 results.append(
                     [benchmark["matrix"][key] for key in benchmark["matrix"]]
