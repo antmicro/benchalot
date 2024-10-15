@@ -3,6 +3,7 @@ import pandas as pd
 from logging import getLogger
 from datetime import timezone, datetime
 from numpy import median
+from sys import stderr
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -46,6 +47,13 @@ def output_results_from_file(config, include):
 
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
+    print(
+        results_df.groupby([var for var in config["matrix"]])[RESULTS_COLUMN]
+        .agg(["mean", "min", "median", "max"])
+        .reset_index()
+        .to_markdown(),
+        file=stderr,  # to stderr since yaspin sits in stdout (and cannot be moved)
+    )
     for key in config["output"]:
         output = config["output"][key]
         logger.debug(f"Creating output for {output}")
