@@ -33,5 +33,8 @@ tuttest:
   stage: formatting
   before_script:
     - apt update -y && apt upgrade -y && apt install make sudo git -y
+    - python3 -m venv .venv
+    - source .venv/bin/activate
+    - pip install git+https://github.com/antmicro/tuttest
   script:
     - make tuttest
