@@ -3,6 +3,7 @@ import pandas as pd
 from logging import getLogger
 from datetime import timezone, datetime
 from numpy import median
+import os
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -69,6 +70,7 @@ def get_grouped_table(results_df: pd.DataFrame, columns=None):
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
     print(get_grouped_table(results_df).to_markdown())
+    prev_umask = os.umask(0)
     for key in config["output"]:
         output = config["output"][key]
         logger.debug(f"Creating output for {output}")
@@ -123,4 +125,5 @@ def output_results(results_df: pd.DataFrame, config: dict):
                 get_grouped_table(results_df).to_markdown(
                     output["filename"], index=False
                 )
+    os.umask(prev_umask)
     logger.info("Finished outputting results.")
