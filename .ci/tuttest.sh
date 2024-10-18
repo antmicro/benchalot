@@ -42,5 +42,5 @@ if [ $ret -ne 0 ]; then
 fi
 
 echo "$SIZE_CONFIG" > size_config.yml
-python src/main.py size_config.yml
+benchmarker size_config.yml
 assert_file_exists file_size.csv

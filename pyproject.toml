@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 [project]
 name = "benchmarker"
 readme = "README.md"
-version = "0.0.1"
+version = "0.1"
 description = "A tool used for automatic benchmarking of software."
 requires-python = ">=3.11"
 dependencies = [
