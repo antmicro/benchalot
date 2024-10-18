@@ -31,7 +31,7 @@ flake8:
 tuttest:
   stage: formatting
   before_script:
-    - apt update -y && apt upgrade -y && apt install python3 python3-venv make sudo git gcc gzip bzip xz -y
+    - apt update -y && apt upgrade -y && apt install python3 python3-venv make sudo git gcc gzip bzip2 xz-utils -y
     - python3 -m venv .venv
     - source .venv/bin/activate
     - pip install git+https://github.com/antmicro/tuttest
