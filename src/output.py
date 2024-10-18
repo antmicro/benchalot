@@ -70,7 +70,8 @@ def get_grouped_table(results_df: pd.DataFrame, columns=None):
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
     print(get_grouped_table(results_df).to_markdown())
-    prev_umask = os.umask(0)
+    if os.getuid() == 0:
+        prev_umask = os.umask(0)
     for key in config["output"]:
         output = config["output"][key]
         logger.debug(f"Creating output for {output}")
@@ -125,5 +126,6 @@ def output_results(results_df: pd.DataFrame, config: dict):
                 get_grouped_table(results_df).to_markdown(
                     output["filename"], index=False
                 )
-    os.umask(prev_umask)
+    if os.getuid() == 0:
+        os.umask(prev_umask)
     logger.info("Finished outputting results.")
