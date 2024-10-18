@@ -1,7 +1,11 @@
 from time import monotonic_ns
 from subprocess import PIPE, Popen
 from logging import getLogger
-from execution import execute_and_handle_output, handle_output, check_return_code
+from benchmarker.execution import (
+    execute_and_handle_output,
+    handle_output,
+    check_return_code,
+)
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")

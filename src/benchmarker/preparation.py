@@ -1,6 +1,6 @@
 from itertools import product
 from logging import getLogger
-from metrics import (
+from benchmarker.metrics import (
     measure_time,
     gather_stdout,
     gather_stderr,
