@@ -166,7 +166,7 @@ And this `table.md`:
 ### Custom Metrics
 
 Benchmarker allows usage of custom metrics.
-To use a custom metric specify metric name and command in `run.metrics` using syntax `metric_name: command`.
+To use a custom metric, specify the metric name and command in `run.metrics` using the syntax `metric_name: command`.
 `command` will be executed after each run of `benchmark` section.
 `command` should output results by printing them to standard output.
 
