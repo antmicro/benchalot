@@ -17,6 +17,9 @@ and then create a Python virtual environment:
 ```bash
 python3 -m  venv .venv
 source .venv/bin/activate
+```
+then run:
+```bash
 pip install .
 ```
 
