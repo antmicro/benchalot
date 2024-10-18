@@ -1,15 +1,26 @@
 from subprocess import Popen, PIPE
 from logging import getLogger, INFO, ERROR
 from tqdm import tqdm
+from os import getcwd
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
+working_directory = getcwd()
+
+
+def set_working_directory(cwd):
+    global working_directory
+    working_directory = cwd
 
 
 def check_return_code(command, code):
     if code != 0:
         logger.error(f"Subprocess '{command}' exited abnormally (exit code {code})")
         exit(1)
+
+
+def execute(command):
+    return Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
 
 
 def handle_output(process, capture_stdout=False, capture_stderr=False):
