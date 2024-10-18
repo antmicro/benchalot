@@ -4,6 +4,7 @@ from logging import getLogger
 from datetime import timezone, datetime
 from numpy import median
 import os
+from pandas.api.types import is_numeric_dtype
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -48,31 +49,37 @@ def output_results_from_file(config, include):
     output_results(old_outputs, config)
 
 
-def get_grouped_table(results_df: pd.DataFrame, columns=None):
+def get_grouped_table(results_df: pd.DataFrame, result_column, columns=None):
     if columns is not None:
-        table_df = results_df.loc[:, columns + [RESULTS_COLUMN]]
-        table_df = table_df.groupby(columns)
-        table_df = (
-            table_df[RESULTS_COLUMN]
-            .agg(["mean", "median", "std", "min", "max"])
-            .reset_index()
-        )
+        table_df = results_df.loc[:, columns + [result_column]]
+        if is_numeric_dtype(table_df[result_column]):
+            table_df = table_df.groupby(columns)
+            table_df = (
+                table_df[RESULTS_COLUMN]
+                .agg(["mean", "median", "std", "min", "max"])
+                .reset_index()
+            )
+        else:
+            table_df = table_df.drop_duplicates().reset_index()
     else:
         table_df = results_df.loc[:, :]
-        table_df = table_df.groupby(
-            [col for col in results_df.columns if col != RESULTS_COLUMN]
-        )
-        table_df = (
-            results_df[RESULTS_COLUMN]
-            .agg(["mean", "median", "std", "min", "max"])
-            .reset_index()
-        )
+        if is_numeric_dtype(table_df[result_column]):
+            table_df = table_df.groupby(
+                [col for col in results_df.columns if col != result_column]
+            )
+            table_df = (
+                results_df[RESULTS_COLUMN]
+                .agg(["mean", "median", "std", "min", "max"])
+                .reset_index()
+            )
+        else:
+            table_df = table_df.drop_duplicates().reset_index()
     return table_df
 
 
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
-    print(get_grouped_table(results_df).to_markdown())
+    print(get_grouped_table(results_df, results_df.columns[-1]).to_markdown())
     if os.getuid() == 0:
         prev_umask = os.umask(0)
     for key in config["output"]:
@@ -90,7 +97,7 @@ def output_results(results_df: pd.DataFrame, config: dict):
                     output_df,
                     aes(
                         x=f"factor({output['x-axis']})",
-                        y=RESULTS_COLUMN,
+                        y=output["y-axis"],
                     ),
                 )
                 + geom_bar(position="dodge", stat="summary", fun_y=median)
@@ -121,12 +128,14 @@ def output_results(results_df: pd.DataFrame, config: dict):
             )
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
+            result_column = output["result_column"]
+
             if "columns" in output:
-                get_grouped_table(results_df, columns=output["columns"]).to_markdown(
-                    output["filename"], index=False
-                )
+                get_grouped_table(
+                    results_df, columns=output["columns"], result_column=result_column
+                ).to_markdown(output["filename"], index=False)
             else:
-                get_grouped_table(results_df).to_markdown(
+                get_grouped_table(results_df, result_column=result_column).to_markdown(
                     output["filename"], index=False
                 )
     if os.getuid() == 0:

@@ -10,7 +10,7 @@ lint:
 	flake8 --verbose  --ignore=E501,W503 ./src
 
 typecheck:
-	mypy ./src/main.py ./src/validation.py ./src/preparation.py  ./src/execution.py ./src/output.py ./src/variance.py ./src/log.py
+	mypy ./src/*.py ./src/metrics/*.py
 
 sanitize: format lint typecheck
 

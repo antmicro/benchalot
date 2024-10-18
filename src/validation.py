@@ -48,6 +48,18 @@ def validate_config(config) -> dict:
         if not has_csv:
             error(field, "has to have at least one `.csv` output")
 
+    def metric_exists(field, value, error):
+        if value is None:
+            return
+        if "metrics" not in config["run"]:
+            if value != "time":
+                error(field, f"did not find metric '{value}'")
+            return
+
+        if value not in config["run"]["metrics"]:
+            error(field, f"did not find metric '{value}'")
+            return
+
     valid_schema = {
         "matrix": {
             "required": False,
@@ -139,6 +151,14 @@ def validate_config(config) -> dict:
                                 "dependencies": "^matrix",
                                 "check_with": variables_exist,
                             },
+                            "result_column": {
+                                "type": "string",
+                                "empty": False,
+                                "required": False,
+                                "dependencies": "^run.metrics",
+                                "check_with": metric_exists,
+                                "default": "time",
+                            },
                         },
                     },
                     {
@@ -154,6 +174,14 @@ def validate_config(config) -> dict:
                                 "required": True,
                                 "dependencies": "^matrix",
                                 "check_with": variable_exists,
+                            },
+                            "y-axis": {
+                                "type": "string",
+                                "empty": False,
+                                "required": False,
+                                "default": "time",
+                                "dependencies": "^run.metrics",
+                                "check_with": metric_exists,
                             },
                             "color": {
                                 "type": "string",
