@@ -42,9 +42,12 @@ def execute_and_handle_output(command, capture_stdout=False, capture_stderr=Fals
     return total
 
 
-def run_multiple_commands(commands: list):
+def execute_section(commands: list, section_name=""):
+    logger.info(f"Executing '{section_name}' section...")
+    logger.debug(f"Executing: {commands}")
     for c in commands:
         execute_and_handle_output(c)
+    logger.info(f"Execution of '{section_name}' section finished.")
 
 
 def perform_benchmarks(benchmarks: list, samples: int) -> list:
@@ -63,14 +66,14 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
                 for metric in benchmark["metrics"]:
                     logger.debug(f"Running benchmark: {benchmark}")
                     if "before" in benchmark:
-                        run_multiple_commands(benchmark["before"])
+                        execute_section(benchmark["before"], "before")
                         bar.refresh(nolock=True)
                     bar.set_description(f"Benchmarking `{benchmark['benchmark']}`")
                     partial_result = metric(benchmark["benchmark"])
                     bar.refresh(nolock=True)
                     partial_results.append(partial_result)
                     if "after" in benchmark:
-                        run_multiple_commands(benchmark["after"])
+                        execute_section(benchmark["after"], "after")
                         bar.refresh(nolock=True)
                     bar.update(1)
                 results.append(

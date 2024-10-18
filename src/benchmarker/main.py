@@ -2,7 +2,7 @@ import yaml
 from sys import argv, executable
 from benchmarker.validation import validate_config
 from benchmarker.preparation import prepare_benchmarks
-from benchmarker.execution import perform_benchmarks
+from benchmarker.execution import perform_benchmarks, execute_section
 from os import geteuid, execvp
 from benchmarker.variance import modify_system_state, restore_system_state
 from benchmarker.output import output_results_from_list, output_results_from_file
@@ -99,9 +99,17 @@ def main():
             modify_system_state(config["system"])
 
         benchmarks = prepare_benchmarks(config)
+
         if "save-output" in config["run"]:
             setup_command_logging(config["run"]["save-output"])
+
+        if "before-all" in config["run"]:
+            execute_section(config["run"]["before-all"], "before-all")
+
         results = perform_benchmarks(benchmarks, config["run"]["samples"])
+
+        if "after-all" in config["run"]:
+            execute_section(config["run"]["after-all"], "after-all")
 
         if "system" in config:
             restore_system_state(config["system"])

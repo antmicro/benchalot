@@ -101,6 +101,12 @@ def validate_config(config) -> dict:
                     "min": 1,
                     "default": 1,
                 },
+                "before-all": {
+                    "required": False,
+                    "type": "list",
+                    "empty": False,
+                    "minlength": 1,
+                },
                 "before": {
                     "required": False,
                     "type": "list",
@@ -120,6 +126,12 @@ def validate_config(config) -> dict:
                     "type": "list",
                     "empty": False,
                     "check_with": check_command_variables,
+                },
+                "after-all": {
+                    "required": False,
+                    "type": "list",
+                    "empty": False,
+                    "minlength": 1,
                 },
                 "save-output": {
                     "required": False,
