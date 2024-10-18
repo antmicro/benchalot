@@ -17,7 +17,7 @@ and then create a Python virtual environment:
 ```bash
 python3 -m  venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install .
 ```
 
 Configure the application by editing the YAML configuration file.
@@ -25,19 +25,19 @@ Then pass configuration file's name as an argument.
 For example, start the benchmark by typing this command:
 <!--name="run"-->
 ```bash
-python src/main.py config.yml
+benchmarker config.yml
 ```
 
 To regenerate the output without re-running benchmarks, use `--update-output`:
 <!--name="update-output"-->
 ```bash
-python src/main.py config.yml --update-output result.csv
+benchmarker config.yml --update-output result.csv
 ```
 
 To see available command line arguments type:
 <!--name="help-information"-->
 ```
-python src/main.py --help
+benchmarker --help
 ```
 
 ## Configuration
