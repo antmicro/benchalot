@@ -64,7 +64,7 @@ def validate_config(config) -> dict:
 
     def supported_metrics(field, value, error):
         for metric in value:
-            if metric not in ["time", "exit-codes", "stdout", "stderr"]:
+            if metric not in ["time", "stdout", "stderr"]:
                 if type(metric) is not dict:
                     error(field, f"invalid metric {metric}")
 

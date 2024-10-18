@@ -32,18 +32,6 @@ def gather_stderr(commands):
     return total
 
 
-def gather_exit_codes(commands):
-    exit_codes = []
-    for command in commands:
-        process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-        result = process.wait()
-        exit_codes.append(result)
-        handle_output(process)
-    if len(commands) == 1:
-        return exit_codes[0]
-    return tuple(exit_codes)
-
-
 def custom_metric(metric, commands):
     for command in commands:
         execute_and_handle_output(command)

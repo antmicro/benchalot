@@ -4,7 +4,6 @@ from metrics import (
     measure_time,
     gather_stdout,
     gather_stderr,
-    gather_exit_codes,
     custom_metric,
 )
 from functools import partial
@@ -40,8 +39,6 @@ def prepare_benchmarks(config) -> list:
             metrics.append(gather_stdout)
         elif metric == "stderr":
             metrics.append(gather_stderr)
-        elif metric == "exit-codes":
-            metrics.append(gather_exit_codes)
         else:
             metrics.append(partial(custom_metric, list(metric.items())[0][1]))
     if "options" in config and "isolate-cpus" in config["options"]:
