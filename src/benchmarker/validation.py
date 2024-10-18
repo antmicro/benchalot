@@ -77,7 +77,6 @@ def validate_config(config) -> dict:
             error(field, f"directory '{value}' not found")
             return
 
-
     valid_schema = {
         "matrix": {
             "required": False,
@@ -155,14 +154,13 @@ def validate_config(config) -> dict:
                     "default": ["time"],
                     "check_with": supported_metrics,
                 },
-                 "cwd": {
+                "cwd": {
                     "required": False,
                     "type": "string",
                     "empty": False,
                     "default": getcwd(),
                     "check_with": path_exists,
                 },
-
             },
         },
         "output": {
