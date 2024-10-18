@@ -17,14 +17,14 @@ RUN=$(tuttest README.md run)
 RUN_UPDATE=$(tuttest README.md update-output)
 HELP_INFORMATION=$(tuttest README.md help-information)
 SIZE_CONFIG=$(tuttest README.md size-config)
-eval "$HELP_INFORMATION"
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
 eval "$INSTALL"
 
-echo "$CONFIG" > config.yml
+eval "$HELP_INFORMATION"
 
+echo "$CONFIG" > config.yml
 eval "$RUN"
 assert_file_exists plot.png
 assert_file_exists table.md
@@ -40,8 +40,6 @@ if [ $ret -ne 0 ]; then
     echo "Plots are not the same."
     exit 1
 fi
-
-
 
 echo "$SIZE_CONFIG" > size_config.yml
 python src/main.py size_config.yml

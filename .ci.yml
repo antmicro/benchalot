@@ -32,10 +32,6 @@ flake8:
 tuttest:
   stage: formatting
   before_script:
-    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make sudo git -y
-    - python3 -m venv .venv
-    - source .venv/bin/activate
-    - pip install .[dev]
+    - apt update -y && apt upgrade -y && apt install make sudo git -y
   script:
-    - source .venv/bin/activate
     - make tuttest
