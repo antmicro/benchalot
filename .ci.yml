@@ -37,4 +37,5 @@ tuttest:
     - source .venv/bin/activate
     - pip install git+https://github.com/antmicro/tuttest
   script:
+    - source .venv/bin/activate
     - make tuttest
