@@ -99,12 +99,13 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 
 ### Run
 
+* `benchmark` contains the commands to be benchmarked.
+* `before` (optional) contains the commands to be executed before the benchmark. 
+* `after` (optional) contains the commands to be executed after the benchmark. 
+* `before-all` (optional) contains the commands to be executed once before all of the benchmarks.
+* `after-all` (optional) contains the commands to be executed once after all of the benchmarks.
 * `samples` (optional, default = 1) defines how many times repeat each benchmark.
 * `save-output` (optional, default = None) defines where to save the stdout and stderr of the benchmarked commands. If set to `"STDERR"` or `"STDOUT"`, the output will be printed to standard error or standard output respectively.
-* `before` contains the commands to be executed before the benchmark. 
-* `benchmark` contains the commands to be benchmarked.
-* `after` contains the commands to be executed after the measurement. 
-The `before` and `after` sections are optional.
 * `metrics` (optional, default = `["time"]`) a list of metrics to be gathered from benchmarked commands.
 Built-in are: `time`, `stderr` and `stdout`.
 Each metric is gathered independently.
