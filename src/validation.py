@@ -151,7 +151,7 @@ def validate_config(config) -> dict:
                                 "dependencies": "^matrix",
                                 "check_with": variables_exist,
                             },
-                            "result_column": {
+                            "result-column": {
                                 "type": "string",
                                 "empty": False,
                                 "required": False,
@@ -225,5 +225,13 @@ def validate_config(config) -> dict:
         error_and_exit(v.errors)
     logger.info("Finished validating config.")
     normalized_config = v.normalized(config)
+
+    # Default values do not work correctly in valuesrules
+    for key in config["output"]:
+        output = config["output"][key]
+        if output["format"] == "table-md" and "result-column" not in output:
+            output["result-column"] = "time"
+        if output["format"] == "bar-chart" and "y-axis" not in output:
+            output["y-axis"] = "time"
     logger.debug(f"Normalized config {normalized_config}")
     return normalized_config
