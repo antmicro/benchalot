@@ -2,6 +2,8 @@
 from cerberus import Validator  # type: ignore
 from re import findall
 from logging import getLogger
+from os import getcwd
+from os.path import isdir
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -67,6 +69,14 @@ def validate_config(config) -> dict:
             if metric not in ["time", "stdout", "stderr"]:
                 if type(metric) is not dict:
                     error(field, f"invalid metric {metric}")
+
+    def path_exists(field, value, error):
+        if value is None:
+            return
+        if not isdir(value):
+            error(field, f"directory '{value}' not found")
+            return
+
 
     valid_schema = {
         "matrix": {
@@ -145,6 +155,14 @@ def validate_config(config) -> dict:
                     "default": ["time"],
                     "check_with": supported_metrics,
                 },
+                 "cwd": {
+                    "required": False,
+                    "type": "string",
+                    "empty": False,
+                    "default": getcwd(),
+                    "check_with": path_exists,
+                },
+
             },
         },
         "output": {
