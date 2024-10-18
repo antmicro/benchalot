@@ -165,7 +165,6 @@ def validate_config(config) -> dict:
                                 "empty": False,
                                 "required": False,
                                 "check_with": metric_exists,
-                                "default": "time",
                             },
                         },
                     },
@@ -188,7 +187,6 @@ def validate_config(config) -> dict:
                                 "empty": False,
                                 "required": False,
                                 "check_with": metric_exists,
-                                "default": "time",
                             },
                             "color": {
                                 "type": "string",
@@ -235,7 +233,9 @@ def validate_config(config) -> dict:
     logger.info("Finished validating config.")
     normalized_config = v.normalized(config)
 
-    # Default values do not work correctly in valuesrules
+    # Set default values for "result-column" and "y-axis"
+    # We have do it manually because default values for fields
+    # do not apply correctly when fields are specified in "valuesrules"
     defaultable_fields = {"table-md": "result-column", "bar-chart": "y-axis"}
     for key in normalized_config["output"]:
         output = normalized_config["output"][key]
