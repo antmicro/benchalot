@@ -22,14 +22,22 @@ def gather_stdout(commands):
     total = ""
     for command in commands:
         total += execute_and_handle_output(command, capture_stdout=True)
-    return total
+    try:
+        total_numeric = float(total)
+    except ValueError:
+        pass
+    return total_numeric
 
 
 def gather_stderr(commands):
     total = ""
     for command in commands:
         total += execute_and_handle_output(command, capture_stderr=True)
-    return total
+    try:
+        total_numeric = float(total)
+    except ValueError:
+        pass
+    return total_numeric
 
 
 def custom_metric(metric, commands):
