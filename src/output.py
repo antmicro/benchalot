@@ -44,7 +44,7 @@ def output_results_from_file(config, include):
     output_results(old_outputs, config)
 
 
-def get_printable_table(results_df: pd.DataFrame, columns=None):
+def get_grouped_table(results_df: pd.DataFrame, columns=None):
     if columns is not None:
         table_df = results_df.loc[:, columns + [RESULTS_COLUMN]]
         table_df = table_df.groupby(columns)
@@ -68,7 +68,7 @@ def get_printable_table(results_df: pd.DataFrame, columns=None):
 
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
-    print(get_printable_table(results_df).to_markdown())
+    print(get_grouped_table(results_df).to_markdown())
     for key in config["output"]:
         output = config["output"][key]
         logger.debug(f"Creating output for {output}")
@@ -116,11 +116,11 @@ def output_results(results_df: pd.DataFrame, config: dict):
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             if "columns" in output:
-                get_printable_table(results_df, columns=output["columns"]).to_markdown(
+                get_grouped_table(results_df, columns=output["columns"]).to_markdown(
                     output["filename"], index=False
                 )
             else:
-                get_printable_table(results_df).to_markdown(
+                get_grouped_table(results_df).to_markdown(
                     output["filename"], index=False
                 )
     logger.info("Finished outputting results.")
