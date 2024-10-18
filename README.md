@@ -171,7 +171,7 @@ To use a custom metric specify metric name and command in `run.metrics` using sy
 `command` should output results by printing them to standard output.
 
 Example: Let's say we want to measure size difference between files compressed by `gzip`, `bzip2` and `xz`.
-We can start by specifying configuration file:
+We can start by specifying the configuration:
  <!--name="size-config"-->
 ```yaml
 ---
