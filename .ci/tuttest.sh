@@ -21,7 +21,7 @@ if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
 eval "$INSTALL"
-
+pip install .
 eval "$HELP_INFORMATION"
 
 echo "$CONFIG" > config.yml
