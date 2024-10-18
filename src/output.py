@@ -8,7 +8,6 @@ from pandas.api.types import is_numeric_dtype
 
 logger = getLogger(f"benchmarker.{__name__}")
 
-RESULTS_COLUMN = "time"
 TIME_STAMP_COLUMN = "benchmark_date"
 
 
@@ -24,22 +23,20 @@ def read_old_outputs(include: list) -> pd.DataFrame:
 
 
 def output_results_from_list(results: list, config, include: list):
+    metrics_columns = [
+        metric if type(metric) is not dict else list(metric.keys())[0]
+        for metric in config["run"]["metrics"]
+    ]
     if "matrix" in config:
         logger.debug("Found `matrix` section, creating columns.")
         results_df = pd.DataFrame(
             data=results,
-            columns=(
-                [key for key in config["matrix"].keys()]
-                + [metric.split("@")[0] for metric in config["run"]["metrics"]]
-            ),
+            columns=([key for key in config["matrix"].keys()] + metrics_columns),
         )
 
     else:
-        logger.debug("`matrix` section not found")
-        results_df = pd.DataFrame(
-            data=results,
-            columns=[metric.split("@")[0] for metric in config["run"]["metrics"]],
-        )
+        logger.debug(results)
+        results_df = pd.DataFrame(data=results, columns=metrics_columns)
     results_df.insert(
         0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y/%m/%d %H:%M")
     )
@@ -59,7 +56,7 @@ def get_grouped_table(results_df: pd.DataFrame, result_column, columns=None):
         if is_numeric_dtype(table_df[result_column]):
             table_df = table_df.groupby(columns)
             table_df = (
-                table_df[RESULTS_COLUMN]
+                table_df[result_column]
                 .agg(["mean", "median", "std", "min", "max"])
                 .reset_index()
             )
@@ -72,7 +69,7 @@ def get_grouped_table(results_df: pd.DataFrame, result_column, columns=None):
                 [col for col in results_df.columns if col != result_column]
             )
             table_df = (
-                results_df[RESULTS_COLUMN]
+                results_df[result_column]
                 .agg(["mean", "median", "std", "min", "max"])
                 .reset_index()
             )

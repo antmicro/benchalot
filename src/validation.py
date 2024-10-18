@@ -62,7 +62,7 @@ def validate_config(config) -> dict:
     def supported_metrics(field, value, error):
         for metric in value:
             if metric not in ["time", "exit-codes", "stdout", "stderr"]:
-                if "@" not in metric:
+                if type(metric) is not dict:
                     error(field, f"invalid metric {metric}")
 
     valid_schema = {
@@ -233,19 +233,16 @@ def validate_config(config) -> dict:
     normalized_config = v.normalized(config)
 
     # Default values do not work correctly in valuesrules
+    defaultable_fields = {"table-md": "result-column", "bar-chart": "y-axis"}
     for key in normalized_config["output"]:
         output = normalized_config["output"][key]
-        if output["format"] == "table-md" and "result-column" not in output:
-            if "time" not in normalized_config["run"]["metrics"]:
-                output["result-column"] = normalized_config["run"]["metrics"][0].split(
-                    "@"
-                )[0]
-                continue
-            output["result-column"] = "time"
-        if output["format"] == "bar-chart" and "y-axis" not in output:
-            if "time" not in normalized_config["run"]["metrics"]:
-                output["y-axis"] = normalized_config["run"]["metrics"][0].split("@")[0]
-                continue
-            output["y-axis"] = "time"
+        if (
+            output["format"] in defaultable_fields
+            and defaultable_fields[output["format"]] not in output
+        ):
+            metric = normalized_config["run"]["metrics"][0]
+            if type(metric) is dict:
+                metric = list(metric.keys())[0]
+            output[defaultable_fields[output["format"]]] = metric
     logger.debug(f"Normalized config {normalized_config}")
     return normalized_config

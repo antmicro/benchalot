@@ -43,7 +43,7 @@ def prepare_benchmarks(config) -> list:
         elif metric == "exit-codes":
             metrics.append(gather_exit_codes)
         else:
-            metrics.append(partial(custom_metric, metric.split("@")[1]))
+            metrics.append(partial(custom_metric, list(metric.items())[0][1]))
     if "options" in config and "isolate-cpus" in config["options"]:
         for i, c in enumerate(config["run"]["benchmark"]):
             config["run"]["benchmark"][i] = "cset shield --exec -- " + c
