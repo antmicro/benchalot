@@ -35,7 +35,7 @@ def load_configuration_file(filename):
 
 def main():
     parser = ArgumentParser(
-        prog="python src/main.py",
+        prog="benchmarker",
         description="Benchmarker is a tool used for automatic benchmarking of software.",
     )
     parser.add_argument("config_filename", help="a path to YAML configuration file")
