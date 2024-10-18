@@ -1,6 +1,7 @@
 from time import monotonic_ns
-from subprocess import run, DEVNULL
+from subprocess import run
 from logging import getLogger
+from execution import execute_command
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -9,13 +10,12 @@ def measure_time(commands):
     total = 0
     for command in commands:
         start = monotonic_ns()
-        result = run(command, shell=True, stdout=DEVNULL, stderr=DEVNULL)
+        result = execute_command(command)
         total += monotonic_ns() - start
-        if result.returncode != 0:
+        if result != 0:
             logger.critical(
-                f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
+                f"Subprocess '{command}' exited abnormally (exit code {result})"
             )
-            logger.critical(result.stderr.decode("utf-8").strip())
             exit(1)
     return total / 1e9
 
@@ -23,12 +23,11 @@ def measure_time(commands):
 def gather_stdout(commands):
     total = ""
     for command in commands:
-        result = run(command, shell=True, capture_output=True)
+        result = run(command, capture_output=True, shell=True)
         if result.returncode != 0:
             logger.critical(
                 f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
             )
-            logger.critical(result.stderr.decode("utf-8").strip())
             exit(1)
         total += result.stdout.decode("utf-8").strip()
     return total
@@ -42,7 +41,6 @@ def gather_stderr(commands):
             logger.critical(
                 f"Subprocess '{command}' exited abnormally (exit code {result.returncode})"
             )
-            logger.critical(result.stderr.decode("utf-8").strip())
             exit(1)
         total += result.stderr.decode("utf-8").strip()
     return total
@@ -51,8 +49,8 @@ def gather_stderr(commands):
 def gather_exit_codes(commands):
     exit_codes = []
     for command in commands:
-        result = run(command, shell=True, stdout=DEVNULL, stderr=DEVNULL)
-        exit_codes.append(result.returncode)
+        result = execute_command(command)
+        exit_codes.append(result)
     if len(commands) == 1:
         return exit_codes[0]
     return tuple(exit_codes)
