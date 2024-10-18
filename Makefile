@@ -1,7 +1,7 @@
 .PHONY: format check_format lint typecheck sanitize tuttest
 
 format:
-	black src/*
+	black src/benchmarker/*
 
 check_format:
 	black --check src/benchmarker/*
