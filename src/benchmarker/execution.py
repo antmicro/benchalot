@@ -19,8 +19,9 @@ def check_return_code(command, code):
         exit(1)
 
 
-def execute(command):
-    return Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+def execute_command(command):
+    global working_directory
+    return Popen(command, shell=True, stdout=PIPE, stderr=PIPE, cwd=working_directory)
 
 
 def handle_output(process, capture_stdout=False, capture_stderr=False):
@@ -46,7 +47,7 @@ def handle_output(process, capture_stdout=False, capture_stderr=False):
 
 
 def execute_and_handle_output(command, capture_stdout=False, capture_stderr=False):
-    process = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+    process = execute_command(command)
     total = handle_output(process, capture_stdout, capture_stderr)
     result = process.wait()
     check_return_code(command, result)

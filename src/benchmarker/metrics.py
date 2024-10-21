@@ -4,7 +4,7 @@ from benchmarker.execution import (
     execute_and_handle_output,
     handle_output,
     check_return_code,
-    execute,
+    execute_command,
 )
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -15,7 +15,7 @@ def measure_time(commands):
     total = 0
     for command in commands:
         start = monotonic_ns()
-        process = execute(command)
+        process = execute_command(command)
         process.wait()
         total += monotonic_ns() - start
         handle_output(process)
@@ -47,7 +47,7 @@ def gather_stderr(commands):
 def custom_metric(metric, commands):
     for command in commands:
         execute_and_handle_output(command)
-    process = execute(metric)
+    process = execute_command(metric)
     output = handle_output(process, capture_stdout=True)
     result = process.wait()
     check_return_code(metric, result)
