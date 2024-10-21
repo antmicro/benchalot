@@ -57,6 +57,8 @@ def get_stat_table(
 ) -> pd.DataFrame:
     statistics = ["min", "median", "max"]
     if show_columns is None:
+        if results_df[TIME_STAMP_COLUMN].nunique() == 1:
+            results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
         if is_numeric_dtype(results_df[result_column]):
             table_df = pd.DataFrame(columns=statistics)
             table_df.loc[0] = [
@@ -68,6 +70,10 @@ def get_stat_table(
             table_df = results_df.drop_duplicates().reset_index(drop=True)
         return table_df
     else:
+        if results_df[TIME_STAMP_COLUMN].nunique() == 1:
+            results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
+        else:
+            show_columns = [TIME_STAMP_COLUMN] + show_columns
         return get_grouped_stat_table(results_df, result_column, show_columns)
 
 
@@ -75,7 +81,7 @@ def get_grouped_stat_table(
     results_df: pd.DataFrame, result_column: str, show_columns: list[str]
 ) -> pd.DataFrame:
     statistics = ["min", "median", "max"]
-    table_df = results_df.loc[:, [TIME_STAMP_COLUMN] + show_columns + [result_column]]
+    table_df = results_df.loc[:, show_columns + [result_column]]
     math_df = table_df.groupby(show_columns)
     if is_numeric_dtype(table_df[result_column]):
         for stat in statistics:
