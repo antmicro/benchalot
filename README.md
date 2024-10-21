@@ -106,6 +106,7 @@ If there is no `matrix` section, Benchmarker will execute the `run` section once
 * `after-all` (optional) contains the commands to be executed once after all of the benchmarks.
 * `samples` (optional, default = 1) defines how many times repeat each benchmark.
 * `save-output` (optional, default = None) defines where to save the stdout and stderr of the benchmarked commands. If set to `"STDERR"` or `"STDOUT"`, the output will be printed to standard error or standard output respectively.
+* `cwd` (optional) change working directory of the commands to specified location.
 * `metrics` (optional, default = `["time"]`) a list of metrics to be gathered from benchmarked commands.
 Built-in are: `time`, `stderr` and `stdout`.
 Each metric is gathered independently.
