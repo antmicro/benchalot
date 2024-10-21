@@ -279,5 +279,10 @@ def validate_config(config) -> dict:
             if type(metric) is dict:
                 metric = list(metric.keys())[0]
             output[defaultable_fields[output["format"]]] = metric
+        if output["format"] == "table-md" and "columns" not in output:
+            if "matrix" in normalized_config:
+                output["columns"] = list(normalized_config["matrix"].keys())
+            else:
+                output["columns"] = None
     logger.debug(f"Normalized config {normalized_config}")
     return normalized_config

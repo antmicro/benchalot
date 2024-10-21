@@ -50,18 +50,25 @@ def output_results_from_file(config, include):
     output_results(old_outputs, config)
 
 
-def get_stat_table(results_df: pd.DataFrame, result_column: str) -> pd.DataFrame:
+def get_stat_table(
+    results_df: pd.DataFrame,
+    result_column: str,
+    show_columns: list[str] | None = None,
+) -> pd.DataFrame:
     statistics = ["min", "median", "max"]
-    if is_numeric_dtype(results_df[result_column]):
-        table_df = pd.DataFrame(columns=statistics)
-        table_df.loc[0] = [
-            results_df[result_column].min(),
-            results_df[result_column].median(),
-            results_df[result_column].max(),
-        ]
+    if show_columns is None:
+        if is_numeric_dtype(results_df[result_column]):
+            table_df = pd.DataFrame(columns=statistics)
+            table_df.loc[0] = [
+                results_df[result_column].min(),
+                results_df[result_column].median(),
+                results_df[result_column].max(),
+            ]
+        else:
+            table_df = results_df.drop_duplicates().reset_index(drop=True)
+        return table_df
     else:
-        table_df = results_df.drop_duplicates().reset_index(drop=True)
-    return table_df
+        return get_grouped_stat_table(results_df, result_column, show_columns)
 
 
 def get_grouped_stat_table(
@@ -83,11 +90,6 @@ def output_results(results_df: pd.DataFrame, config: dict):
     show_columns = config.get("matrix")
     if show_columns is not None:
         show_columns = list(show_columns.keys())
-    print(
-        get_grouped_stat_table(
-            results_df, results_df.columns[-1], show_columns
-        ).to_markdown(index=False)
-    )
     if os.getuid() == 0:
         prev_umask = os.umask(0)
     for key in config["output"]:
@@ -142,16 +144,17 @@ def output_results(results_df: pd.DataFrame, config: dict):
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             result_column = output["result-column"]
-            if "columns" in output:
-                get_grouped_stat_table(
-                    results_df,
-                    show_columns=output["columns"],
-                    result_column=result_column,
-                ).to_markdown(output["filename"], index=False)
-            else:
-                get_stat_table(results_df, result_column=result_column).to_markdown(
-                    output["filename"], index=False
-                )
+            get_stat_table(
+                results_df,
+                show_columns=output["columns"],
+                result_column=result_column,
+            ).to_markdown(output["filename"], index=False)
+            show_columns = output["columns"]
     if os.getuid() == 0:
         os.umask(prev_umask)
+    print(
+        get_stat_table(results_df, results_df.columns[-1], show_columns).to_markdown(
+            index=False
+        )
+    )
     logger.info("Finished outputting results.")
