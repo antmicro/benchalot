@@ -2,7 +2,7 @@ from plotnine import ggplot, aes, geom_bar, facet_grid, theme_classic, labs
 import pandas as pd
 from logging import getLogger
 from datetime import timezone, datetime
-from numpy import median
+import numpy as np
 import os
 from pandas.api.types import is_numeric_dtype
 
@@ -50,37 +50,40 @@ def output_results_from_file(config, include):
     output_results(old_outputs, config)
 
 
-def get_grouped_table(results_df: pd.DataFrame, result_column, columns=None):
-    if columns is not None:
-        table_df = results_df.loc[:, columns + [result_column]]
-        if is_numeric_dtype(table_df[result_column]):
-            table_df = table_df.groupby(columns)
-            table_df = (
-                table_df[result_column]
-                .agg(["mean", "median", "std", "min", "max"])
-                .reset_index()
-            )
+def get_grouped_table(results_df: pd.DataFrame, result_column, show_columns=[]):
+    if not show_columns:
+        if is_numeric_dtype(results_df[result_column]):
+            table_df = pd.DataFrame(columns=["min", "median", "max"])
+            table_df.loc[0] = [
+                results_df[result_column].min(),
+                results_df[result_column].median(),
+                results_df[result_column].max(),
+            ]
         else:
-            table_df = table_df.drop_duplicates().reset_index()
-    else:
-        table_df = results_df.loc[:, :]
-        if is_numeric_dtype(table_df[result_column]):
-            table_df = table_df.groupby(
-                [col for col in results_df.columns if col != result_column]
-            )
-            table_df = (
-                results_df[result_column]
-                .agg(["mean", "median", "std", "min", "max"])
-                .reset_index()
-            )
-        else:
-            table_df = table_df.drop_duplicates().reset_index()
+            table_df = results_df.drop_duplicates().reset_index(drop=True)
+        return table_df
+    table_df = results_df.loc[:, [TIME_STAMP_COLUMN] + show_columns + [result_column]]
+    group_keys = [col for col in show_columns]
+    math_df = table_df.groupby(group_keys)
+    if is_numeric_dtype(table_df[result_column]):
+        table_df["min"] = math_df[result_column].transform("min")
+        table_df["median"] = math_df[result_column].transform("median")
+        table_df["max"] = math_df[result_column].transform("max")
+        table_df = table_df.drop(result_column, axis=1).reset_index(drop=True)
+    table_df = table_df.drop_duplicates().reset_index(drop=True)
     return table_df
 
 
 def output_results(results_df: pd.DataFrame, config: dict):
     logger.info("Outputting results...")
-    print(get_grouped_table(results_df, results_df.columns[-1]).to_markdown())
+    show_columns = config.get("matrix")
+    if show_columns is not None:
+        show_columns = list(show_columns.keys())
+    print(
+        get_grouped_table(results_df, results_df.columns[-1], show_columns).to_markdown(
+            index=False
+        )
+    )
     if os.getuid() == 0:
         prev_umask = os.umask(0)
     for key in config["output"]:
@@ -106,7 +109,7 @@ def output_results(results_df: pd.DataFrame, config: dict):
                         y=output["y-axis"],
                     ),
                 )
-                + geom_bar(position="dodge", stat="summary", fun_y=median)
+                + geom_bar(position="dodge", stat="summary", fun_y=np.median)
                 + theme_classic()
                 + labs(x=output["x-axis"])
             )
@@ -135,10 +138,11 @@ def output_results(results_df: pd.DataFrame, config: dict):
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             result_column = output["result-column"]
-
             if "columns" in output:
                 get_grouped_table(
-                    results_df, columns=output["columns"], result_column=result_column
+                    results_df,
+                    show_columns=output["columns"],
+                    result_column=result_column,
                 ).to_markdown(output["filename"], index=False)
             else:
                 get_grouped_table(results_df, result_column=result_column).to_markdown(
