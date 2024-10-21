@@ -50,25 +50,29 @@ def output_results_from_file(config, include):
     output_results(old_outputs, config)
 
 
-def get_grouped_table(results_df: pd.DataFrame, result_column, show_columns=[]):
-    if not show_columns:
-        if is_numeric_dtype(results_df[result_column]):
-            table_df = pd.DataFrame(columns=["min", "median", "max"])
-            table_df.loc[0] = [
-                results_df[result_column].min(),
-                results_df[result_column].median(),
-                results_df[result_column].max(),
-            ]
-        else:
-            table_df = results_df.drop_duplicates().reset_index(drop=True)
-        return table_df
+def get_stat_table(results_df: pd.DataFrame, result_column: str) -> pd.DataFrame:
+    statistics = ["min", "median", "max"]
+    if is_numeric_dtype(results_df[result_column]):
+        table_df = pd.DataFrame(columns=statistics)
+        table_df.loc[0] = [
+            results_df[result_column].min(),
+            results_df[result_column].median(),
+            results_df[result_column].max(),
+        ]
+    else:
+        table_df = results_df.drop_duplicates().reset_index(drop=True)
+    return table_df
+
+
+def get_grouped_stat_table(
+    results_df: pd.DataFrame, result_column: str, show_columns: list[str]
+) -> pd.DataFrame:
+    statistics = ["min", "median", "max"]
     table_df = results_df.loc[:, [TIME_STAMP_COLUMN] + show_columns + [result_column]]
-    group_keys = [col for col in show_columns]
-    math_df = table_df.groupby(group_keys)
+    math_df = table_df.groupby(show_columns)
     if is_numeric_dtype(table_df[result_column]):
-        table_df["min"] = math_df[result_column].transform("min")
-        table_df["median"] = math_df[result_column].transform("median")
-        table_df["max"] = math_df[result_column].transform("max")
+        for stat in statistics:
+            table_df[stat] = math_df[result_column].transform(stat)
         table_df = table_df.drop(result_column, axis=1).reset_index(drop=True)
     table_df = table_df.drop_duplicates().reset_index(drop=True)
     return table_df
@@ -80,9 +84,9 @@ def output_results(results_df: pd.DataFrame, config: dict):
     if show_columns is not None:
         show_columns = list(show_columns.keys())
     print(
-        get_grouped_table(results_df, results_df.columns[-1], show_columns).to_markdown(
-            index=False
-        )
+        get_grouped_stat_table(
+            results_df, results_df.columns[-1], show_columns
+        ).to_markdown(index=False)
     )
     if os.getuid() == 0:
         prev_umask = os.umask(0)
@@ -139,13 +143,13 @@ def output_results(results_df: pd.DataFrame, config: dict):
             logger.debug("Outputting markdown table.")
             result_column = output["result-column"]
             if "columns" in output:
-                get_grouped_table(
+                get_grouped_stat_table(
                     results_df,
                     show_columns=output["columns"],
                     result_column=result_column,
                 ).to_markdown(output["filename"], index=False)
             else:
-                get_grouped_table(results_df, result_column=result_column).to_markdown(
+                get_stat_table(results_df, result_column=result_column).to_markdown(
                     output["filename"], index=False
                 )
     if os.getuid() == 0:
