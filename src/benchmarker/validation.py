@@ -18,7 +18,10 @@ logger = getLogger(f"benchmarker.{__name__}")
 
 def error_and_exit(error):
     logger.critical("Config validation failed.")
-    logger.critical(error)
+    logger.critical(f"Encountered {error.error_count()} errors")
+    for e in error.errors():
+        location = ".".join(e["loc"])
+        logger.critical(f"{location}: {e['msg']}, input: '{e['input']}'")
     exit(1)
 
 
@@ -104,6 +107,8 @@ class BarChartOutput(OutputField):
 
     def apply_default_values(self, matrix, metrics):
         if self.y_axis is None:
+            if len(metrics) != 1:
+                raise ValueError("'y-axis' not specified")
             self.y_axis = (
                 metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
             )
@@ -127,6 +132,8 @@ class TableMdOutput(OutputField):
         if self.columns is None:
             self.columns = list(matrix.keys())
         if self.result_column is None:
+            if len(metrics) != 1:
+                raise ValueError("'result-column' not specified")
             self.result_column = (
                 metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
             )

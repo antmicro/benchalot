@@ -48,7 +48,7 @@ def prepare_benchmarks(
             run_config["benchmark"][i] = "cset shield --exec -- " + c
     benchmarks = []
     logger.info("Preparing benchmarks...")
-    if len(matrix) == 0:
+    if not matrix:
         logger.debug("`matrix` not found in the config.")
         benchmarks.append(deepcopy(run_config))
         benchmarks[0]["matrix"] = {}

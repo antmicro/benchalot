@@ -98,7 +98,9 @@ def output_results(
     results_df: pd.DataFrame, output_config: dict, matrix: dict[str, list]
 ):
     logger.info("Outputting results...")
-    show_columns = list(matrix.keys())
+    print_table = get_stat_table(
+        results_df, results_df.columns[-1], list(matrix.keys())
+    )
     if os.getuid() == 0:
         prev_umask = os.umask(0)
     for key in output_config:
@@ -144,17 +146,14 @@ def output_results(
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             result_column = output["result-column"]
-            get_stat_table(
+            table = get_stat_table(
                 results_df,
                 show_columns=output["columns"],
                 result_column=result_column,
-            ).to_markdown(output["filename"], index=False)
-            show_columns = output["columns"]
+            )
+            table.to_markdown(output["filename"], index=False)
+            print_table = table
     if os.getuid() == 0:
         os.umask(prev_umask)
-    print(
-        get_stat_table(results_df, results_df.columns[-1], show_columns).to_markdown(
-            index=False
-        )
-    )
+    print(print_table.to_markdown(index=False))
     logger.info("Finished outputting results.")
