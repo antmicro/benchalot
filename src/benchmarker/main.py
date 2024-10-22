@@ -93,29 +93,27 @@ def main():
 
     if not args.update_output:
         is_root = geteuid() == 0
-        if config["system"]["on"] and not is_root:
+        if config["system"]["modify"] and not is_root:
             print(
                 "To perform system configuration, root privileges are required. Running sudo..."
             )
             execvp("sudo", ["sudo", executable] + argv)
-        if config["system"]["root_required"]:
+        if config["system"]["modify"]:
             modify_system_state(config["system"])
 
-        benchmarks = prepare_benchmarks(config)
+        benchmarks = prepare_benchmarks(
+            config["run"], config["matrix"], config["system"]["isolate-cpus"]
+        )
 
-        if "save-output" in config["run"]:
+        if config["run"]["save-output"]:
             setup_command_logging(config["run"]["save-output"])
         set_working_directory(config["run"]["cwd"])
 
-        if "before-all" in config["run"]:
-            execute_section(config["run"]["before-all"], "before-all")
-
+        execute_section(config["run"]["before-all"], "before-all")
         results = perform_benchmarks(benchmarks, config["run"]["samples"])
+        execute_section(config["run"]["after-all"], "after-all")
 
-        if "after-all" in config["run"]:
-            execute_section(config["run"]["after-all"], "after-all")
-
-        if config["system"]["on"]:
+        if config["system"]["modify"]:
             restore_system_state(config["system"])
 
         output_results_from_list(results, config, args.include)

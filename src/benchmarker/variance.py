@@ -42,7 +42,7 @@ def modify_system_state(system_options):
             "/proc/sys/kernel/randomize_va_space", str(0)
         )
         logger.debug("Disabled ASLR.")
-    if len(system_options["isolate-cpus"]) > 0:
+    if system_options["isolate-cpus"]:
         cpu_str = ""
         for cpu in system_options["isolate-cpus"]:
             cpu_str += str(cpu) + ","
@@ -62,7 +62,7 @@ def modify_system_state(system_options):
     if system_options.get("governor-performance"):
         cpus = (
             system_options["isolate-cpus"]
-            if len(system_options["isolate-cpus"]) > 0
+            if system_options["isolate-cpus"]
             else range(cpu_count())
         )
         logger.debug(f"Setting CPU governor for CPUs {cpus}...")

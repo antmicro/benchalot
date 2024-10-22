@@ -24,22 +24,21 @@ def error_and_exit(error):
 
 
 class SystemSection(BaseModel):
-    isolate_cpus: list[int] = Field(default=None, alias="isolate-cpus")
+    isolate_cpus: list[int] | bool = Field(default=False, alias="isolate-cpus")
     disable_aslr: bool = Field(default=False, alias="disable-aslr")
     governor_performance: bool = Field(default=False, alias="governor-performance")
     model_config = ConfigDict(extra="forbid")
 
     @computed_field  # type: ignore
     @property
-    def on(self) -> bool:
-        return (
-            len(self.isolate_cpus) > 0 or self.disable_aslr or self.governor_performance
-        )
+    def modify(self) -> bool:
+        isolate_cpus_empty = not self.isolate_cpus
+        return self.disable_aslr or self.governor_performance or not isolate_cpus_empty
 
 
 class RunSection(BaseModel):
     samples: int = 1
-    save_output: str = Field(default=None, alias="save-output")
+    save_output: str | bool = Field(default=False, alias="save-output")
     before_all: list[str] = Field(default=[], alias="before-all")
     before: list[str] = []
     benchmark: list[str]

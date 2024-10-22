@@ -77,16 +77,17 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
                 partial_results = []
                 for metric in benchmark["metrics"]:
                     logger.debug(f"Running benchmark: {benchmark}")
-                    if "before" in benchmark:
-                        execute_section(benchmark["before"], "before")
-                        bar.refresh(nolock=True)
+
+                    execute_section(benchmark["before"], "before")
+                    bar.refresh(nolock=True)
+
                     bar.set_description(f"Benchmarking `{benchmark['benchmark']}`")
                     partial_result = metric(benchmark["benchmark"])
                     bar.refresh(nolock=True)
                     partial_results.append(partial_result)
-                    if "after" in benchmark:
-                        execute_section(benchmark["after"], "after")
-                        bar.refresh(nolock=True)
+
+                    execute_section(benchmark["after"], "after")
+                    bar.refresh(nolock=True)
                     bar.update(1)
                 results.append(
                     [benchmark["matrix"][key] for key in benchmark["matrix"]]
