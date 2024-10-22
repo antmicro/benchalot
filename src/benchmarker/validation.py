@@ -1,9 +1,18 @@
-from pydantic import BaseModel, ValidationError, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ValidationError,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+    computed_field,
+)
 from typing import Literal
 from re import findall
 from logging import getLogger
 from os import getcwd
 from os.path import isdir
+from pprint import pp
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -17,9 +26,15 @@ def error_and_exit(error):
 class SystemSection(BaseModel):
     isolate_cpus: list[int] = Field(default=None, alias="isolate-cpus")
     disable_aslr: bool = Field(default=False, alias="disable-aslr")
-    governor_performance: bool = Field(
-        default=False, alias="governor-performance")
+    governor_performance: bool = Field(default=False, alias="governor-performance")
     model_config = ConfigDict(extra="forbid")
+
+    @computed_field  # type: ignore
+    @property
+    def on(self) -> bool:
+        return (
+            len(self.isolate_cpus) > 0 or self.disable_aslr or self.governor_performance
+        )
 
 
 class RunSection(BaseModel):
@@ -49,7 +64,7 @@ class RunSection(BaseModel):
         for metric in metrics:
             if type(metric) is str and metric not in ["time", "stdout", "stderr"]:
                 raise ValueError(f"invalid metric '{metric}'")
-        return metric
+        return metrics
 
 
 class OutputField(BaseModel):
@@ -63,8 +78,9 @@ class OutputField(BaseModel):
         pass
 
     def check_metric_exists(self, metric_name, metrics):
-        metric_names = [name if type(name) is str else list(
-            name.keys())[0] for name in metrics]
+        metric_names = [
+            name if type(name) is str else list(name.keys())[0] for name in metrics
+        ]
         if metric_name not in metric_names:
             raise ValueError(f"metric '{metric_name}' not found")
 
@@ -90,8 +106,9 @@ class BarChartOutput(OutputField):
 
     def apply_default_values(self, matrix, metrics):
         if self.y_axis is None:
-            self.y_axis = metrics[0] if type(
-                metrics[0]) is str else list(metrics[0].keys())[0]
+            self.y_axis = (
+                metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
+            )
 
     def check_vars_exist(self, matrix):
         check_var_exists(self.facet, matrix)
@@ -112,8 +129,9 @@ class TableMdOutput(OutputField):
         if self.columns is None:
             self.columns = list(matrix.keys())
         if self.result_column is None:
-            self.result_column = metrics[0] if type(
-                metrics[0]) is str else list(metrics[0].keys())[0]
+            self.result_column = (
+                metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
+            )
 
     def check_vars_exist(self, matrix):
         for column in self.columns:
@@ -138,9 +156,20 @@ def check_command_variables(commands, matrix):
 
 class ConfigFile(BaseModel):
     matrix: dict[str, list] = {}
-    system: SystemSection | None = None
+    system: SystemSection = SystemSection()
     run: RunSection
     output: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
+
+    @field_validator("output")
+    @classmethod
+    def at_least_one_csv(
+        cls, outputs: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
+    ):
+        for output_key in outputs:
+            output = outputs[output_key]
+            if type(output) is CsvOutput:
+                return outputs
+        raise ValueError("at least one 'csv' output is required")
 
     @model_validator(mode="after")
     def apply_default_values(self):
@@ -149,7 +178,7 @@ class ConfigFile(BaseModel):
             output.apply_default_values(self.matrix, self.run.metrics)
         return self
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_command_vars(self):
         if self.matrix == {}:
             return self
@@ -158,14 +187,14 @@ class ConfigFile(BaseModel):
         check_command_variables(self.run.after, self.matrix)
         return self
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_output_vars(self):
         for output_key in self.output:
             output = self.output[output_key]
             output.check_vars_exist(self.matrix)
         return self
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_output_metrics(self):
         for output_key in self.output:
             output = self.output[output_key]
@@ -175,8 +204,9 @@ class ConfigFile(BaseModel):
 
 def validate_config(config) -> dict:
     try:
-        ConfigFile(**config)
+        config_validator = ConfigFile(**config)
     except ValidationError as e:
         error_and_exit(e)
-    print("Validation succesful!")
-    exit()
+    normalized_config = config_validator.model_dump(by_alias=True)
+    pp(normalized_config)
+    return normalized_config

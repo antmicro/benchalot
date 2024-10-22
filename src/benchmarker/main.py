@@ -93,12 +93,12 @@ def main():
 
     if not args.update_output:
         is_root = geteuid() == 0
-        if "system" in config and not is_root:
+        if config["system"]["on"] and not is_root:
             print(
                 "To perform system configuration, root privileges are required. Running sudo..."
             )
             execvp("sudo", ["sudo", executable] + argv)
-        if "system" in config:
+        if config["system"]["root_required"]:
             modify_system_state(config["system"])
 
         benchmarks = prepare_benchmarks(config)
@@ -115,7 +115,7 @@ def main():
         if "after-all" in config["run"]:
             execute_section(config["run"]["after-all"], "after-all")
 
-        if "system" in config:
+        if config["system"]["on"]:
             restore_system_state(config["system"])
 
         output_results_from_list(results, config, args.include)

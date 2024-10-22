@@ -42,7 +42,7 @@ def modify_system_state(system_options):
             "/proc/sys/kernel/randomize_va_space", str(0)
         )
         logger.debug("Disabled ASLR.")
-    if "isolate-cpus" in system_options:
+    if len(system_options["isolate-cpus"]) > 0:
         cpu_str = ""
         for cpu in system_options["isolate-cpus"]:
             cpu_str += str(cpu) + ","
@@ -58,29 +58,26 @@ def modify_system_state(system_options):
             logger.critical(str(result.stderr))
             logger.critical(str(result.stdout))
             exit(1)
-        if system_options.get("governor-performance"):
-            logger.debug(f"Setting CPU governor for CPUs {cpu_str}...")
-            for cpu in system_options["isolate-cpus"]:
-                system_state[f"governor{cpu}"] = get_and_set(
-                    f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor",
-                    "performance",
-                )
-            logger.debug(f"Set CPU governor for CPUs {cpu_str}.")
-    elif system_options.get("governor-performance"):
-        logger.debug("Setting CPU governor for all CPUs...")
-        for cpu in range(cpu_count()):
+        system_state["isolate-cpus"] = True
+    if system_options.get("governor-performance"):
+        cpus = (
+            system_options["isolate-cpus"]
+            if len(system_options["isolate-cpus"]) > 0
+            else range(cpu_count())
+        )
+        logger.debug(f"Setting CPU governor for CPUs {cpus}...")
+        for cpu in cpus:
             system_state[f"governor{cpu}"] = get_and_set(
                 f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor",
                 "performance",
             )
-        logger.debug("Set CPU governor for all CPUs.")
-    logger.info("Finished modifying system state.")
+        logger.debug(f"Set CPU governor for CPUs {cpu_str}.")
 
 
 def restore_system_state(system_options):
     logger.info("Restoring system state...")
     logger.debug(f"Saved system state: {system_options}")
-    if "isolate-cpus" in system_options:
+    if system_state.get("isolate-cpus"):
         run("cset shield --reset", shell=True, capture_output=True)
         logger.debug("Removed CPU shield.")
     if system_options.get("governor-performance"):
