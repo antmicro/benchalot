@@ -22,32 +22,35 @@ def read_old_outputs(include: list) -> pd.DataFrame:
     return results_df
 
 
-def output_results_from_list(results: list, config, include: list):
+def output_results_from_list(
+    results: list,
+    output_config: dict,
+    matrix: dict[str, list],
+    metrics: list,
+    include: list,
+):
     metrics_columns = [
         metric if type(metric) is not dict else list(metric.keys())[0]
-        for metric in config["run"]["metrics"]
+        for metric in metrics
     ]
-    if "matrix" in config:
-        logger.debug("Found `matrix` section, creating columns.")
-        results_df = pd.DataFrame(
-            data=results,
-            columns=([key for key in config["matrix"].keys()] + metrics_columns),
-        )
+    results_df = pd.DataFrame(
+        data=results,
+        columns=([key for key in matrix] + metrics_columns),
+    )
 
-    else:
-        logger.debug(results)
-        results_df = pd.DataFrame(data=results, columns=metrics_columns)
     results_df.insert(
         0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y/%m/%d %H:%M")
     )
     old_outputs = read_old_outputs(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
-    output_results(results_df, config)
+    output_results(results_df, output_config, matrix)
 
 
-def output_results_from_file(config, include):
+def output_results_from_file(
+    output_config: dict, include: list, matrix: dict[str, list]
+):
     old_outputs = read_old_outputs(include)
-    output_results(old_outputs, config)
+    output_results(old_outputs, output_config, matrix)
 
 
 def get_stat_table(
@@ -56,7 +59,7 @@ def get_stat_table(
     show_columns: list[str] | None = None,
 ) -> pd.DataFrame:
     statistics = ["min", "median", "max"]
-    if show_columns is None:
+    if not show_columns:
         if results_df[TIME_STAMP_COLUMN].nunique() == 1:
             results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
         if is_numeric_dtype(results_df[result_column]):
@@ -91,15 +94,15 @@ def get_grouped_stat_table(
     return table_df
 
 
-def output_results(results_df: pd.DataFrame, config: dict):
+def output_results(
+    results_df: pd.DataFrame, output_config: dict, matrix: dict[str, list]
+):
     logger.info("Outputting results...")
-    show_columns = config.get("matrix")
-    if show_columns is not None:
-        show_columns = list(show_columns.keys())
+    show_columns = list(matrix.keys())
     if os.getuid() == 0:
         prev_umask = os.umask(0)
-    for key in config["output"]:
-        output = config["output"][key]
+    for key in output_config:
+        output = output_config[key]
         logger.debug(f"Creating output for {output}")
         output_df = results_df
         logger.debug(output_df.head())
@@ -125,25 +128,16 @@ def output_results(results_df: pd.DataFrame, config: dict):
                 + theme_classic()
                 + labs(x=output["x-axis"])
             )
-            if "facet" in output:
+            if output["facet"]:
                 plot += facet_grid(cols=output["facet"])
-            if "color" in output:
+            if output["color"]:
                 plot += aes(fill=f"factor({output['color']})")
                 plot += labs(fill=output["color"])
-            width = 10
-            height = 9
-            dpi = 100
-            if "width" in output:
-                width = output["width"]
-            if "height" in output:
-                height = output["height"]
-            if "dpi" in output:
-                dpi = output["dpi"]
             plot.save(
                 output["filename"],
-                width=width,
-                height=height,
-                dpi=dpi,
+                width=output["width"],
+                height=output["height"],
+                dpi=output["dpi"],
                 limitsize=False,
                 verbose=False,
             )

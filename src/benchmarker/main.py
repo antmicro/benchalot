@@ -116,13 +116,19 @@ def main():
         if config["system"]["modify"]:
             restore_system_state(config["system"])
 
-        output_results_from_list(results, config, args.include)
+        output_results_from_list(
+            results,
+            config["output"],
+            config["matrix"],
+            config["run"]["metrics"],
+            args.include,
+        )
     else:
         old_outputs = args.update_output
         for file in old_outputs:
             if not isfile(file):
                 logger.critical(f"File '{file}' not found")
                 exit(1)
-        output_results_from_file(config, old_outputs)
+        output_results_from_file(config["output"], old_outputs, config["matrix"])
     logger.info("Exiting Benchmarker...")
     unregister(crash_msg_log_file)

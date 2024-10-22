@@ -54,7 +54,9 @@ def execute_and_handle_output(command, capture_stdout=False, capture_stderr=Fals
     return total
 
 
-def execute_section(commands: list, section_name=""):
+def execute_section(commands: list[str], section_name=""):
+    if not commands:
+        return
     logger.info(f"Executing '{section_name}' section...")
     logger.debug(f"Executing: {commands}")
     for c in commands:

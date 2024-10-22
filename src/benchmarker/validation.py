@@ -12,7 +12,6 @@ from re import findall
 from logging import getLogger
 from os import getcwd
 from os.path import isdir
-from pprint import pp
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -24,7 +23,7 @@ def error_and_exit(error):
 
 
 class SystemSection(BaseModel):
-    isolate_cpus: list[int] | bool = Field(default=False, alias="isolate-cpus")
+    isolate_cpus: list[int] = Field(default=None, alias="isolate-cpus")
     disable_aslr: bool = Field(default=False, alias="disable-aslr")
     governor_performance: bool = Field(default=False, alias="governor-performance")
     model_config = ConfigDict(extra="forbid")
@@ -38,7 +37,7 @@ class SystemSection(BaseModel):
 
 class RunSection(BaseModel):
     samples: int = 1
-    save_output: str | bool = Field(default=False, alias="save-output")
+    save_output: str = Field(default=None, alias="save-output")
     before_all: list[str] = Field(default=[], alias="before-all")
     before: list[str] = []
     benchmark: list[str]
@@ -202,10 +201,12 @@ class ConfigFile(BaseModel):
 
 
 def validate_config(config) -> dict:
+    logger.info("Validating config...")
     try:
         config_validator = ConfigFile(**config)
     except ValidationError as e:
         error_and_exit(e)
     normalized_config = config_validator.model_dump(by_alias=True)
-    pp(normalized_config)
+    logger.info("Successfully validated config.")
+    logger.debug(normalized_config)
     return normalized_config
