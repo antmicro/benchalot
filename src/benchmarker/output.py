@@ -4,7 +4,7 @@ from logging import getLogger
 from datetime import timezone, datetime
 import numpy as np
 import os
-from pandas.api.types import is_numeric_dtype
+from pandas.api.types import is_numeric_dtype, is_string_dtype
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -97,6 +97,13 @@ def get_grouped_stat_table(
 def output_results(
     results_df: pd.DataFrame, output_config: dict, matrix: dict[str, list]
 ):
+
+    # Convert all string columns to categorical to prevent rearranging by plotnine
+    for column in results_df.columns:
+        if is_string_dtype(results_df[column]):
+            series = results_df[column]
+            results_df[column] = pd.Categorical(series, categories=series.unique())
+
     logger.info("Outputting results...")
     print_table = get_stat_table(
         results_df, results_df.columns[-1], list(matrix.keys())
