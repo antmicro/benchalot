@@ -23,21 +23,12 @@ def read_old_outputs(include: list) -> pd.DataFrame:
 
 
 def output_results_from_list(
-    results: list,
+    results: dict,
     output_config: dict,
     matrix: dict[str, list],
-    metrics: list,
     include: list,
 ):
-    metrics_columns = [
-        metric if type(metric) is not dict else list(metric.keys())[0]
-        for metric in metrics
-    ]
-    results_df = pd.DataFrame(
-        data=results,
-        columns=([key for key in matrix] + metrics_columns),
-    )
-
+    results_df = pd.DataFrame(results)
     results_df.insert(
         0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y/%m/%d %H:%M")
     )

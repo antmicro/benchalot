@@ -9,7 +9,7 @@ from benchmarker.execution import (
 )
 from os import geteuid, execvp
 from benchmarker.variance import modify_system_state, restore_system_state
-from benchmarker.output import output_results_from_list, output_results_from_file
+from benchmarker.output import output_results_from_dict, output_results_from_file
 from argparse import ArgumentParser
 from os.path import isfile
 from benchmarker.log import (
@@ -116,11 +116,10 @@ def main():
         if config["system"]["modify"]:
             restore_system_state(config["system"])
 
-        output_results_from_list(
+        output_results_from_dict(
             results,
             config["output"],
             config["matrix"],
-            config["run"]["metrics"],
             args.include,
         )
     else:

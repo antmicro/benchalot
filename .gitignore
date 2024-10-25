@@ -2,3 +2,4 @@
 *.csv
 __pycache__
 table.md
+benchmarker.egg-info

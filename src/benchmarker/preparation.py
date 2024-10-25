@@ -42,7 +42,7 @@ def prepare_benchmarks(
         elif metric == "stderr":
             metrics_functions.append(gather_stderr)
         else:
-            metrics_functions.append(partial(custom_metric, list(metric.items())[0][1]))
+            metrics_functions.append(partial(custom_metric, list(metric.items())[0][1],list(metric.items())[0][0]))
     if isolate_cpus:
         for i, c in enumerate(run_config["benchmark"]):
             run_config["benchmark"][i] = "cset shield --exec -- " + c
