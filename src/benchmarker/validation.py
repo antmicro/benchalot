@@ -183,7 +183,6 @@ class BarChartOutput(OutputField):
     width: int = Field(default=10, ge=1)
     height: int = Field(default=9, ge=1)
     dpi: int = Field(default=100, ge=50)
-    stack: list[str]
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):

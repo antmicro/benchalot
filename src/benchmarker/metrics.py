@@ -13,7 +13,7 @@ from csv import DictReader
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
 
-_FORMAT = "{step} {name}"
+_FORMAT = "{name}.{step}"
 
 
 def measure_time(benchmarks: dict[str, list[str]]) -> dict:
@@ -93,16 +93,36 @@ def custom_metric(
     output = handle_output(process, capture_stdout=True)
     result = process.wait()
     check_return_code(metric_command, result)
-    measurements = dict()
     if len(output.splitlines()) == 1:
         try:
             output = float(output)
         except ValueError:
             pass
-        measurements[metric_name] = output
-        return measurements
+        return {metric_name: output}
+
     output_stream = StringIO(output)
     reader = DictReader(output_stream)
+    tmp_dict = {}
     for row in reader:
-        return row
-    return {metric_name: None}
+        tmp_dict = row
+    output_dict = {}
+    total_float = 0.0
+    total_str = ""
+    output_float = True
+    for key in tmp_dict:
+        value = tmp_dict[key]
+        output_dict[_FORMAT.format(name=metric_name, step=key)] = value
+        print(value)
+        try:
+            value = float(value)
+        except ValueError:
+            pass
+        if type(value) is float:
+            total_float += value
+        else:
+            output_float = False
+    if output_float:
+        output_dict[metric_name] = total_float
+    else:
+        output_dict[metric_name] = total_str
+    return output_dict
