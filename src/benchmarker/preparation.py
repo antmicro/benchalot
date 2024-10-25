@@ -35,10 +35,10 @@ def name_benchmark_steps(
 ) -> dict[str, list[str]]:
     if type(benchmarks) is dict:
         return benchmarks
-    named_benchmarks = dict()
-    for i, benchmark in enumerate(benchmarks):
-        named_benchmarks["step_" + str(i)] = [benchmark]
-    return named_benchmarks
+    elif type(benchmarks) is list:
+        return {"onlystep": benchmarks}
+    assert "Unreachable!"
+    return None  # type: ignore
 
 
 def prepare_benchmarks(
