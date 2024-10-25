@@ -26,6 +26,14 @@ def error_and_exit(error):
 
 
 class SystemSection(BaseModel):
+    """Schema for `system` section of the configuration file.
+
+    Attributes:
+        isolate_cpus: CPU cores which will be shielded by `cpuset`
+        disable_aslr: Option to disable address space layout randomization.
+        governor_performance: Option to change CPU governor to performance.
+    """
+
     isolate_cpus: list[int] = Field(default=None, alias="isolate-cpus")
     disable_aslr: bool = Field(default=False, alias="disable-aslr")
     governor_performance: bool = Field(default=False, alias="governor-performance")
@@ -34,11 +42,26 @@ class SystemSection(BaseModel):
     @computed_field  # type: ignore
     @property
     def modify(self) -> bool:
+        """ "Whether the system will need to be modified."""
         isolate_cpus_empty = not self.isolate_cpus
         return self.disable_aslr or self.governor_performance or not isolate_cpus_empty
 
 
 class RunSection(BaseModel):
+    """Schema for `run` section of the configuration file.
+
+    Attributes:
+        samples: How many times each benchmark should be repeated.
+        save_output: Name of a file where `stdout` and `stderr` of executed commands will be saved.
+        before_all: Commands to be executed before all the benchmarks.
+        before:  Commands to be executed before each benchmark.
+        benchmark: Commands to be benchmarked.
+        after:  Commands to be executed after each benchmark.
+        after-all:  Commands to be executed after all the benchmarks.
+        cwd:  Working directory of the commands.
+        metrics:  Metrics to be gathered during benchmarking.
+    """
+
     samples: int = 1
     save_output: str = Field(default=None, alias="save-output")
     before_all: list[str] = Field(default=[], alias="before-all")
@@ -69,16 +92,46 @@ class RunSection(BaseModel):
 
 
 class OutputField(BaseModel):
+    """Parent class for possible output formats in the `output` section.
+
+    Attributes:
+        filename: Name of the output file.
+        format: Name of the output format.
+    """
+
     filename: str
     format: str
 
     def apply_default_values(self, matrix, metrics):
+        """Apply default values to missing fields.
+
+        Args:
+            matrix: `matrix` section from the configuration file.
+            metrics: `run.metrics` section from the configuration file.
+        """
         pass
 
     def check_vars_exist(self, matrix):
+        """Verify if variables used in the output are present in the `matrix` section.
+
+        Args:
+            matrix: `matrix` section from the configuration file.
+
+        Raises:
+            ValueError
+        """
         pass
 
     def check_metric_exists(self, metric_name, metrics):
+        """Check if metric is present in the `run.metrics` section.
+
+        Args:
+            metric_name: Name of the metric.
+            metrics: `run.metrics` section.
+
+        Raises:
+            ValueError
+        """
         metric_names = [
             name if type(name) is str else list(name.keys())[0] for name in metrics
         ]
@@ -86,15 +139,42 @@ class OutputField(BaseModel):
             raise ValueError(f"metric '{metric_name}' not found")
 
     def check_metrics_exist(self, metrics):
+        """Check if metrics used in the output are present in the `run.metrics` section.
+
+        Args:
+            metrics: `run.metrics` section.
+
+        Raises:
+            ValueError
+        """
         pass
 
 
 class CsvOutput(OutputField):
+    """Schema of a csv output field.
+
+    Attributes:
+        format: Must be "csv".
+    """
+
     format: Literal["csv"]
     model_config = ConfigDict(extra="forbid")
 
 
 class BarChartOutput(OutputField):
+    """Schema of a bar chart output field.
+
+    Attributes:
+        format: Must be "bar-chart".
+        x_axis: Name of a variable which will put on x-axis of the chart.
+        y_axis: Name of a metric which will put on y-axis of the chart.
+        facet: Name of a variable which will be used to facet the chart.
+        color: Name of a variable which will be used as color channel the chart.
+        width: Resulting plot image width in inches.
+        height: Resulting plot image height in inches.
+        dpi: Resulting plot image DPI.
+    """
+
     format: Literal["bar-chart"]
     x_axis: str = Field(alias="x-axis")
     y_axis: str = Field(default=None, alias="y-axis")
@@ -106,6 +186,16 @@ class BarChartOutput(OutputField):
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):
+        """Apply default values to missing fields.
+        Set y-axis (if missing) to the only metric specified in the config.
+
+        Args:
+            matrix: `matrix` section from the configuration file.
+            metrics: `run.metrics` section from the configuration file.
+
+        Raises:
+            ValueError: If there are more than one metrics in `run.metrics` section and y-axis is `None`.
+        """
         if self.y_axis is None:
             if len(metrics) != 1:
                 raise ValueError("'y-axis' not specified")
@@ -114,6 +204,11 @@ class BarChartOutput(OutputField):
             )
 
     def check_vars_exist(self, matrix):
+        """Check if facet, x-axis and color are present in the matrix section
+
+        Args:
+            matrix: `matrix` section from the configuration file.
+        """
         check_var_exists(self.facet, matrix)
         check_var_exists(self.x_axis, matrix)
         check_var_exists(self.color, matrix)
@@ -123,12 +218,28 @@ class BarChartOutput(OutputField):
 
 
 class TableMdOutput(OutputField):
+    """Schema of a markdown table output field.
+
+    Attributes:
+        format: Must be "table-md".
+        columns: List of variables which should be included in the output table. Defaults to all the variables.
+        result_column: Metric to be used to create statistics columns.
+    """
+
     format: Literal["table-md"]
     columns: list[str] | None = None
     result_column: str = Field(default=None, alias="result-column")
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):
+        """Apply default values.
+        If `None`, set `columns` to contain all the variables from `matrix` section.
+        If `None`, set `result_column` to the only metric in `run.metrics` section.
+
+        Raises:
+            ValueError: If there are more than one metrics in `run.metrics` section and `result_column` is `None`.
+
+        """
         if self.columns is None:
             self.columns = list(matrix.keys())
         if self.result_column is None:
@@ -139,6 +250,7 @@ class TableMdOutput(OutputField):
             )
 
     def check_vars_exist(self, matrix):
+        """Check if columns contain valid variable names."""
         for column in self.columns:
             check_var_exists(column, matrix)
 
@@ -152,6 +264,15 @@ def check_var_exists(var_key, matrix):
 
 
 def check_command_variables(commands, matrix):
+    """Check if variables used in commands are present in `matrix` section.
+
+    Args:
+        commands: List of commands to be validated.
+        matrix: `matrix` section from the configuration file.
+
+    Raises:
+        ValueError
+    """
     for command in commands:
         variables = findall(r"\$matrix\.[a-zA-Z0-9]*", command)
         for var in variables:
@@ -160,6 +281,15 @@ def check_command_variables(commands, matrix):
 
 
 class ConfigFile(BaseModel):
+    """Schema of the configuration file.
+
+    Attributes:
+        matrix: Section containing variables and their values.
+        system: Section containing variance reducing, system modifying options.
+        run: Section containing commands.
+        output: Section containing desired outputs.
+    """
+
     matrix: dict[str, list] = {}
     system: SystemSection = SystemSection()
     run: RunSection
@@ -170,6 +300,11 @@ class ConfigFile(BaseModel):
     def at_least_one_csv(
         cls, outputs: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
     ):
+        """Check if output section contains at least one csv output
+
+        Raises:
+            ValueError: When no csv is found.
+        """
         for output_key in outputs:
             output = outputs[output_key]
             if type(output) is CsvOutput:
@@ -178,6 +313,7 @@ class ConfigFile(BaseModel):
 
     @model_validator(mode="after")
     def apply_default_values(self):
+        """Apply default values for the output fields."""
         for output_key in self.output:
             output = self.output[output_key]
             output.apply_default_values(self.matrix, self.run.metrics)
@@ -185,6 +321,7 @@ class ConfigFile(BaseModel):
 
     @model_validator(mode="after")
     def check_command_vars(self):
+        """Check whether variables used in commands are present in the `matrix` section."""
         if self.matrix == {}:
             return self
         check_command_variables(self.run.before, self.matrix)
@@ -194,6 +331,7 @@ class ConfigFile(BaseModel):
 
     @model_validator(mode="after")
     def check_output_vars(self):
+        """Check whether variables used in outputs are present in the `matrix` section."""
         for output_key in self.output:
             output = self.output[output_key]
             output.check_vars_exist(self.matrix)
@@ -201,6 +339,7 @@ class ConfigFile(BaseModel):
 
     @model_validator(mode="after")
     def check_output_metrics(self):
+        """Check whether metrics used in outputs are present in the `run.metrics` section."""
         for output_key in self.output:
             output = self.output[output_key]
             output.check_metrics_exist(self.run.metrics)
