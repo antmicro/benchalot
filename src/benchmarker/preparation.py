@@ -30,13 +30,13 @@ def prepare_commands(commands: list, var_combination) -> list:
     return prepared_commands
 
 
-def name_benchmark_steps(
+def name_benchmark_stages(
     benchmarks: list[str] | dict[str, list[str]],
 ) -> dict[str, list[str]]:
     if type(benchmarks) is dict:
         return benchmarks
     elif type(benchmarks) is list:
-        return {"onlystep": benchmarks}
+        return {"onlystage": benchmarks}
     assert "Unreachable!"
     return None  # type: ignore
 

@@ -1,7 +1,7 @@
 import yaml
 from sys import argv, executable
 from benchmarker.validation import validate_config
-from benchmarker.preparation import prepare_benchmarks, name_benchmark_steps
+from benchmarker.preparation import prepare_benchmarks, name_benchmark_stages
 from benchmarker.execution import (
     perform_benchmarks,
     execute_section,
@@ -101,7 +101,7 @@ def main():
         if config["system"]["modify"]:
             modify_system_state(config["system"])
         run_config = config["run"]
-        run_config["benchmark"] = name_benchmark_steps(run_config["benchmark"])
+        run_config["benchmark"] = name_benchmark_stages(run_config["benchmark"])
         benchmarks = prepare_benchmarks(
             run_config, config["matrix"], config["system"]["isolate-cpus"]
         )

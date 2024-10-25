@@ -13,11 +13,11 @@ from csv import DictReader
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
 
-_FORMAT = "{name}.{step}"
+_FORMAT = "{name}.{stage}"
 
 
 def measure_time(benchmarks: dict[str, list[str]]) -> dict:
-    def _measure_step_time(commands: list[str]) -> float:
+    def _measure_stage_time(commands: list[str]) -> float:
         elapsed_time = 0.0
         for command in commands:
             start = monotonic_ns()
@@ -28,8 +28,8 @@ def measure_time(benchmarks: dict[str, list[str]]) -> dict:
         return elapsed_time / 1e9
 
     measurements = dict()
-    for step, commands in benchmarks.items():
-        measurements[_FORMAT.format(name="time", step=step)] = _measure_step_time(
+    for stage, commands in benchmarks.items():
+        measurements[_FORMAT.format(name="time", stage=stage)] = _measure_stage_time(
             commands
         )
     measurements["time"] = sum(measurements.values())
@@ -41,7 +41,7 @@ def measure_time(benchmarks: dict[str, list[str]]) -> dict:
 def _gather_output(
     benchmarks: dict[str, list[str]], output: Literal["stderr", "stdout"]
 ) -> dict:
-    def _gather_step_output(commands: list[str]) -> str | float:
+    def _gather_stage_output(commands: list[str]) -> str | float:
         total = ""
         for command in commands:
             if output == "stdout":
@@ -59,8 +59,8 @@ def _gather_output(
     total_str = ""
     output_float = True
     for name, command in benchmarks.items():
-        value = _gather_step_output(command)
-        measurements[_FORMAT.format(name=output, step=name)] = value
+        value = _gather_stage_output(command)
+        measurements[_FORMAT.format(name=output, stage=name)] = value
         if type(value) is float:
             total_float += value
         else:
@@ -111,7 +111,7 @@ def custom_metric(
     output_float = True
     for key in tmp_dict:
         value = tmp_dict[key]
-        output_dict[_FORMAT.format(name=metric_name, step=key)] = value
+        output_dict[_FORMAT.format(name=metric_name, stage=key)] = value
         print(value)
         try:
             value = float(value)
