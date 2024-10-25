@@ -111,8 +111,6 @@ def custom_metric(
     output_float = True
     for key in tmp_dict:
         value = tmp_dict[key]
-        output_dict[_FORMAT.format(name=metric_name, stage=key)] = value
-        print(value)
         try:
             value = float(value)
         except ValueError:
@@ -121,6 +119,7 @@ def custom_metric(
             total_float += value
         else:
             output_float = False
+        output_dict[_FORMAT.format(name=metric_name, stage=key)] = value
     if output_float:
         output_dict[metric_name] = total_float
     else:
