@@ -29,7 +29,7 @@ class SystemSection(BaseModel):
     """Schema for `system` section of the configuration file.
 
     Attributes:
-        isolate_cpus: CPU cores which will be shielded by `cpuset`
+        isolate_cpus: CPU cores which will be shielded by `cpuset`.
         disable_aslr: Option to disable address space layout randomization.
         governor_performance: Option to change CPU governor to performance.
     """
@@ -92,7 +92,7 @@ class RunSection(BaseModel):
 
 
 class OutputField(BaseModel):
-    """Parent class for possible output formats in the `output` section.
+    """Parent class for output formats.
 
     Attributes:
         filename: Name of the output file.
@@ -166,10 +166,10 @@ class BarChartOutput(OutputField):
 
     Attributes:
         format: Must be "bar-chart".
-        x_axis: Name of a variable which will put on x-axis of the chart.
-        y_axis: Name of a metric which will put on y-axis of the chart.
+        x_axis: Name of a variable which will used as x-axis of the chart.
+        y_axis: Name of a metric which will used as y-axis of the chart.
         facet: Name of a variable which will be used to facet the chart.
-        color: Name of a variable which will be used as color channel the chart.
+        color: Name of a variable which will be used as color channel of the chart.
         width: Resulting plot image width in inches.
         height: Resulting plot image height in inches.
         dpi: Resulting plot image DPI.
@@ -222,8 +222,8 @@ class TableMdOutput(OutputField):
 
     Attributes:
         format: Must be "table-md".
-        columns: List of variables which should be included in the output table. Defaults to all the variables.
-        result_column: Metric to be used to create statistics columns.
+        columns: List of variables which will be included in the output table.
+        result_column: Metric which will be included in the table.
     """
 
     format: Literal["table-md"]
@@ -233,7 +233,7 @@ class TableMdOutput(OutputField):
 
     def apply_default_values(self, matrix, metrics):
         """Apply default values.
-        If `None`, set `columns` to contain all the variables from `matrix` section.
+        If `None`, set `columns` to contain all variables from `matrix` section.
         If `None`, set `result_column` to the only metric in `run.metrics` section.
 
         Raises:
@@ -250,7 +250,7 @@ class TableMdOutput(OutputField):
             )
 
     def check_vars_exist(self, matrix):
-        """Check if columns contain valid variable names."""
+        """Check if columns contain valid variables' names."""
         for column in self.columns:
             check_var_exists(column, matrix)
 
