@@ -60,17 +60,19 @@ def get_stat_table(
     result_column: str,
     show_columns: list[str] | None = None,
 ) -> pd.DataFrame:
-    statistics = ["min", "median", "max"]
+    sub_result_columns = _get_substages(list(results_df.columns), result_column)
     if not show_columns:
         if results_df[TIME_STAMP_COLUMN].nunique() == 1:
             results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
         if is_numeric_dtype(results_df[result_column]):
-            table_df = pd.DataFrame(columns=statistics)
-            table_df.loc[0] = [
-                results_df[result_column].min(),
-                results_df[result_column].median(),
-                results_df[result_column].max(),
-            ]
+            output_columns = sub_result_columns + [result_column]
+            result_stat = dict()
+            for col in output_columns:
+                col_name = col.removeprefix(result_column + ".")
+                result_stat["min " + col_name] = [results_df[col].min()]
+                result_stat["median " + col_name] = [results_df[col].min()]
+                result_stat["max " + col_name] = [results_df[col].min()]
+            table_df = pd.DataFrame(result_stat)
         else:
             table_df = results_df.drop_duplicates().reset_index(drop=True)
         return table_df
@@ -86,14 +88,22 @@ def get_grouped_stat_table(
     results_df: pd.DataFrame, result_column: str, show_columns: list[str]
 ) -> pd.DataFrame:
     statistics = ["min", "median", "max"]
-    table_df = results_df.loc[:, show_columns + [result_column]]
+    sub_result_columns = _get_substages(list(results_df.columns), result_column)
+    table_df = results_df.loc[:, show_columns + sub_result_columns + [result_column]]
     math_df = table_df.groupby(show_columns, observed=False)
-    if is_numeric_dtype(table_df[result_column]):
-        for stat in statistics:
-            table_df[stat] = math_df[result_column].transform(stat)
-        table_df = table_df.drop(result_column, axis=1).reset_index(drop=True)
+    for col in sub_result_columns + [result_column]:
+        if is_numeric_dtype(table_df[result_column]):
+            for stat in statistics:
+                table_df[stat + " " + col.removeprefix(result_column + ".")] = math_df[
+                    col
+                ].transform(stat)
+            table_df = table_df.drop(col, axis=1).reset_index(drop=True)
     table_df = table_df.drop_duplicates().reset_index(drop=True)
     return table_df
+
+
+def _get_substages(columns: list[str], metric_name: str) -> list[str]:
+    return [col for col in columns if col.startswith(metric_name + ".")]
 
 
 def get_bar_chart(
@@ -104,7 +114,7 @@ def get_bar_chart(
     color: str | None,
     facet: str | None,
 ):
-    stack = [col for col in output_df.columns if col.startswith(y_axis + ".")]
+    stack = _get_substages(list(output_df.columns), y_axis)
     if stack and color:
         logger.warning("'bar-chart': color setting is present, bars won't be stacked.")
     if stack and not color:
