@@ -96,6 +96,49 @@ def get_grouped_stat_table(
     return table_df
 
 
+def get_bar_chart(
+    output_df: pd.DataFrame,
+    variable_names: list[str],
+    x_axis: str,
+    y_axis: str,
+    color: str | None,
+    facet: str | None,
+):
+    stack = [col for col in output_df.columns if col.startswith(y_axis + ".")]
+    if stack and color:
+        logger.warning("'bar-chart': color setting is present, bars won't be stacked.")
+    if stack and not color:
+        output_df = output_df.drop(columns=[y_axis])
+        output_df = output_df.melt(
+            id_vars=list(variable_names),
+            value_vars=stack,
+            var_name="stage",
+            value_name=y_axis,
+        )
+        # prevent rearranging by plotnine
+        series = output_df["stage"]
+        output_df["stage"] = pd.Categorical(series, categories=series.unique())
+
+    plot = ggplot(output_df, aes(x=x_axis, y=y_axis))
+
+    if color:
+        plot += aes(fill=f"factor({color})")
+        plot += labs(fill=color)
+    if stack and not color:
+        plot += aes(fill="stage")
+        plot += geom_bar(position="stack", stat="summary", fun_y=np.median)
+        plot += scale_fill_discrete(
+            labels=[x.removeprefix(y_axis + ".") for x in stack]
+        )
+    else:
+        plot += geom_bar(position="dodge", stat="summary", fun_y=np.median)
+
+    if facet:
+        plot += facet_grid(cols=facet)
+    plot += theme_classic()
+    return plot
+
+
 def output_results(
     results_df: pd.DataFrame, output_config: dict, matrix: dict[str, list]
 ):
@@ -127,43 +170,14 @@ def output_results(
                     f"y-axis of output {key} has non-numeric type; bar-chart will not be generated"
                 )
                 continue
-
-            stack = [
-                col
-                for col in output_df.columns
-                if col.startswith(output["y-axis"] + ".")
-            ]
-            if stack and not output["color"]:
-                output_df = output_df.drop(columns=[output["y-axis"]])
-                print(stack)
-                output_df = output_df.melt(
-                    id_vars=list(matrix.keys()),
-                    value_vars=stack,
-                    var_name="stage",
-                    value_name=output["y-axis"],
-                )
-                # prevent rearranging by plotnine
-                series = output_df["stage"]
-                output_df["stage"] = pd.Categorical(series, categories=series.unique())
-
-            plot = ggplot(output_df, aes(x=output["x-axis"], y=output["y-axis"]))
-
-            if stack and not output["color"]:
-                plot += aes(fill="stage")
-                plot += geom_bar(position="stack", stat="summary", fun_y=np.median)
-                plot += scale_fill_discrete(
-                    labels=[x.removeprefix(output["y-axis"] + ".") for x in stack]
-                )
-            else:
-                plot += geom_bar(position="dodge", stat="summary", fun_y=np.median)
-
-            if output["facet"]:
-                plot += facet_grid(cols=output["facet"])
-            if output["color"]:
-                plot += aes(fill=f"factor({output['color']})")
-                plot += labs(fill=output["color"])
-            plot += theme_classic()
-            plot += labs(x=output["x-axis"])
+            plot = get_bar_chart(
+                output_df=output_df,
+                variable_names=list(matrix.keys()),
+                x_axis=output["x-axis"],
+                y_axis=output["y-axis"],
+                color=output["color"],
+                facet=output["facet"],
+            )
             plot.save(
                 output["filename"],
                 width=output["width"],
@@ -172,6 +186,7 @@ def output_results(
                 limitsize=False,
                 verbose=False,
             )
+
         elif output["format"] == "table-md":
             logger.debug("Outputting markdown table.")
             result_column = output["result-column"]
