@@ -61,8 +61,9 @@ def prepare_benchmarks(
                 )
             )
     if isolate_cpus:
-        for i, c in enumerate(run_config["benchmark"]):
-            run_config["benchmark"][i] = "cset shield --exec -- " + c
+        for name in run_config["benchmark"]:
+            for i, c in enumerate(run_config["benchmark"][name]):
+                run_config["benchmark"][name][i] = "cset shield --exec -- " + c
     benchmarks = []
     logger.info("Preparing benchmarks...")
     if not matrix:
@@ -80,6 +81,7 @@ def prepare_benchmarks(
                 benchmark[section] = prepare_commands(
                     run_config[section], var_combination
                 )
+            benchmark["benchmark"] = {}
             for name in run_config["benchmark"]:
                 benchmark["benchmark"][name] = prepare_commands(
                     run_config["benchmark"][name], var_combination

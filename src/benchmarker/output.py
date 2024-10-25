@@ -22,7 +22,7 @@ def read_old_outputs(include: list) -> pd.DataFrame:
     return results_df
 
 
-def output_results_from_list(
+def output_results_from_dict(
     results: dict,
     output_config: dict,
     matrix: dict[str, list],
@@ -79,7 +79,7 @@ def get_grouped_stat_table(
 ) -> pd.DataFrame:
     statistics = ["min", "median", "max"]
     table_df = results_df.loc[:, show_columns + [result_column]]
-    math_df = table_df.groupby(show_columns)
+    math_df = table_df.groupby(show_columns, observed=False)
     if is_numeric_dtype(table_df[result_column]):
         for stat in statistics:
             table_df[stat] = math_df[result_column].transform(stat)

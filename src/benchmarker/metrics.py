@@ -16,18 +16,17 @@ command_logger = getLogger("run")
 _FORMAT = "{step} {name}"
 
 
-def _measure_step_time(commands: list[str]) -> float:
-    elapsed_time = 0.0
-    for command in commands:
-        start = monotonic_ns()
-        process = execute_command(command)
-        process.wait()
-        elapsed_time += monotonic_ns() - start
-        handle_output(process)
-    return elapsed_time / 1e9
-
-
 def measure_time(benchmarks: dict[str, list[str]]) -> dict:
+    def _measure_step_time(commands: list[str]) -> float:
+        elapsed_time = 0.0
+        for command in commands:
+            start = monotonic_ns()
+            process = execute_command(command)
+            process.wait()
+            elapsed_time += monotonic_ns() - start
+            handle_output(process)
+        return elapsed_time / 1e9
+
     measurements = dict()
     for step, commands in benchmarks.items():
         measurements[_FORMAT.format(name="time", step=step)] = _measure_step_time(
@@ -35,35 +34,32 @@ def measure_time(benchmarks: dict[str, list[str]]) -> dict:
         )
     measurements["time"] = sum(measurements.values())
     if len(benchmarks) == 1:
-        return dict({"time": measurements["time"]})
+        return {"time": measurements["time"]}
     return measurements
-
-
-def _gather_step_output(
-    commands: list[str], output: Literal["stderr", "stdout"]
-) -> str | float:
-    total = ""
-    for command in commands:
-        if output == "stdout":
-            total += execute_and_handle_output(command, capture_stdout=True)
-        elif output == "stderr":
-            total += execute_and_handle_output(command, capture_stderr=True)
-    try:
-        return float(total)
-    except ValueError:
-        pass
-    return total
 
 
 def _gather_output(
     benchmarks: dict[str, list[str]], output: Literal["stderr", "stdout"]
 ) -> dict:
+    def _gather_step_output(commands: list[str]) -> str | float:
+        total = ""
+        for command in commands:
+            if output == "stdout":
+                total += execute_and_handle_output(command, capture_stdout=True)
+            elif output == "stderr":
+                total += execute_and_handle_output(command, capture_stderr=True)
+        try:
+            return float(total)
+        except ValueError:
+            pass
+        return total
+
     measurements = dict()
     total_float = 0.0
     total_str = ""
     output_float = True
     for name, command in benchmarks.items():
-        value = _gather_step_output(command, output)
+        value = _gather_step_output(command)
         measurements[_FORMAT.format(name=output, step=name)] = value
         if type(value) is float:
             total_float += value
@@ -75,7 +71,7 @@ def _gather_output(
     else:
         measurements[output] = total_str
     if len(benchmarks) == 1:
-        return dict({output: measurements[output]})
+        return {output: measurements[output]}
     return measurements
 
 
