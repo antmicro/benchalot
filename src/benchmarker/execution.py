@@ -76,7 +76,6 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
         unit=" benchmarks",
         leave=False,
     )
-    results_len = 0
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
@@ -99,10 +98,7 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
                     results.setdefault(key, []).append(benchmark["matrix"][key])
 
                 for key in partial_results:
-                    column = results.setdefault(key, [])
-                    column += (results_len - len(column)) * [None]
-                    column.append(partial_result[key])
-                results_len += 1
+                    results.setdefault(key, []).append(partial_result[key])
 
         except KeyboardInterrupt:
             logger.warning("Stopped benchmarks.")
@@ -110,8 +106,5 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
             break
     bar.close()
     logger.info("Finished performing benchmarks.")
-    for column_name in results:
-        column = results[column_name]
-        column += (results_len-len(column)) * [None]
     logger.debug(f"Benchmark results: {results}")
     return results

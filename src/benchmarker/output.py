@@ -28,7 +28,10 @@ def output_results_from_list(
     matrix: dict[str, list],
     include: list,
 ):
-    results_df = pd.DataFrame(results)
+    try:
+        results_df = pd.DataFrame(results)
+    except ValueError as e:
+        logger.critical(e)
     results_df.insert(
         0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y/%m/%d %H:%M")
     )

@@ -66,7 +66,7 @@ class RunSection(BaseModel):
     save_output: str = Field(default=None, alias="save-output")
     before_all: list[str] = Field(default=[], alias="before-all")
     before: list[str] = []
-    benchmark: list[str]
+    benchmark: list[str] | dict[list[str]]
     after: list[str] = []
     after_all: list[str] = Field(default=[], alias="after-all")
     cwd: str = getcwd()
