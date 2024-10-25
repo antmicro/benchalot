@@ -2,8 +2,6 @@ from subprocess import Popen, PIPE
 from logging import getLogger, INFO, ERROR
 from tqdm import tqdm
 from os import getcwd
-from collections import OrderedDict
-from pprint import pp
 
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -67,8 +65,8 @@ def execute_section(commands: list[str], section_name=""):
     logger.info(f"Execution of '{section_name}' section finished.")
 
 
-def perform_benchmarks(benchmarks: list, samples: int) -> list:
-    results = OrderedDict()
+def perform_benchmarks(benchmarks: list, samples: int) -> dict[str, list]:
+    results: dict[str, list] = dict()
     logger.info("Performing benchmarks...")
     bar = tqdm(
         desc="Performing benchmarks...",
@@ -79,7 +77,7 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
-                partial_results = OrderedDict()
+                partial_results = dict()
                 for metric in benchmark["metrics"]:
                     logger.debug(f"Running benchmark: {benchmark}")
 
@@ -98,7 +96,7 @@ def perform_benchmarks(benchmarks: list, samples: int) -> list:
                     results.setdefault(key, []).append(benchmark["matrix"][key])
 
                 for key in partial_results:
-                    results.setdefault(key, []).append(partial_result[key])
+                    results.setdefault(key, []).append(partial_results[key])
 
         except KeyboardInterrupt:
             logger.warning("Stopped benchmarks.")

@@ -30,6 +30,17 @@ def prepare_commands(commands: list, var_combination) -> list:
     return prepared_commands
 
 
+def name_benchmark_steps(
+    benchmarks: list[str] | dict[str, list[str]],
+) -> dict[str, list[str]]:
+    if type(benchmarks) is dict:
+        return benchmarks
+    named_benchmarks = dict()
+    for i, benchmark in enumerate(benchmarks):
+        named_benchmarks["step_" + str(i)] = [benchmark]
+    return named_benchmarks
+
+
 def prepare_benchmarks(
     run_config: dict, matrix: dict[str, list[str]], isolate_cpus: bool
 ) -> list:
@@ -42,7 +53,13 @@ def prepare_benchmarks(
         elif metric == "stderr":
             metrics_functions.append(gather_stderr)
         else:
-            metrics_functions.append(partial(custom_metric, list(metric.items())[0][1],list(metric.items())[0][0]))
+            metrics_functions.append(
+                partial(
+                    custom_metric,
+                    list(metric.items())[0][1],
+                    list(metric.items())[0][0],
+                )
+            )
     if isolate_cpus:
         for i, c in enumerate(run_config["benchmark"]):
             run_config["benchmark"][i] = "cset shield --exec -- " + c
@@ -59,9 +76,13 @@ def prepare_benchmarks(
         logger.debug(f"Variable combinations {var_combinations}")
         for var_combination in var_combinations:
             benchmark = {"matrix": var_combination}
-            for section in ["before", "benchmark", "after"]:
+            for section in ["before", "after"]:
                 benchmark[section] = prepare_commands(
                     run_config[section], var_combination
+                )
+            for name in run_config["benchmark"]:
+                benchmark["benchmark"][name] = prepare_commands(
+                    run_config["benchmark"][name], var_combination
                 )
             benchmark["metrics"] = metrics_functions
             benchmarks.append(benchmark)

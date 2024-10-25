@@ -66,7 +66,7 @@ class RunSection(BaseModel):
     save_output: str = Field(default=None, alias="save-output")
     before_all: list[str] = Field(default=[], alias="before-all")
     before: list[str] = []
-    benchmark: list[str] | dict[list[str]]
+    benchmark: list[str] | dict[str, list]
     after: list[str] = []
     after_all: list[str] = Field(default=[], alias="after-all")
     cwd: str = getcwd()
@@ -325,7 +325,11 @@ class ConfigFile(BaseModel):
         if self.matrix == {}:
             return self
         check_command_variables(self.run.before, self.matrix)
-        check_command_variables(self.run.benchmark, self.matrix)
+        if type(self.run.benchmark) is dict:
+            for name in self.run.benchmark:
+                check_command_variables(self.run.benchmark[name], self.matrix)
+        else:
+            check_command_variables(self.run.benchmark, self.matrix)
         check_command_variables(self.run.after, self.matrix)
         return self
 

@@ -6,75 +6,107 @@ from benchmarker.execution import (
     check_return_code,
     execute_command,
 )
-from collections import OrderedDict
+from typing import Literal
+from io import StringIO
+from csv import DictReader
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
 
-_FORMAT = "{name}.{stepno}"
+_FORMAT = "{step} {name}"
 
-def measure_time(commands: list[str]) -> OrderedDict:
-    measurements = OrderedDict()
-    for i, command in enumerate(commands):
+
+def _measure_step_time(commands: list[str]) -> float:
+    elapsed_time = 0.0
+    for command in commands:
         start = monotonic_ns()
         process = execute_command(command)
         process.wait()
-        elapsed_time = monotonic_ns() - start
-        measurements[_FORMAT.format(name="time",stepno=i)] = elapsed_time / 1e9
+        elapsed_time += monotonic_ns() - start
         handle_output(process)
+    return elapsed_time / 1e9
+
+
+def measure_time(benchmarks: dict[str, list[str]]) -> dict:
+    measurements = dict()
+    for step, commands in benchmarks.items():
+        measurements[_FORMAT.format(name="time", step=step)] = _measure_step_time(
+            commands
+        )
     measurements["time"] = sum(measurements.values())
-    if len(commands) == 1:
-        return OrderedDict({"time": measurements["time"]})
+    if len(benchmarks) == 1:
+        return dict({"time": measurements["time"]})
     return measurements
 
 
-def _gather_output(commands: list[str], output: str) -> OrderedDict:
-    measurements = OrderedDict()
-    for i, command in enumerate(commands):
-        if output == "stdout":
-            value = execute_and_handle_output(command, capture_stdout=True)
-        elif output == "stderr":
-            value = execute_and_handle_output(command, capture_stderr=True)
-        try:
-            value = float(value)
-        except ValueError:
-            pass
-        measurements[_FORMAT.format(name=output, stepno=i)] = value
-    try:
-        measurements[output] = sum(measurements.values())
-    except TypeError:
-        measurements[output] = " ".join(measurements.values())
-    if len(commands) == 1:
-        return OrderedDict({output: measurements[output]})
-    return measurements
-
-
-def gather_stdout(commands: list[str]) -> OrderedDict:
-    return _gather_output(commands,"stdout")
-
-
-def gather_stderr(commands: list[str]) -> OrderedDict:
-    return _gather_output(commands,"stderr")
-
-
-def custom_metric(metric_command: str,metric_name:str, commands: list[str]) -> OrderedDict:
+def _gather_step_output(
+    commands: list[str], output: Literal["stderr", "stdout"]
+) -> str | float:
+    total = ""
     for command in commands:
-        execute_and_handle_output(command)
+        if output == "stdout":
+            total += execute_and_handle_output(command, capture_stdout=True)
+        elif output == "stderr":
+            total += execute_and_handle_output(command, capture_stderr=True)
+    try:
+        return float(total)
+    except ValueError:
+        pass
+    return total
+
+
+def _gather_output(
+    benchmarks: dict[str, list[str]], output: Literal["stderr", "stdout"]
+) -> dict:
+    measurements = dict()
+    total_float = 0.0
+    total_str = ""
+    output_float = True
+    for name, command in benchmarks.items():
+        value = _gather_step_output(command, output)
+        measurements[_FORMAT.format(name=output, step=name)] = value
+        if type(value) is float:
+            total_float += value
+        else:
+            output_float = False
+        total_str += str(value)
+    if output_float:
+        measurements[output] = total_float
+    else:
+        measurements[output] = total_str
+    if len(benchmarks) == 1:
+        return dict({output: measurements[output]})
+    return measurements
+
+
+def gather_stdout(benchmarks: dict[str, list[str]]) -> dict:
+    return _gather_output(benchmarks, "stdout")
+
+
+def gather_stderr(benchmarks: dict[str, list[str]]) -> dict:
+    return _gather_output(benchmarks, "stderr")
+
+
+def custom_metric(
+    metric_command: str, metric_name: str, benchmarks: dict[str, list[str]]
+) -> dict:
+    for name, commands in benchmarks.items():
+        for command in commands:
+            execute_and_handle_output(command)
     process = execute_command(metric_command)
     output = handle_output(process, capture_stdout=True)
     result = process.wait()
     check_return_code(metric_command, result)
-    measurements = OrderedDict()
-    for i, line in enumerate(output.split("\n")):
+    measurements = dict()
+    if len(output.splitlines()) == 1:
         try:
-            output = float(line)
+            output = float(output)
         except ValueError:
             pass
-        measurements[_FORMAT.format(name=metric_name, stepno=i)] = output
-    try:
-        measurements[metric_name] = sum(measurements.values())
-    except TypeError:
-        measurements[metric_name] = " ".join(measurements.values())
-    if len(commands) == 1:
-        return OrderedDict({metric_name: measurements[metric_name]})
-    return measurements
+        measurements[metric_name] = output
+        return measurements
+    output_stream = StringIO(output)
+    reader = DictReader(output_stream)
+    for row in reader:
+        return row
+    return {metric_name: None}
