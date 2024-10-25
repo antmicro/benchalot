@@ -113,6 +113,17 @@ Each metric is gathered independently.
 User can also specify their own metric using `metric_name: command` syntax.
 See: [Custom Metrics](#custom-metrics)
 
+Commands in the `benchmark` section can be split into stages using this syntax:
+```yaml
+run:
+    benchmark:
+        stage-1:
+            - "command1"
+        stage-2:
+            - "command2"
+```
+Benchmarker will take measurements for each stage separately.
+
 ### System
 
 The `system` section allows the user to apply variance reduction measures.
