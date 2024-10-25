@@ -119,6 +119,33 @@ def output_results(
                     f"y-axis of output {key} has non-numeric type; bar-chart will not be generated"
                 )
                 continue
+            if output["stack"]:
+                output_df = output_df.drop(columns=[output["y-axis"]])
+                output_df = output_df.melt(
+                    id_vars=list(matrix.keys()),
+                    value_vars=output["stack"],
+                    var_name="step",
+                    value_name=output["y-axis"],
+                )
+                series = output_df["step"]
+                output_df["step"] = pd.Categorical(series, categories=series.unique())
+                print(output_df)
+                plot = (
+                    ggplot(
+                        output_df,
+                        aes(
+                            x=f"factor({output['x-axis']})",
+                            fill="factor(step)",
+                            y=output["y-axis"],
+                        ),
+                    )
+                    + geom_bar(position="stack", stat="summary", fun_y=np.median)
+                    + theme_classic()
+                    + labs(x=output["x-axis"])
+                )
+                plot.show()
+                continue
+
             plot = (
                 ggplot(
                     output_df,
