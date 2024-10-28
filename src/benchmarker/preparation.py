@@ -8,8 +8,11 @@ from benchmarker.metrics import (
 )
 from functools import partial
 from copy import deepcopy
+from re import findall
 
 logger = getLogger(f"benchmarker.{__name__}")
+
+VAR_REGEX = r"{{[a-zA-Z0-9_\-.]*}}"
 
 
 def create_variable_combinations(**kwargs):
@@ -18,12 +21,13 @@ def create_variable_combinations(**kwargs):
         yield dict(zip(keys, instance))
 
 
-def prepare_commands(commands: list, var_combination) -> list:
-    def prepare_command(command: str, var_combination) -> str:
-        for var in var_combination:
-            command = command.replace(f"$matrix.{var}", str(var_combination[var]))
-        return command
+def prepare_command(command: str, var_combination) -> str:
+    for var in var_combination:
+        command = command.replace("{{" + var + "}}", str(var_combination[var]))
+    return command
 
+
+def prepare_commands(commands: list, var_combination) -> list:
     prepared_commands = []
     for command in commands:
         prepared_commands.append(prepare_command(command, var_combination))
@@ -39,6 +43,34 @@ def name_benchmark_stages(
         return {"onlystage": benchmarks}
     assert "Unreachable!"
     return None  # type: ignore
+
+
+def prepare_before_after_all_commands(
+    run_config: dict, matrix: dict[str, list]
+) -> list[list[str]]:
+    ret = []
+    for section in ["before-all", "after-all"]:
+        curr_section_commands = []
+        if run_config[section]:
+            for command in run_config[section]:
+                vars = set()
+                for var_name in findall(VAR_REGEX, command):
+                    vars.add(var_name.removeprefix("{{").removesuffix("}}"))
+                if vars:
+                    var_combos = create_variable_combinations(
+                        **{k: v for k, v in matrix.items() if k in vars}
+                    )
+                    for var_combo in var_combos:
+                        curr_section_commands.append(
+                            prepare_command(command, var_combo)
+                        )
+                else:
+                    curr_section_commands.append(command)
+        ret.append(curr_section_commands)
+    return ret
+
+
+3
 
 
 def prepare_benchmarks(

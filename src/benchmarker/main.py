@@ -1,7 +1,11 @@
 import yaml
 from sys import argv, executable
 from benchmarker.validation import validate_config
-from benchmarker.preparation import prepare_benchmarks, name_benchmark_stages
+from benchmarker.preparation import (
+    prepare_benchmarks,
+    name_benchmark_stages,
+    prepare_before_after_all_commands,
+)
 from benchmarker.execution import (
     perform_benchmarks,
     execute_section,
@@ -106,15 +110,18 @@ def main():
         benchmarks = prepare_benchmarks(
             run_config, config["matrix"], config["system"]["isolate-cpus"]
         )
+        before_all_commands, after_all_commands = prepare_before_after_all_commands(
+            run_config, config["matrix"]
+        )
 
         if config["run"]["save-output"]:
             setup_command_logging(config["run"]["save-output"])
         set_working_directory(config["run"]["cwd"])
         environ.update(config["run"]["env"])
 
-        execute_section(config["run"]["before-all"], "before-all")
+        execute_section(before_all_commands, "before-all")
         results = perform_benchmarks(benchmarks, config["run"]["samples"])
-        execute_section(config["run"]["after-all"], "after-all")
+        execute_section(after_all_commands, "after-all")
 
         if config["system"]["modify"]:
             restore_system_state(config["system"])

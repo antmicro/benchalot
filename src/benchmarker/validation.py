@@ -12,6 +12,7 @@ from re import findall
 from logging import getLogger
 from os import getcwd
 from os.path import isdir
+from benchmarker.preparation import VAR_REGEX
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -278,9 +279,9 @@ def check_command_variables(commands, matrix):
         ValueError
     """
     for command in commands:
-        variables = findall(r"\$matrix\.[a-zA-Z0-9]*", command)
+        variables = findall(VAR_REGEX, command)
         for var in variables:
-            var_key = var.split(".")[1]
+            var_key = var.removeprefix("{{").removesuffix("}}")
             check_var_exists(var_key, matrix)
 
 
