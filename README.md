@@ -148,7 +148,7 @@ Currently there are three supported formats: `csv`, `bar-plot` and `table-md`.
 
 `csv` output will contain columns corresponding to variables and one column with benchmark results.
 
-`bar-plot` will result in a `.png` image containing the plot.
+`bar-chart` will result in a `.png` image containing the plot.
 Configure using these options:
 * `x-axis` (mandatory): contains name of the variable which will be used as x-axis on the plot.
 * `y-axis` (optional, default = `time`): contains name of metric to be used as y-axis on the plot.
@@ -156,6 +156,9 @@ Configure using these options:
 * `width` (optional, default = 10in): width of resulting image in inches.
 * `height` (optional, default = 9in): height of resulting image in inches.
 * `dpi` (optional, default = 100): DPI of resulting image.
+* `stat` (optional, default = `median`): what statistic function should determine bar height.
+Available are: `min`, `mean`, `median` and `max`.
+
 `table-md` will result in a text file containing a markdown table. 
 Configured using these options:
 * `columns` (optional, default - include all columns): contains an array of variable names which will be used to group the results in the table.

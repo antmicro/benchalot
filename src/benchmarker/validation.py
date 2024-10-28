@@ -175,6 +175,7 @@ class BarChartOutput(OutputField):
         width: Resulting plot image width in inches.
         height: Resulting plot image height in inches.
         dpi: Resulting plot image DPI.
+        stat: What mathematical function should be used to determine bar-height.
     """
 
     format: Literal["bar-chart"]
@@ -185,6 +186,7 @@ class BarChartOutput(OutputField):
     width: int = Field(default=10, ge=1)
     height: int = Field(default=9, ge=1)
     dpi: int = Field(default=100, ge=50)
+    stat: Literal["min", "mean", "median", "max"] = "median"
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):

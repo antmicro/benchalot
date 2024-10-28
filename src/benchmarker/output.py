@@ -113,6 +113,7 @@ def get_bar_chart(
     y_axis: str,
     color: str | None,
     facet: str | None,
+    stat: str,
 ):
     stack = _get_substages(list(output_df.columns), y_axis)
     if stack and color:
@@ -131,17 +132,18 @@ def get_bar_chart(
 
     plot = ggplot(output_df, aes(x=x_axis, y=y_axis))
 
+    funcs = {"mean": np.mean, "median": np.median, "min": np.min, "max": np.max}
     if color:
         plot += aes(fill=f"factor({color})")
         plot += labs(fill=color)
     if stack and not color:
         plot += aes(fill="stage")
-        plot += geom_bar(position="stack", stat="summary", fun_y=np.median)
+        plot += geom_bar(position="stack", stat="summary", fun_y=funcs[stat])
         plot += scale_fill_discrete(
             labels=[x.removeprefix(y_axis + ".") for x in stack]
         )
     else:
-        plot += geom_bar(position="dodge", stat="summary", fun_y=np.median)
+        plot += geom_bar(position="dodge", stat="summary", fun_y=funcs[stat])
 
     if facet:
         plot += facet_grid(cols=facet)
@@ -187,6 +189,7 @@ def output_results(
                 y_axis=output["y-axis"],
                 color=output["color"],
                 facet=output["facet"],
+                stat=output["stat"],
             )
             plot.save(
                 output["filename"],
