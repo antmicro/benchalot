@@ -60,7 +60,9 @@ def execute_section(commands: list[str], section_name=""):
         return
     logger.info(f"Executing '{section_name}' section...")
     logger.debug(f"Executing: {commands}")
-    for c in commands:
+    bar = tqdm(commands, leave=False, delay=1)
+    for c in bar:
+        bar.set_description(c[:20] + "..." if len(c) > 20 else c, refresh=False)
         execute_and_handle_output(c)
     logger.info(f"Execution of '{section_name}' section finished.")
 
@@ -69,10 +71,11 @@ def perform_benchmarks(benchmarks: list, samples: int) -> dict[str, list]:
     results: dict[str, list] = dict()
     logger.info("Performing benchmarks...")
     bar = tqdm(
-        desc="Performing benchmarks...",
+        desc="Performing benchmarks.",
         total=(len(benchmarks) * samples * len(benchmarks[0]["metrics"])),
-        unit=" benchmarks",
+        unit="benchmark",
         leave=False,
+        mininterval=1,
     )
     for benchmark in benchmarks:
         try:
@@ -82,15 +85,20 @@ def perform_benchmarks(benchmarks: list, samples: int) -> dict[str, list]:
                     logger.debug(f"Running benchmark: {benchmark}")
 
                     execute_section(benchmark["before"], "before")
-                    bar.refresh(nolock=True)
 
-                    bar.set_description(f"Benchmarking `{benchmark['benchmark']}`")
+                    text = str(
+                        [benchmark["benchmark"][key] for key in benchmark["benchmark"]]
+                    )
+                    text = text.replace("[", "")
+                    text = text.replace("]", "")
+                    bar.set_description(
+                        f"Executing {text[:20] + '...' if len(text)>20 else text}"
+                    )
                     partial_result = metric(benchmark["benchmark"])
                     bar.refresh(nolock=True)
                     partial_results.update(partial_result)
 
                     execute_section(benchmark["after"], "after")
-                    bar.refresh(nolock=True)
                     bar.update(1)
                 for key in benchmark["matrix"]:
                     results.setdefault(key, []).append(benchmark["matrix"][key])
