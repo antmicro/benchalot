@@ -150,7 +150,7 @@ Currently there are three supported formats: `csv`, `bar-plot` and `table-md`.
 
 `bar-chart` will result in a `.png` image containing the plot.
 Configure using these options:
-* `x-axis` (mandatory): contains name of the variable which will be used as x-axis on the plot.
+* `x-axis` (optional, default = create one bar): contains name of the variable which will be used as x-axis on the plot.
 * `y-axis` (optional, default = `time`): contains name of metric to be used as y-axis on the plot.
 * `facet` (optional): contains name of the variable which will be used to facet (divide into subplots) the plot.
 * `width` (optional, default = 10in): width of resulting image in inches.

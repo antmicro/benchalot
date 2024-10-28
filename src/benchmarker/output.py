@@ -6,6 +6,8 @@ from plotnine import (
     theme_classic,
     labs,
     scale_fill_discrete,
+    element_blank,
+    theme,
 )
 import pandas as pd
 from logging import getLogger
@@ -13,6 +15,7 @@ from datetime import timezone, datetime
 import numpy as np
 import os
 from pandas.api.types import is_numeric_dtype, is_string_dtype
+from uuid import uuid4
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -109,7 +112,7 @@ def _get_substages(columns: list[str], metric_name: str) -> list[str]:
 def get_bar_chart(
     output_df: pd.DataFrame,
     variable_names: list[str],
-    x_axis: str,
+    x_axis: str | None,
     y_axis: str,
     color: str | None,
     facet: str | None,
@@ -130,7 +133,15 @@ def get_bar_chart(
         series = output_df["stage"]
         output_df["stage"] = pd.Categorical(series, categories=series.unique())
 
-    plot = ggplot(output_df, aes(x=x_axis, y=y_axis))
+    plot = ggplot(output_df, aes(y=y_axis))
+    if x_axis:
+        plot += aes(x=x_axis)
+    else:
+        dummy_column = str(uuid4())
+        output_df[dummy_column] = (
+            0  # create dummy column since geom_bar always needs to have an x-axis
+        )
+        plot += aes(x=dummy_column)
 
     funcs = {"mean": np.mean, "median": np.median, "min": np.min, "max": np.max}
     if color:
@@ -148,6 +159,12 @@ def get_bar_chart(
     if facet:
         plot += facet_grid(cols=facet)
     plot += theme_classic()
+    if not x_axis:
+        plot += theme(
+            axis_text_x=element_blank(),
+            axis_title_x=element_blank(),
+            axis_ticks_x=element_blank(),
+        )
     return plot
 
 

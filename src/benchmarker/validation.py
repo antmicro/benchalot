@@ -179,7 +179,7 @@ class BarChartOutput(OutputField):
     """
 
     format: Literal["bar-chart"]
-    x_axis: str = Field(alias="x-axis")
+    x_axis: str = Field(default=None, alias="x-axis")
     y_axis: str = Field(default=None, alias="y-axis")
     facet: str | None = None
     color: str | None = None
