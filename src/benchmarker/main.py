@@ -19,6 +19,7 @@ from benchmarker.log import (
 )
 from logging import getLogger
 from atexit import unregister
+from os import environ
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -109,6 +110,7 @@ def main():
         if config["run"]["save-output"]:
             setup_command_logging(config["run"]["save-output"])
         set_working_directory(config["run"]["cwd"])
+        environ.update(config["run"]["env"])
 
         execute_section(config["run"]["before-all"], "before-all")
         results = perform_benchmarks(benchmarks, config["run"]["samples"])

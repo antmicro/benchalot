@@ -60,6 +60,7 @@ class RunSection(BaseModel):
         after-all:  Commands to be executed after all the benchmarks.
         cwd:  Working directory of the commands.
         metrics:  Metrics to be gathered during benchmarking.
+        env: Enviromental variables used when running commands.
     """
 
     samples: int = 1
@@ -71,6 +72,7 @@ class RunSection(BaseModel):
     after_all: list[str] = Field(default=[], alias="after-all")
     cwd: str = getcwd()
     metrics: list[str | dict] = ["time"]
+    env: dict[str, str] = {}
     model_config = ConfigDict(extra="forbid")
 
     @field_validator("cwd")
