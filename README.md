@@ -211,11 +211,11 @@ The size measurements are accessible under `size` name and can be specified for 
 #### Custom Metrics and Stages
 
 Standard syntax for specifying stages does not work with custom metrics.
-To specify your own stages with custom metrics make sure that command prints `csv` like formatted measurements to `stdout`.
+To specify your own stages with custom metrics make sure that command prints formatted measurements formatted like `csv` file to `stdout`.
 For example, if the custom metric command outputs this:
 ```csv
 stage1,stage2
 19.3,30.12
 ```
-the Benchmarker will store `19.3` as measurement for `stage1` and `30.12` as measurement for `stage2`.
-Benchmarker will also combine `stage1` and `stage2` to create column with their sum under custom metric's name.
+Benchmarker will store `19.3` as the measurement for `stage1` and `30.12` as the measurement for `stage2`.
+Benchmarker will also combine `stage1` and `stage2` to create a column with their sum under the custom metric's name.

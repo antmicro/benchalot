@@ -111,6 +111,7 @@ def custom_metric(
     output_float = True
     for key in tmp_dict:
         value = tmp_dict[key]
+        total_str += " " + value
         try:
             value = float(value)
         except ValueError:
