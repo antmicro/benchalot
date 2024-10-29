@@ -195,11 +195,11 @@ matrix:
   compression: ["bzip2", "gzip", "xz"]
 run:
   benchmark:
-    - "{{compression}} -c plot.png > compressed"
+    - "{{compression}} -c plot.png > {{compression}}.out"
   after:
     - "rm compressed"
   metrics: 
-    - "size": "stat -c %s compressed"
+    - "size": "stat -c %s {{compression}}.out"
 output:
   csv:
     filename: "file_size.csv"
@@ -209,7 +209,7 @@ output:
     format: "table-md"
     result-column: size
 ```
-Benchmarker will then execute `stat -c %s compressed` after commands in benchmark section and store stdout as the result. 
+Benchmarker will then execute `stat -c %s {{compression}}.out` after commands in benchmark section and store stdout as the result. 
 The size measurements are accessible under `size` name and can be specified for `table-md` as `result-colum`.
 
 #### Custom Metrics and Stages
