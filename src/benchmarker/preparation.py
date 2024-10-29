@@ -21,13 +21,12 @@ def create_variable_combinations(**kwargs):
         yield dict(zip(keys, instance))
 
 
-def prepare_command(command: str, var_combination) -> str:
-    for var in var_combination:
-        command = command.replace("{{" + var + "}}", str(var_combination[var]))
-    return command
-
-
 def prepare_commands(commands: list, var_combination) -> list:
+    def prepare_command(command: str, var_combination) -> str:
+        for var in var_combination:
+            command = command.replace("{{" + var + "}}", str(var_combination[var]))
+        return command
+
     prepared_commands = []
     for command in commands:
         prepared_commands.append(prepare_command(command, var_combination))
@@ -48,25 +47,28 @@ def name_benchmark_stages(
 def prepare_before_after_all_commands(
     run_config: dict, matrix: dict[str, list]
 ) -> list[list[str]]:
+    logger.info("Preparing 'before-all' and 'after-all' commands...")
     ret = []
     for section in ["before-all", "after-all"]:
         curr_section_commands = []
         if run_config[section]:
+            vars = set()
             for command in run_config[section]:
-                vars = set()
                 for var_name in findall(VAR_REGEX, command):
                     vars.add(var_name.removeprefix("{{").removesuffix("}}"))
-                if vars:
-                    var_combos = create_variable_combinations(
-                        **{k: v for k, v in matrix.items() if k in vars}
+            if vars:
+                var_combinations = create_variable_combinations(
+                    **{k: v for k, v in matrix.items() if k in vars}
+                )
+                for var_combination in var_combinations:
+                    curr_section_commands += prepare_commands(
+                        run_config[section], var_combination
                     )
-                    for var_combo in var_combos:
-                        curr_section_commands.append(
-                            prepare_command(command, var_combo)
-                        )
-                else:
-                    curr_section_commands.append(command)
+            else:
+                curr_section_commands += run_config[section]
         ret.append(curr_section_commands)
+    logger.info("Finished preparing 'before-all' and 'after-all' commands.")
+    logger.debug(ret)
     return ret
 
 
