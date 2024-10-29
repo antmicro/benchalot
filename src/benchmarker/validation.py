@@ -35,6 +35,7 @@ class SystemSection(BaseModel):
     isolate_cpus: list[int] | None = Field(default=None, alias="isolate-cpus")
     disable_aslr: bool = Field(default=False, alias="disable-aslr")
     governor_performance: bool = Field(default=False, alias="governor-performance")
+    model_config = ConfigDict(extra="forbid")
 
     @computed_field  # type: ignore
     @property

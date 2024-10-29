@@ -25,17 +25,6 @@ For example, start the benchmark by typing this command:
 benchmarker config.yml
 ```
 
-To regenerate the output without re-running benchmarks, use `--update-output`:
-<!--name="update-output"-->
-```bash
-benchmarker config.yml --update-output result.csv
-```
-
-To see available command line arguments type:
-<!--name="help-information"-->
-```
-benchmarker --help
-```
 
 ## Configuration
 
@@ -223,3 +212,29 @@ stage1,stage2
 ```
 Benchmarker will store `19.3` as the measurement for `stage1` and `30.12` as the measurement for `stage2`.
 Benchmarker will also combine `stage1` and `stage2` to create a column with their sum under the custom metric's name.
+
+## Arguments
+
+To see available command line arguments type:
+<!--name="help-information"-->
+```
+benchmarker --help
+```
+
+To regenerate the output without re-running benchmarks, use `--update-output`:
+<!--name="update-output"-->
+```bash
+benchmarker config.yml --update-output result.csv
+```
+
+To include previous results with the next benchmark, use `--include`:
+<!--name="include"-->
+```bash
+benchmarker config.yml --include result.csv
+```
+
+To split configuration file into many smaller ones, use `--split`:
+<!--name="split"-->
+```bash
+benchmarker config.yml --split tag
+```

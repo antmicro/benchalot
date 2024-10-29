@@ -56,11 +56,6 @@ def main():
         )
         execvp("sudo", ["sudo", executable] + argv)
 
-    if config["run"]["save-output"]:
-        setup_command_logging(config["run"]["save-output"])
-    set_working_directory(config["run"]["cwd"])
-    environ.update(config["run"]["env"])
-
     run_config = config["run"]
     run_config["benchmark"] = name_benchmark_stages(run_config["benchmark"])
     benchmarks = prepare_benchmarks(
@@ -73,13 +68,19 @@ def main():
     if config["run"]["save-output"]:
         setup_command_logging(config["run"]["save-output"])
     set_working_directory(config["run"]["cwd"])
+    environ.update(config["run"]["env"])
 
     execute_section(before_all_commands, "before-all")
+
+    if config["system"]["modify"]:
+        modify_system_state(config["system"])
+
     results = perform_benchmarks(benchmarks, config["run"]["samples"])
-    execute_section(after_all_commands, "after-all")
 
     if config["system"]["modify"]:
         restore_system_state(config["system"])
+
+    execute_section(after_all_commands, "after-all")
 
     output_results_from_dict(
         results,
@@ -187,6 +188,7 @@ def generate_config_files(config: dict, config_filename: str, split: list[str]):
             logger.critical(f"Variable '{var}' not found.")
             exit(1)
     logger.info("Spliting configuration file...")
+    config["system"].pop("modify")  # remove calculated field from config file
     matrices = split_matrix(config["matrix"], split)
     command = "benchmarker " + config_filename + " -u"
     directory = "out"

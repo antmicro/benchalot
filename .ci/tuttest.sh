@@ -13,8 +13,10 @@ cd $TMP_DIR
 CONFIG="$(tuttest README.md config.yml)"
 DEPENDENCIES=$(tuttest README.md dependencies)
 RUN=$(tuttest README.md run)
-RUN_UPDATE=$(tuttest README.md update-output)
 HELP_INFORMATION=$(tuttest README.md help-information)
+RUN_UPDATE=$(tuttest README.md update-output)
+RUN_INCLUDE=$(tuttest README.md include)
+RUN_SPLIT=$(tuttest README.md split)
 SIZE_CONFIG=$(tuttest README.md size-config)
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
@@ -41,6 +43,13 @@ if [ $ret -ne 0 ]; then
     exit 1
 fi
 
-echo "$SIZE_CONFIG" > size_config.yml
-benchmarker size_config.yml
+echo "$SIZE_CONFIG" > config.yml
+benchmarker config.yml
 assert_file_exists file_size.csv
+rm result.csv
+mv file_size.csv result.csv
+eval $RUN_INCLUDE
+echo "$CONFIG" > config.yml
+eval $RUN_SPLIT
+assert_file_exists "out/config.yml.part0.yml"
+assert_file_exists "out/config.yml.part1.yml"
