@@ -329,6 +329,7 @@ class ConfigFile(BaseModel):
         """Check whether variables used in commands are present in the `matrix` section."""
         if self.matrix == {}:
             return self
+        check_command_variables(self.run.before_all, self.matrix)
         check_command_variables(self.run.before, self.matrix)
         if type(self.run.benchmark) is dict:
             for name in self.run.benchmark:
@@ -336,6 +337,7 @@ class ConfigFile(BaseModel):
         else:
             check_command_variables(self.run.benchmark, self.matrix)
         check_command_variables(self.run.after, self.matrix)
+        check_command_variables(self.run.after_all, self.matrix)
         return self
 
     @model_validator(mode="after")

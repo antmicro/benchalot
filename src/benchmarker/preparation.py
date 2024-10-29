@@ -9,6 +9,9 @@ from benchmarker.metrics import (
 from functools import partial
 from copy import deepcopy
 from re import findall
+from collections.abc import Callable
+from typing import Any
+
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -21,11 +24,13 @@ def create_variable_combinations(**kwargs):
         yield dict(zip(keys, instance))
 
 
+def prepare_command(command: str, var_combination) -> str:
+    for var in var_combination:
+        command = command.replace("{{" + var + "}}", str(var_combination[var]))
+    return command
+
+
 def prepare_commands(commands: list, var_combination) -> list:
-    def prepare_command(command: str, var_combination) -> str:
-        for var in var_combination:
-            command = command.replace("{{" + var + "}}", str(var_combination[var]))
-        return command
 
     prepared_commands = []
     for command in commands:
@@ -72,14 +77,12 @@ def prepare_before_after_all_commands(
     return ret
 
 
-3
-
-
-def prepare_benchmarks(
-    run_config: dict, matrix: dict[str, list[str]], isolate_cpus: bool
-) -> list:
-    metrics_functions = []
-    for metric in run_config["metrics"]:
+def get_metrics_functions(
+    metrics: list[str | dict[str, str]],
+    var_combination: dict[str, str | int] | None = None,
+) -> list[Callable[[dict], dict]]:
+    metrics_functions: list[Callable[[dict[Any, Any]], dict[Any, Any]]] = []
+    for metric in metrics:
         if metric == "time":
             metrics_functions.append(measure_time)
         elif metric == "stdout":
@@ -87,13 +90,19 @@ def prepare_benchmarks(
         elif metric == "stderr":
             metrics_functions.append(gather_stderr)
         else:
+            metric_command = list(metric.items())[0][1]  # type: ignore
+            metric_name = list(metric.items())[0][0]  # type: ignore
+            if var_combination:
+                metric_command = prepare_command(metric_command, var_combination)
             metrics_functions.append(
-                partial(
-                    custom_metric,
-                    list(metric.items())[0][1],
-                    list(metric.items())[0][0],
-                )
+                partial(custom_metric, metric_command, metric_name)
             )
+    return metrics_functions
+
+
+def prepare_benchmarks(
+    run_config: dict, matrix: dict[str, list[str]], isolate_cpus: bool
+) -> list:
     if isolate_cpus:
         for name in run_config["benchmark"]:
             for i, c in enumerate(run_config["benchmark"][name]):
@@ -104,7 +113,7 @@ def prepare_benchmarks(
         logger.debug("`matrix` not found in the config.")
         benchmarks.append(deepcopy(run_config))
         benchmarks[0]["matrix"] = {}
-        benchmarks[0]["metrics"] = metrics_functions
+        benchmarks[0]["metrics"] = get_metrics_functions(metrics=run_config["metrics"])
     else:
         logger.debug("Creating variable combinations...")
         var_combinations = list(create_variable_combinations(**matrix))
@@ -120,7 +129,9 @@ def prepare_benchmarks(
                 benchmark["benchmark"][name] = prepare_commands(
                     run_config["benchmark"][name], var_combination
                 )
-            benchmark["metrics"] = metrics_functions
+            benchmark["metrics"] = get_metrics_functions(
+                run_config["metrics"], var_combination
+            )
             benchmarks.append(benchmark)
     logger.info("Finished preparing benchmarks.")
     logger.debug(f"Prepared benchmarks: {benchmarks}")
