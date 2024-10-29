@@ -55,14 +55,14 @@ matrix:
 run:
   samples: 3
   save-output: "run.log"
-  before:
-    - "git clone . ../sleeper"
-    - "cd ../sleeper && git checkout $matrix.tag && make build"
+  before-all:
+    - "git clone . ../{{tag}}"
+    - "cd ../{{tag}} && git checkout {{tag}} && make build"
   benchmark:
-    - "../sleeper/sleeper $matrix.thread $matrix.input"
-  after:
-    - "cd ../sleeper && make clean"
-    - "rm -rf ../sleeper"
+    - "../{{tag}}/sleeper {{thread}} {{input}}"
+  after-all:
+    - "cd ../{{tag}} && make clean"
+    - "rm -rf ../{{tag}}"
 output:
   csv:
     filename: "result.csv"
@@ -196,7 +196,7 @@ matrix:
   compression: ["bzip2", "gzip", "xz"]
 run:
   benchmark:
-    - "$matrix.compression -c plot.png > compressed"
+    - "{{compression}} -c plot.png > compressed"
   after:
     - "rm compressed"
   metrics: 
