@@ -197,7 +197,7 @@ run:
   benchmark:
     - "{{compression}} -c plot.png > {{compression}}.out"
   after:
-    - "rm compressed"
+    - "rm {{compression}}.out"
   metrics: 
     - "size": "stat -c %s {{compression}}.out"
 output:
