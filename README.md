@@ -85,16 +85,15 @@ output:
 ### Matrix
 
 Based on that config, Benchmarker will run a benchmark for each value specified in `matrix.*` fields.
-It will then store the results in the `output.name` file.
-Commands specified as strings in `run` field will be executed with every substring beginning with `$matrix.` being substituted to corresponding variable.
+Commands specified as strings in `run` field will be executed with every substring with `{{var_name}}` being substituted to corresponding value.
 For each combination of variable values, a run will be performed, e.g.:  
 The above configuration will result in runs:  
-`$matrix.thread = 2; $matrix.input = "data1"; $matrix.commit = "abc123"`  
-`$matrix.thread = 4; $matrix.input = "data1"; $matrix.commit = "abc123"`  
-`$matrix.thread = 8; $matrix.input = "data1"; $matrix.commit = "abc123"`  
+`thread = 2; input = "data1"; tag = "slow"`  
+`thread = 4; input = "data1"; tag = "slow"`  
+`thread = 8; input = "data1"; tag = "slow"`  
 [...]  
-`$matrix.thread = 8; $matrix.input = "data3"; $matrix.commit = "cba321"`
-in total performing 27 benchmarks.
+`thread = 8; input = "data3"; tag = "fast"`
+in total creating 18 combinations of variable values.
 If there is no `matrix` section, Benchmarker will execute the `run` section once.
 
 ### Run
