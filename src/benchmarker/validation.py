@@ -93,6 +93,43 @@ class RunSection(BaseModel):
                 raise ValueError(f"invalid metric '{metric}'")
         return metrics
 
+    def check_command_variables(self, command: str, matrix: dict[str, list]):
+        variables = findall(VAR_REGEX, command)
+        for var in variables:
+            var_key = var.removeprefix("{{").removesuffix("}}")
+            check_var_exists(var_key, matrix)
+
+    def check_commands_variables(self, commands, matrix):
+        """Check if variables used in commands are present in `matrix` section.
+
+        Args:
+            commands: List of commands to be validated.
+            matrix: `matrix` section from the configuration file.
+
+        Raises:
+            ValueError
+        """
+        for command in commands:
+            self.check_command_variables(command, matrix)
+
+    def check_vars_custom_metrics(self, matrix: dict[str, list]):
+        for metric in self.metrics:
+            if type(metric) is dict:
+                command = list(metric.items())[0][1]
+                self.check_command_variables(command, matrix)
+
+    def validate_command_vars(self, matrix: dict[str, list]):
+        self.check_commands_variables(self.before_all, matrix)
+        self.check_commands_variables(self.before, matrix)
+        if type(self.benchmark) is dict:
+            for name in self.benchmark:
+                self.check_commands_variables(self.benchmark[name], matrix)
+        else:
+            self.check_commands_variables(self.benchmark, matrix)
+        self.check_commands_variables(self.after, matrix)
+        self.check_commands_variables(self.after_all, matrix)
+        self.check_vars_custom_metrics(matrix)
+
 
 class OutputField(BaseModel):
     """Parent class for output formats.
@@ -268,23 +305,6 @@ def check_var_exists(var_key, matrix):
         raise ValueError(f"variable '{var_key}' not found")
 
 
-def check_command_variables(commands, matrix):
-    """Check if variables used in commands are present in `matrix` section.
-
-    Args:
-        commands: List of commands to be validated.
-        matrix: `matrix` section from the configuration file.
-
-    Raises:
-        ValueError
-    """
-    for command in commands:
-        variables = findall(VAR_REGEX, command)
-        for var in variables:
-            var_key = var.removeprefix("{{").removesuffix("}}")
-            check_var_exists(var_key, matrix)
-
-
 class ConfigFile(BaseModel):
     """Schema of the configuration file.
 
@@ -329,15 +349,7 @@ class ConfigFile(BaseModel):
         """Check whether variables used in commands are present in the `matrix` section."""
         if self.matrix == {}:
             return self
-        check_command_variables(self.run.before_all, self.matrix)
-        check_command_variables(self.run.before, self.matrix)
-        if type(self.run.benchmark) is dict:
-            for name in self.run.benchmark:
-                check_command_variables(self.run.benchmark[name], self.matrix)
-        else:
-            check_command_variables(self.run.benchmark, self.matrix)
-        check_command_variables(self.run.after, self.matrix)
-        check_command_variables(self.run.after_all, self.matrix)
+        self.run.validate_command_vars(self.matrix)
         return self
 
     @model_validator(mode="after")
