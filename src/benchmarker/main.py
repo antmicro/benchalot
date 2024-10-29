@@ -41,7 +41,7 @@ def main():
         update_output(args.update_output, config["output"], config["matrix"])
         exit_benchmarker()
     if args.split:  # Split configuration file and exit
-        generate_config_files(config, args.split)
+        generate_config_files(config, args.config_filename, args.split)
         exit_benchmarker()
 
     for file in args.include:
@@ -166,7 +166,7 @@ def load_configuration_file(filename):
     return config
 
 
-def generate_config_files(config: dict, split: list[str]):
+def generate_config_files(config: dict, config_filename: str, split: list[str]):
     def split_matrix(matrix, along):
         if not along:
             return [matrix]
@@ -182,14 +182,37 @@ def generate_config_files(config: dict, split: list[str]):
                 ret.append(new_m)
         return ret
 
+    for var in split:
+        if var not in config["matrix"]:
+            logger.critical(f"Variable '{var}' not found.")
+            exit(1)
+    logger.info("Spliting configuration file...")
     matrices = split_matrix(config["matrix"], split)
+    command = "benchmarker " + config_filename + " -u"
+    directory = "out"
     for i, matrix in enumerate(matrices):
-        c = {k: v for k, v in config.items() if k != "matrix"}
-        c["matrix"] = matrix
-        c["output"] = {"partial_output": {"format": "csv", "filename": f"out{i}.csv"}}
-        Path("out").mkdir(exist_ok=True)
-        with open(f"out/config{i}.yml", "w") as file:
-            yaml.dump(c, file)
+        new_config = {k: v for k, v in config.items() if k != "matrix"}
+        new_config["matrix"] = matrix
+        unique_name = f"{config_filename}.part{i}"
+        output_file_name = f"{unique_name}.csv"
+        new_config["output"] = {
+            "partial_output": {"format": "csv", "filename": output_file_name}
+        }
+
+        file_path = f"{directory}/{unique_name}.yml"
+        Path(directory).mkdir(exist_ok=True)
+        with open(file_path, "w") as file:
+            yaml.dump(new_config, file)
+
+        command += " " + output_file_name
+
+        logger.debug(file_path)
+        logger.debug(new_config)
+
+    print(f"{len(matrices)} config files were created in '{directory}' directory.")
+    print("To combine results of their execution use: ")
+    print("\t" + command)
+    logger.info("Finished spliting configuration file.")
 
 
 def update_output(old_outputs: list[str], output_config: dict, matrix: dict[str, list]):
