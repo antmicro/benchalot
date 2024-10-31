@@ -7,11 +7,11 @@ from benchmarker.metrics import (
     custom_metric,
 )
 from functools import partial
-from copy import deepcopy
 from re import sub, findall
 from collections.abc import Callable
 from typing import Any
 from benchmarker.validation import RunSection
+from dataclasses import dataclass
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -136,9 +136,17 @@ def get_metrics_functions(
     return metrics_functions
 
 
+@dataclass
+class Benchmark:
+    matrix: dict[str, str]
+    before: list[str]
+    benchmark: dict[str, list[str]]
+    after: list[str]
+
+
 def prepare_benchmarks(
     run_config: RunSection, matrix: dict[str, list[str]], isolate_cpus: bool
-) -> list[dict]:
+) -> list[Benchmark]:
     """Prepare `before`, `benchmark` and `after` commands so that they can be executed as part of one benchmark.
 
     Args:
@@ -155,16 +163,16 @@ def prepare_benchmarks(
             if type(commands) is list:
                 for i, c in enumerate(commands):
                     run_config.benchmark[name][i] = "cset shield --exec -- " + c
-    benchmarks = []
+    benchmarks: list[Benchmark] = []
     logger.info("Preparing benchmarks...")
     if not matrix:
         logger.debug("`matrix` not found in the config.")
         benchmark = {}
-        benchmark["before"] = deepcopy(run_config.before)
-        benchmark["benchmark"] = deepcopy(run_config.benchmark)
-        benchmark["after"] = deepcopy(run_config.after)
+        benchmark["before"] = run_config.before
+        benchmark["benchmark"] = run_config.benchmark
+        benchmark["after"] = run_config.after
         benchmark["matrix"] = {}
-        benchmark["metrics"] = get_metrics_functions(metrics=run_config["metrics"])
+        benchmark["metrics"] = get_metrics_functions(metrics=run_config.metrics)
         benchmarks.append(benchmark)
     else:
         logger.debug("Creating variable combinations...")
