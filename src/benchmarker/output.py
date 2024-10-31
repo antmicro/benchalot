@@ -24,6 +24,7 @@ TIME_STAMP_COLUMN = "benchmark_date"
 
 def read_old_outputs(include: list[str]) -> pd.DataFrame:
     """Parse files containing old results and concatenate them into a single dataframe.
+
     Args:
         include: List of names of files with old results.
 
@@ -46,10 +47,10 @@ def output_results_from_dict(
     matrix: dict[str, list],
     include: list,
 ) -> None:
-    """Create output for the results. Optionally include old results.
+    """Create output for the results, optionally including old results.
 
     Args:
-        results: Dictionary containing columns with results and variables' values.
+        results: Dictionary containing columns with results and values of the variables.
         output_config: Configuration file's output section.
         matrix: Configuration file's matrix section.
     """
@@ -68,11 +69,11 @@ def output_results_from_dict(
 def output_results_from_file(
     output_config: dict, include: list, matrix: dict[str, list]
 ) -> None:
-    """Create output for the old results.
+    """Create output for the results contained in files.
 
     Args:
         output_config: Configuration file's output section.
-        include: List of names of files to with old results.
+        include: List of file names with old results.
         matrix: Configuration file's matrix section.
     """
     old_outputs = read_old_outputs(include)
@@ -84,13 +85,12 @@ def get_stat_table(
     result_column: str,
     show_columns: list[str] | None = None,
 ) -> pd.DataFrame:
-    """Create table with specified columns.
-    Compute basic statistics if result column has numeric type.
+    """Create summary table with specified columns.
 
     Args:
         results_df: Dataframe containing the results.
-        result_column: Name of a metric which will be included in the table.
-        show_columns: Variables' names which will be included in the table.
+        result_column: A name of a metric which will be included in the table.
+        show_columns: Variable names which will be included in the table.
     """
     sub_result_columns = _get_substages(list(results_df.columns), result_column)
     if not show_columns:
@@ -143,7 +143,7 @@ def _get_substages(columns: list[str], metric_name: str) -> list[str]:
         metric_name: Metric's name.
 
     Returns:
-        list[str]: List of column names which contain results of the metric.
+        list[str]: List of column names which contain the metric.
     """
     return [col for col in columns if col.startswith(metric_name + ".")]
 
@@ -157,7 +157,7 @@ def get_bar_chart(
     facet: str | None,
     stat: str,
 ) -> ggplot:
-    """Get bar plot object with specified visual aspects
+    """Create bar plot object.
 
     Args:
         output_df: Dataframe containing benchmark results.
@@ -223,7 +223,7 @@ def get_bar_chart(
 def _output_results(
     results_df: pd.DataFrame, output_config: dict, matrix: dict[str, list]
 ) -> None:
-    """Process output configuration and create output accordingly.
+    """Create output based on results and configuration.
 
     Args:
         results_df: Dataframe containing benchmark results.
