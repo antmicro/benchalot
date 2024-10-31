@@ -16,7 +16,7 @@ logger = getLogger(f"benchmarker.{__name__}")
 
 
 def setup_benchmarker_logging(verbose: bool, debug: bool) -> None:
-    """Setup loggers for Benchmarker.
+    """Setup loggers.
 
     Args:
         verbose: If true, set logging level to `INFO`.
@@ -50,10 +50,10 @@ def setup_benchmarker_logging(verbose: bool, debug: bool) -> None:
 
 
 def setup_command_logging(output_filename: str) -> None:
-    """Setup `run` logger so that it writes command output to a file.
+    """Setup `run` logger so that it writes command output to a file/`stdout`/`stderr`.
 
     Args:
-        output_filename: Name of the file where output of commands will be written.
+        output_filename: Name of the file where output of commands will be written. If "STDERR", then output to `stderr`. If "STDOUT", then output to `stdout`.
     """
     handler: StreamHandler | FileHandler | None = None
     if output_filename == "STDERR":
@@ -70,5 +70,9 @@ def setup_command_logging(output_filename: str) -> None:
 
 
 def crash_msg_log_file(filename):
-    """Print crash message."""
+    """Print crash message.
+
+    Args:
+        filename: Name of the debug log file.
+    """
     logger.critical(f"Benchmarker exited abnormally! Log files generated: {filename}.")
