@@ -15,7 +15,13 @@ from sys import stderr, stdout
 logger = getLogger(f"benchmarker.{__name__}")
 
 
-def setup_benchmarker_logging(verbose, debug):
+def setup_benchmarker_logging(verbose: bool, debug: bool) -> None:
+    """Setup loggers for Benchmarker.
+
+    Args:
+        verbose: If true, set logging level to `INFO`.
+        debug: If true, set logging level to `DEBUG`.
+    """
     console = StreamHandler()
     console.setFormatter(
         Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
@@ -43,7 +49,13 @@ def setup_benchmarker_logging(verbose, debug):
     register(crash_msg_log_file, temp_log_file.name)
 
 
-def setup_command_logging(output_filename):
+def setup_command_logging(output_filename: str) -> None:
+    """Setup `run` logger so that it writes command output to a file.
+
+    Args:
+        output_filename: Name of the file where output of commands will be written.
+    """
+    handler: StreamHandler | FileHandler | None = None
     if output_filename == "STDERR":
         handler = StreamHandler(stream=stderr)
     elif output_filename == "STDOUT":
@@ -58,4 +70,5 @@ def setup_command_logging(output_filename):
 
 
 def crash_msg_log_file(filename):
+    """Print crash message."""
     logger.critical(f"Benchmarker exited abnormally! Log files generated: {filename}.")
