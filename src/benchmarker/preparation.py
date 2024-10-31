@@ -19,12 +19,27 @@ VAR_REGEX = r"{{[a-zA-Z0-9_\-.]*}}"
 
 
 def create_variable_combinations(**kwargs):
+    """Create all possible variable values combinations
+
+    Args:
+        kwargs: Dictionary containing list of variable values.
+    """
     keys = kwargs.keys()
     for instance in product(*kwargs.values()):
         yield dict(zip(keys, instance))
 
 
 def prepare_command(command: str, variables: dict[str, str | int]) -> str:
+    """Replace variable references with values.
+
+    Args:
+        command: Command to be modified.
+        variables: Variable names paired with values.
+
+    Returns:
+        str: Command with all variable references replaced.
+    """
+
     def replace_substring(match):
         variable_name = match.group(0).removeprefix("{{").removesuffix("}}")
         try:
@@ -37,16 +52,32 @@ def prepare_command(command: str, variables: dict[str, str | int]) -> str:
     return new_command
 
 
-def prepare_commands(commands: list, var_combination) -> list:
+def prepare_commands(commands: list, variables: dict[str, str | int]) -> list[str]:
+    """Replace variable references with values in multiple commands.
+
+    Args:
+        command: List of commands.
+        variables: Variable names paired with values.
+    Returns:
+        list[str]: List of commands with all variable references replaced.
+    """
     prepared_commands = []
     for command in commands:
-        prepared_commands.append(prepare_command(command, var_combination))
+        prepared_commands.append(prepare_command(command, variables))
     return prepared_commands
 
 
 def name_benchmark_stages(
-    benchmarks: list[str] | dict[str, list[str]],
+    benchmarks: list[str] | dict[str, list[str]]
 ) -> dict[str, list[str]]:
+    """Transform list of commands to dictionary of lists of commands.
+
+    Args:
+        benchmarks: List or dictionary of lists of commands.
+
+    Returns:
+        dict[str, list[str]]: Stage names paired with lists of commands.
+    """
     if type(benchmarks) is dict:
         return benchmarks
     elif type(benchmarks) is list:
@@ -57,7 +88,16 @@ def name_benchmark_stages(
 
 def prepare_before_after_all_commands(
     run_config: dict, matrix: dict[str, list]
-) -> list[list[str]]:
+) -> tuple[list[str], list[str]]:
+    """Create command variants for each combination of values of variables present in before-all and after-all sections.
+
+    Args:
+        run_config: Configuration file's `run` section.
+        matrix: Configuration file's `matrix` section.
+
+    Returns:
+        tuple[list[str], list[str]]: Two lists with command combinations for each section.
+    """
     logger.info("Preparing 'before-all' and 'after-all' commands...")
     ret = []
     for section in ["before-all", "after-all"]:
@@ -80,13 +120,22 @@ def prepare_before_after_all_commands(
         ret.append(curr_section_commands)
     logger.info("Finished preparing 'before-all' and 'after-all' commands.")
     logger.debug(ret)
-    return ret
+    return (ret[0], ret[1])
 
 
 def get_metrics_functions(
     metrics: list[str | dict[str, str]],
-    var_combination: dict[str, str | int] | None = None,
+    variables: dict[str, str | int] | None = None,
 ) -> list[Callable[[dict], dict]]:
+    """Get list of callable metrics functions.
+
+    Args:
+        metrics: List of metric names.
+        variables: Variable names paired with their values. Used with custom metrics.
+
+    Returns:
+        list[Callable[[dict],dict]]: List of callable objects that perform specified measurements.
+    """
     metrics_functions: list[Callable[[dict[Any, Any]], dict[Any, Any]]] = []
     for metric in metrics:
         if metric == "time":
@@ -98,8 +147,8 @@ def get_metrics_functions(
         else:
             metric_command = list(metric.items())[0][1]  # type: ignore
             metric_name = list(metric.items())[0][0]  # type: ignore
-            if var_combination:
-                metric_command = prepare_command(metric_command, var_combination)
+            if variables:
+                metric_command = prepare_command(metric_command, variables)
             metrics_functions.append(
                 partial(custom_metric, metric_command, metric_name)
             )
@@ -108,7 +157,17 @@ def get_metrics_functions(
 
 def prepare_benchmarks(
     run_config: dict, matrix: dict[str, list[str]], isolate_cpus: bool
-) -> list:
+) -> list[dict]:
+    """Prepare `before`, `benchmark` and `after` commands so that they can be executed as part of one benchmark.
+
+    Args:
+        run_config: Configuration file's `run` section.
+        matrix: Configuration file's `matrix` section.
+        isolate_cpus: Whether to prepend `cset shield --exec -- ` to `benchmark` commands.
+
+    Returns:
+        list[dict]: List of unique benchmarks containing their variable combination, modified commands and metrics.
+    """
     if isolate_cpus:
         for name in run_config["benchmark"]:
             for i, c in enumerate(run_config["benchmark"][name]):
