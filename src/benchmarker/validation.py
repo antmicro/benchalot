@@ -8,11 +8,9 @@ from pydantic import (
     computed_field,
 )
 from typing import Literal
-from re import findall
 from logging import getLogger
 from os import getcwd
 from os.path import isdir
-from benchmarker.preparation import VAR_REGEX
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -92,43 +90,6 @@ class RunSection(BaseModel):
             if type(metric) is str and metric not in ["time", "stdout", "stderr"]:
                 raise ValueError(f"invalid metric '{metric}'")
         return metrics
-
-    def check_command_variables(self, command: str, matrix: dict[str, list]):
-        variables = findall(VAR_REGEX, command)
-        for var in variables:
-            var_key = var.removeprefix("{{").removesuffix("}}")
-            check_var_exists(var_key, matrix)
-
-    def check_commands_variables(self, commands, matrix):
-        """Check if variables used in commands are present in `matrix` section.
-
-        Args:
-            commands: List of commands to be validated.
-            matrix: `matrix` section from the configuration file.
-
-        Raises:
-            ValueError
-        """
-        for command in commands:
-            self.check_command_variables(command, matrix)
-
-    def check_vars_custom_metrics(self, matrix: dict[str, list]):
-        for metric in self.metrics:
-            if type(metric) is dict:
-                command = list(metric.items())[0][1]
-                self.check_command_variables(command, matrix)
-
-    def validate_command_vars(self, matrix: dict[str, list]):
-        self.check_commands_variables(self.before_all, matrix)
-        self.check_commands_variables(self.before, matrix)
-        if type(self.benchmark) is dict:
-            for name in self.benchmark:
-                self.check_commands_variables(self.benchmark[name], matrix)
-        else:
-            self.check_commands_variables(self.benchmark, matrix)
-        self.check_commands_variables(self.after, matrix)
-        self.check_commands_variables(self.after_all, matrix)
-        self.check_vars_custom_metrics(matrix)
 
 
 class OutputField(BaseModel):
@@ -342,14 +303,6 @@ class ConfigFile(BaseModel):
         for output_key in self.output:
             output = self.output[output_key]
             output.apply_default_values(self.matrix, self.run.metrics)
-        return self
-
-    @model_validator(mode="after")
-    def check_command_vars(self):
-        """Check whether variables used in commands are present in the `matrix` section."""
-        if self.matrix == {}:
-            return self
-        self.run.validate_command_vars(self.matrix)
         return self
 
     @model_validator(mode="after")

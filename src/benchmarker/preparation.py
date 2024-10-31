@@ -8,7 +8,7 @@ from benchmarker.metrics import (
 )
 from functools import partial
 from copy import deepcopy
-from re import findall
+from re import sub, findall
 from collections.abc import Callable
 from typing import Any
 
@@ -24,14 +24,20 @@ def create_variable_combinations(**kwargs):
         yield dict(zip(keys, instance))
 
 
-def prepare_command(command: str, var_combination) -> str:
-    for var in var_combination:
-        command = command.replace("{{" + var + "}}", str(var_combination[var]))
-    return command
+def prepare_command(command: str, variables: dict[str, str | int]) -> str:
+    def replace_substring(match):
+        variable_name = match.group(0).removeprefix("{{").removesuffix("}}")
+        try:
+            return str(variables[variable_name])
+        except KeyError:
+            logger.critical(f"'{command}': Variable '{variable_name}' not found")
+            exit(1)
+
+    new_command = sub(VAR_REGEX, replace_substring, command)
+    return new_command
 
 
 def prepare_commands(commands: list, var_combination) -> list:
-
     prepared_commands = []
     for command in commands:
         prepared_commands.append(prepare_command(command, var_combination))
