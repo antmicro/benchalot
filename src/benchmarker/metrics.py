@@ -17,13 +17,13 @@ _FORMAT = "{name}.{stage}"
 
 
 def measure_time(benchmarks: dict[str, list[str]]) -> dict:
-    """Measure time of execution of the commands.
+    """Measure execution time of the commands.
 
     Args:
-        benchmarks: Stages with their commands.
+        benchmarks: Commands divided into stages.
 
     Returns:
-        dict: Containing execution time of each stage and total execution time. If there is only one stage, only total execution time is returned.
+        dict: Containing execution time of each stage and total execution time.
     """
 
     def _measure_stage_time(commands: list[str]) -> float:
@@ -50,14 +50,14 @@ def measure_time(benchmarks: dict[str, list[str]]) -> dict:
 def _gather_output(
     benchmarks: dict[str, list[str]], output: Literal["stderr", "stdout"]
 ) -> dict:
-    """Gather `stdout` or `stderr` of each stage.
+    """Gather `stdout` or `stderr` of each command in each stage.
 
     Args:
-        benchmarks: Stages with their commands.
+        benchmarks: Commands divided into stages.
         output: Set  to "stderr" to gather `stderr` or set to "stdout" to gather `stdout`.
 
     Returns:
-        dict: Containing `stderr` or `stdout` of each stage and their total. If possible, output will be converted to float. If there is only one stage, only total is returned.
+        dict: Containing `stderr` or `stdout` of each stage and their total. If possible, output will be converted to float.
     """
 
     def _gather_stage_output(commands: list[str]) -> str | float:
@@ -107,9 +107,9 @@ def gather_stderr(benchmarks: dict[str, list[str]]) -> dict:
 def custom_metric(
     metric_command: str, metric_name: str, benchmarks: dict[str, list[str]]
 ) -> dict:
-    """Execute all the benchmark's stages then execute custom metric command and process its output.
+    """Execute all the benchmark commands, then execute custom metric command and process its output.
     If output has more than one line treat output as csv file, with each column representing separate stage.
-    Combine stages under `metric_name`.
+    Sum stages under `metric_name`.
 
     Args:
         metric_command: Command to be executed as custom metric.
@@ -117,7 +117,7 @@ def custom_metric(
         benchmarks: Stages with their commands.
 
     Returns:
-        dict: Containing multistage result with its total, or just total if only one line is output by custom metric's command.
+        dict: Containing multistage result with its total, or just total if metric's command outputs one line.
     """
     for name, commands in benchmarks.items():
         for command in commands:
