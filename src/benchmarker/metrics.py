@@ -95,7 +95,7 @@ def custom_metric(
     check_return_code(metric_command, result)
     if len(output.splitlines()) == 1:
         try:
-            output = float(output)
+            return {metric_name: float(output)}
         except ValueError:
             pass
         return {metric_name: output}
