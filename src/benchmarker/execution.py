@@ -10,7 +10,7 @@ working_directory = getcwd()
 
 
 def set_working_directory(cwd: str) -> None:
-    """Set globally working directory of executed commands"""
+    """Set working directory of executed commands"""
     global working_directory
     working_directory = cwd
 
@@ -19,7 +19,7 @@ def check_return_code(command: str, code: int) -> None:
     """Check return code of the command and exit Benchmarker if it is not 0
 
     Args:
-        command: Command string used for logging.
+        command: Command string, used in logging.
         code: Return code of the command.
     """
     if code != 0:
@@ -28,7 +28,7 @@ def check_return_code(command: str, code: int) -> None:
 
 
 def execute_command(command: str) -> Popen:
-    """Execute command in shell, with `stdout` and `stderr` piped to Benchmarker.
+    """Execute command in shell, with `stdout` and `stderr` piped.
 
     Args:
         command: Command to be executed.
@@ -43,7 +43,7 @@ def execute_command(command: str) -> Popen:
 def handle_output(
     process: Popen, capture_stdout: bool = False, capture_stderr: bool = False
 ) -> str:
-    """Log and/or save output piped by the process to Benchmarker.
+    """Log and/or save output piped by the process.
 
     Args:
         process: Process object.
@@ -95,11 +95,11 @@ def execute_and_handle_output(
 
 
 def execute_section(commands: list[str], section_name: str = "") -> None:
-    """Execute and handle output of whole section of commands
+    """Execute and handle output of a whole section of commands
 
     Args:
         commands: List of commands to be executed.
-        section_name: Name of the section used during logging.
+        section_name: Name of the section, used in logging.
     """
     if not commands:
         return
@@ -116,7 +116,7 @@ def perform_benchmarks(benchmarks: list, samples: int) -> dict[str, list]:
     """Perform benchmarks and return their results.
 
     Args:
-        benchmarks: Structured list of benchmarks, each containing about variable values, preprocessed commands and callable metrics.
+        benchmarks: Structured list of benchmarks, each containing variable values, preprocessed commands and callable metrics.
         samples: How many times each benchmark needs to be repeated.
 
     Returns:
