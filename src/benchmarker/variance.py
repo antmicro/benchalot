@@ -7,14 +7,14 @@ logger = getLogger(f"benchmarker.{__name__}")
 
 
 def get_and_set(filename: str, value: str) -> str:
-    """First read value from the file, the set it to the new one.
+    """First read the file, then overwrite with value.
 
     Args:
-        filename: Name of the file to be modified.
+        filename: Name of the file.
         value: String to be written.
 
     Returns:
-        str: Value read from the file.
+        str: Contents of the file.
     """
     try:
         file = open(filename, "r")
@@ -28,7 +28,7 @@ def get_and_set(filename: str, value: str) -> str:
 
 
 def set(filename: str, value: str) -> None:
-    """Write value to file.
+    """Write value to a file.
 
     Args:
         filename: Name of the file.
@@ -49,7 +49,7 @@ system_state: dict[str, str] = {}
 
 
 def modify_system_state(system_options: dict) -> None:
-    """Apply modifications to the operating system
+    """Apply variance reducing measures to the operating system.
 
     Args:
         system_options: Configuration file's system section.
