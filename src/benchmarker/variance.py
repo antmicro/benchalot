@@ -6,7 +6,16 @@ from logging import getLogger
 logger = getLogger(f"benchmarker.{__name__}")
 
 
-def get_and_set(filename: str, value: str):
+def get_and_set(filename: str, value: str) -> str:
+    """First read value from the file, the set it to the new one.
+
+    Args:
+        filename: Name of the file to be modified.
+        value: String to be written.
+
+    Returns:
+        str: Value read from the file.
+    """
     try:
         file = open(filename, "r")
         ret = file.read()
@@ -18,7 +27,13 @@ def get_and_set(filename: str, value: str):
     return ret
 
 
-def set(filename: str, value: str):
+def set(filename: str, value: str) -> None:
+    """Write value to file.
+
+    Args:
+        filename: Name of the file.
+        value: Value to be written.
+    """
     try:
         file = open(filename, "w")
         file.write(value)
@@ -30,10 +45,15 @@ def set(filename: str, value: str):
     logger.debug(f"Wrote  '{value_str}' to '{filename}'.")
 
 
-system_state = {}
+system_state: dict[str, str] = {}
 
 
-def modify_system_state(system_options):
+def modify_system_state(system_options: dict) -> None:
+    """Apply modifications to the operating system
+
+    Args:
+        system_options: Configuration file's system section.
+    """
     logger.info("Modifying system state...")
     register(restore_system_state, system_options)
     if system_options.get("disable-aslr"):
@@ -58,7 +78,7 @@ def modify_system_state(system_options):
             logger.critical(str(result.stderr))
             logger.critical(str(result.stdout))
             exit(1)
-        system_state["isolate-cpus"] = True
+        system_state["isolate-cpus"] = "yes"
     if system_options.get("governor-performance"):
         cpus = (
             system_options["isolate-cpus"]
@@ -74,7 +94,12 @@ def modify_system_state(system_options):
         logger.debug(f"Set CPU governor for CPUs {cpu_str}.")
 
 
-def restore_system_state(system_options):
+def restore_system_state(system_options: dict) -> None:
+    """Restore operating system's state.
+
+    Args:
+        system_options: Configuration file's system section.
+    """
     logger.info("Restoring system state...")
     logger.debug(f"Saved system state: {system_options}")
     if system_state.get("isolate-cpus"):
