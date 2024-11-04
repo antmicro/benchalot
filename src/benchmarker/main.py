@@ -25,7 +25,6 @@ from logging import getLogger
 from atexit import unregister
 from os import environ
 from pathlib import Path
-from pprint import pprint
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -35,61 +34,67 @@ def main():
     args = parser.parse_args()
     setup_benchmarker_logging(args.verbose, args.debug)
 
+    config_file = load_configuration_file(args.config_filename)
+    config = validate_config(config_file)
+
+    if args.update_output:  # Update output and exit
+        update_output(args.update_output, config["output"], config["matrix"])
+        exit_benchmarker()
+    if args.split:  # Split configuration file and exit
+        generate_config_files(config, args.split)
+        exit_benchmarker()
+
     for file in args.include:
         if not isfile(file):
             logger.critical(f"File '{file}' not found")
             exit(1)
 
-    config_file = load_configuration_file(args.config_filename)
-    config = validate_config(config_file)
-    if args.split:
-        generate_config_files(config, args.split)
-    exit(1)
-    if not args.update_output:
-        is_root = geteuid() == 0
-        if config["system"]["modify"] and not is_root:
-            print(
-                "To perform system configuration, root privileges are required. Running sudo..."
-            )
-            execvp("sudo", ["sudo", executable] + argv)
-        if config["system"]["modify"]:
-            modify_system_state(config["system"])
-        run_config = config["run"]
-        run_config["benchmark"] = name_benchmark_stages(run_config["benchmark"])
-        benchmarks = prepare_benchmarks(
-            run_config, config["matrix"], config["system"]["isolate-cpus"]
+    is_root = geteuid() == 0
+    if config["system"]["modify"] and not is_root:
+        print(
+            "To perform system configuration, root privileges are required. Running sudo..."
         )
-        before_all_commands, after_all_commands = prepare_before_after_all_commands(
-            run_config, config["matrix"]
-        )
+        execvp("sudo", ["sudo", executable] + argv)
 
-        if config["run"]["save-output"]:
-            setup_command_logging(config["run"]["save-output"])
-        set_working_directory(config["run"]["cwd"])
-        environ.update(config["run"]["env"])
+    if config["run"]["save-output"]:
+        setup_command_logging(config["run"]["save-output"])
+    set_working_directory(config["run"]["cwd"])
+    environ.update(config["run"]["env"])
 
-        execute_section(before_all_commands, "before-all")
-        results = perform_benchmarks(benchmarks, config["run"]["samples"])
-        execute_section(after_all_commands, "after-all")
+    run_config = config["run"]
+    run_config["benchmark"] = name_benchmark_stages(run_config["benchmark"])
+    benchmarks = prepare_benchmarks(
+        run_config, config["matrix"], config["system"]["isolate-cpus"]
+    )
+    before_all_commands, after_all_commands = prepare_before_after_all_commands(
+        run_config, config["matrix"]
+    )
 
-        if config["system"]["modify"]:
-            restore_system_state(config["system"])
+    if config["run"]["save-output"]:
+        setup_command_logging(config["run"]["save-output"])
+    set_working_directory(config["run"]["cwd"])
 
-        output_results_from_dict(
-            results,
-            config["output"],
-            config["matrix"],
-            args.include,
-        )
-    else:
-        old_outputs = args.update_output
-        for file in old_outputs:
-            if not isfile(file):
-                logger.critical(f"File '{file}' not found")
-                exit(1)
-        output_results_from_file(config["output"], old_outputs, config["matrix"])
+    execute_section(before_all_commands, "before-all")
+    results = perform_benchmarks(benchmarks, config["run"]["samples"])
+    execute_section(after_all_commands, "after-all")
+
+    if config["system"]["modify"]:
+        restore_system_state(config["system"])
+
+    output_results_from_dict(
+        results,
+        config["output"],
+        config["matrix"],
+        args.include,
+    )
+
+    exit_benchmarker()
+
+
+def exit_benchmarker():
     logger.info("Exiting Benchmarker...")
     unregister(crash_msg_log_file)
+    exit(0)
 
 
 def get_argument_parser() -> ArgumentParser:
@@ -142,7 +147,7 @@ def get_argument_parser() -> ArgumentParser:
         dest="split",
         metavar="VAR_NAME",
         default=[],
-        help="create new configuration file for each VAR_NAME",
+        help="create new configuration file for each value of VAR_NAME and put them in 'out' directory",
     )
     return parser
 
@@ -181,6 +186,15 @@ def generate_config_files(config: dict, split: list[str]):
     for i, matrix in enumerate(matrices):
         c = {k: v for k, v in config.items() if k != "matrix"}
         c["matrix"] = matrix
-        Path("configs").mkdir(exist_ok=True)
-        with open(f"configs/config{i}.yml", "w") as file:
+        c["output"] = {"partial_output": {"format": "csv", "filename": f"out{i}.csv"}}
+        Path("out").mkdir(exist_ok=True)
+        with open(f"out/config{i}.yml", "w") as file:
             yaml.dump(c, file)
+
+
+def update_output(old_outputs: list[str], output_config: dict, matrix: dict[str, list]):
+    for file in old_outputs:
+        if not isfile(file):
+            logger.critical(f"File '{file}' not found")
+            exit(1)
+    output_results_from_file(output_config, old_outputs, matrix)

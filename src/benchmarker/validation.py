@@ -32,10 +32,9 @@ class SystemSection(BaseModel):
         governor_performance: Option to change CPU governor to performance.
     """
 
-    isolate_cpus: list[int] = Field(default=None, alias="isolate-cpus")
+    isolate_cpus: list[int] | None = Field(default=None, alias="isolate-cpus")
     disable_aslr: bool = Field(default=False, alias="disable-aslr")
     governor_performance: bool = Field(default=False, alias="governor-performance")
-    model_config = ConfigDict(extra="forbid")
 
     @computed_field  # type: ignore
     @property
@@ -62,7 +61,7 @@ class RunSection(BaseModel):
     """
 
     samples: int = 1
-    save_output: str = Field(default=None, alias="save-output")
+    save_output: str | None = Field(default=None, alias="save-output")
     before_all: list[str] = Field(default=[], alias="before-all")
     before: list[str] = []
     benchmark: list[str] | dict[str, list]
@@ -76,7 +75,7 @@ class RunSection(BaseModel):
     @field_validator("cwd")
     @classmethod
     def path_exists(cls, value: str):
-        if not isdir(value):
+        if value and not isdir(value):
             raise ValueError(f"directory '{value}' not found")
         return value
 
