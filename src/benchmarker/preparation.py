@@ -10,7 +10,8 @@ from functools import partial
 from re import sub, findall
 from collections.abc import Callable
 from typing import Any
-from benchmarker.validation import RunSection, Benchmark
+from benchmarker.structs import Benchmark
+from benchmarker.validation import RunSection
 
 logger = getLogger(f"benchmarker.{__name__}")
 

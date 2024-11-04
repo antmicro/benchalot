@@ -2,7 +2,7 @@ from subprocess import Popen, PIPE
 from logging import getLogger, INFO, ERROR
 from tqdm import tqdm
 from os import getcwd
-from benchmarker.validation import Benchmark
+from benchmarker.structs import Benchmark
 
 
 logger = getLogger(f"benchmarker.{__name__}")
