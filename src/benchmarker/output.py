@@ -22,7 +22,14 @@ logger = getLogger(f"benchmarker.{__name__}")
 TIME_STAMP_COLUMN = "benchmark_date"
 
 
-def read_old_outputs(include: list) -> pd.DataFrame:
+def read_old_outputs(include: list[str]) -> pd.DataFrame:
+    """Parse files containing old results and concatenate them into a single dataframe.
+    Args:
+        include: List of names of files with old results.
+
+    Returns:
+        DataFrame: Containing concatenated old results.
+    """
     logger.debug(f"Include list for output: {include}")
     results_df = pd.DataFrame()
     for file in include:
@@ -38,7 +45,14 @@ def output_results_from_dict(
     output_config: dict,
     matrix: dict[str, list],
     include: list,
-):
+) -> None:
+    """Create output for the results. Optionally include old results.
+
+    Args:
+        results: Dictionary containing columns with results and variables' values.
+        output_config: Configuration file's output section.
+        matrix: Configuration file's matrix section.
+    """
     try:
         results_df = pd.DataFrame(results)
     except ValueError as e:
@@ -48,14 +62,21 @@ def output_results_from_dict(
     )
     old_outputs = read_old_outputs(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
-    output_results(results_df, output_config, matrix)
+    _output_results(results_df, output_config, matrix)
 
 
 def output_results_from_file(
     output_config: dict, include: list, matrix: dict[str, list]
-):
+) -> None:
+    """Create output for the old results.
+
+    Args:
+        output_config: Configuration file's output section.
+        include: List of names of files to with old results.
+        matrix: Configuration file's matrix section.
+    """
     old_outputs = read_old_outputs(include)
-    output_results(old_outputs, output_config, matrix)
+    _output_results(old_outputs, output_config, matrix)
 
 
 def get_stat_table(
@@ -63,6 +84,14 @@ def get_stat_table(
     result_column: str,
     show_columns: list[str] | None = None,
 ) -> pd.DataFrame:
+    """Create table with specified columns.
+    Compute basic statistics if result column has numeric type.
+
+    Args:
+        results_df: Dataframe containing the results.
+        result_column: Name of a metric which will be included in the table.
+        show_columns: Variables' names which will be included in the table.
+    """
     sub_result_columns = _get_substages(list(results_df.columns), result_column)
     if not show_columns:
         if results_df[TIME_STAMP_COLUMN].nunique() == 1:
@@ -84,12 +113,13 @@ def get_stat_table(
             results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
         else:
             show_columns = [TIME_STAMP_COLUMN] + show_columns
-        return get_grouped_stat_table(results_df, result_column, show_columns)
+        return _get_grouped_stat_table(results_df, result_column, show_columns)
 
 
-def get_grouped_stat_table(
+def _get_grouped_stat_table(
     results_df: pd.DataFrame, result_column: str, show_columns: list[str]
 ) -> pd.DataFrame:
+    """Helper function for the `get_stat_table` which performs column grouping."""
     statistics = ["min", "median", "max"]
     sub_result_columns = _get_substages(list(results_df.columns), result_column)
     table_df = results_df.loc[:, show_columns + sub_result_columns + [result_column]]
@@ -106,6 +136,15 @@ def get_grouped_stat_table(
 
 
 def _get_substages(columns: list[str], metric_name: str) -> list[str]:
+    """Helper function which returns column names with stages for a given metric.
+
+    Args:
+        columns: List of column names.
+        metric_name: Metric's name.
+
+    Returns:
+        list[str]: List of column names which contain results of the metric.
+    """
     return [col for col in columns if col.startswith(metric_name + ".")]
 
 
@@ -117,7 +156,20 @@ def get_bar_chart(
     color: str | None,
     facet: str | None,
     stat: str,
-):
+) -> ggplot:
+    """Get bar plot object with specified visual aspects
+
+    Args:
+        output_df: Dataframe containing benchmark results.
+        variable_names: List of variable names.
+        x_axis: Name of the variable used as x-axis of the plot.
+        y_axis: Name of the variable used as y-axis of the plot.
+        color: Name of the variable used as color channel of the plot.
+        facet: Name of the variable used to facet the plot.
+
+    Returns:
+        ggplot: The bar chart object.
+    """
     stack = _get_substages(list(output_df.columns), y_axis)
     if stack and color:
         logger.warning("'bar-chart': color setting is present, bars won't be stacked.")
@@ -168,10 +220,17 @@ def get_bar_chart(
     return plot
 
 
-def output_results(
+def _output_results(
     results_df: pd.DataFrame, output_config: dict, matrix: dict[str, list]
-):
+) -> None:
+    """Process output configuration and create output accordingly.
 
+    Args:
+        results_df: Dataframe containing benchmark results.
+        output_config: Configuration file's output section.
+        matrix: Configuration file's matrix section.
+
+    """
     # Convert all string columns to categorical to prevent rearranging by plotnine
     for column in results_df.columns:
         if is_string_dtype(results_df[column]):
