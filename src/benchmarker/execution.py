@@ -2,6 +2,7 @@ from subprocess import Popen, PIPE
 from logging import getLogger, INFO, ERROR
 from tqdm import tqdm
 from os import getcwd
+from benchmarker.validation import Benchmark
 
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -112,7 +113,7 @@ def execute_section(commands: list[str], section_name: str = "") -> None:
     logger.info(f"Execution of '{section_name}' section finished.")
 
 
-def perform_benchmarks(benchmarks: list, samples: int) -> dict[str, list]:
+def perform_benchmarks(benchmarks: list[Benchmark], samples: int) -> dict[str, list]:
     """Perform benchmarks and return their results.
 
     Args:
@@ -126,7 +127,7 @@ def perform_benchmarks(benchmarks: list, samples: int) -> dict[str, list]:
     logger.info("Performing benchmarks...")
     bar = tqdm(
         desc="Performing benchmarks.",
-        total=(len(benchmarks) * samples * len(benchmarks[0]["metrics"])),
+        total=(len(benchmarks) * samples * len(benchmarks[0].metrics)),
         unit="benchmark",
         leave=False,
         mininterval=1,
@@ -135,27 +136,28 @@ def perform_benchmarks(benchmarks: list, samples: int) -> dict[str, list]:
         try:
             for _ in range(0, samples):
                 partial_results = dict()
-                for metric in benchmark["metrics"]:
+                for metric in benchmark.metrics:
                     logger.debug(f"Running benchmark: {benchmark}")
 
-                    execute_section(benchmark["before"], "before")
-
+                    execute_section(benchmark.before, "before")
                     text = str(
-                        [benchmark["benchmark"][key] for key in benchmark["benchmark"]]
+                        [benchmark.benchmark[key] for key in benchmark.benchmark]
                     )
                     text = text.replace("[", "")
                     text = text.replace("]", "")
                     bar.set_description(
                         f"Executing {text[:20] + '...' if len(text)>20 else text}"
                     )
-                    partial_result = metric(benchmark["benchmark"])
+
+                    bar.set_description(f"Benchmarking `{text}`")
+                    partial_result = metric(benchmark.benchmark)
                     bar.refresh(nolock=True)
                     partial_results.update(partial_result)
 
-                    execute_section(benchmark["after"], "after")
+                    execute_section(benchmark.after, "after")
                     bar.update(1)
-                for key in benchmark["matrix"]:
-                    results.setdefault(key, []).append(benchmark["matrix"][key])
+                for key in benchmark.matrix:
+                    results.setdefault(key, []).append(benchmark.matrix[key])
 
                 for key in partial_results:
                     results.setdefault(key, []).append(partial_results[key])

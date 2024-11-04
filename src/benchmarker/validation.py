@@ -10,6 +10,8 @@ from pydantic import (
 from typing import Literal
 from logging import getLogger
 from os.path import isdir
+from collections.abc import Callable
+from dataclasses import dataclass
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -21,6 +23,15 @@ def error_and_exit(error):
         location = ".".join(e["loc"])
         logger.critical(f"{location}: {e['msg']}, input: '{e['input']}'")
     exit(1)
+
+
+@dataclass
+class Benchmark:
+    matrix: dict[str, str]
+    before: list[str]
+    benchmark: dict[str, list[str]]
+    after: list[str]
+    metrics: list[Callable[[dict], dict]]
 
 
 class SystemSection(BaseModel):

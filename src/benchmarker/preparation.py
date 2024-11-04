@@ -10,8 +10,7 @@ from functools import partial
 from re import sub, findall
 from collections.abc import Callable
 from typing import Any
-from benchmarker.validation import RunSection
-from dataclasses import dataclass
+from benchmarker.validation import RunSection, Benchmark
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -136,14 +135,6 @@ def get_metrics_functions(
     return metrics_functions
 
 
-@dataclass
-class Benchmark:
-    matrix: dict[str, str]
-    before: list[str]
-    benchmark: dict[str, list[str]]
-    after: list[str]
-
-
 def prepare_benchmarks(
     run_config: RunSection, matrix: dict[str, list[str]], isolate_cpus: bool
 ) -> list[Benchmark]:
@@ -167,28 +158,33 @@ def prepare_benchmarks(
     logger.info("Preparing benchmarks...")
     if not matrix:
         logger.debug("`matrix` not found in the config.")
-        benchmark = {}
-        benchmark["before"] = run_config.before
-        benchmark["benchmark"] = run_config.benchmark
-        benchmark["after"] = run_config.after
-        benchmark["matrix"] = {}
-        benchmark["metrics"] = get_metrics_functions(metrics=run_config.metrics)
+        benchmark = Benchmark(
+            matrix={},
+            before=run_config.before,
+            benchmark=run_config.benchmark,
+            after=run_config.after,
+            metrics=get_metrics_functions(run_config.metrics),
+        )
         benchmarks.append(benchmark)
     else:
         logger.debug("Creating variable combinations...")
         var_combinations = list(create_variable_combinations(**matrix))
         logger.debug(f"Variable combinations {var_combinations}")
         for var_combination in var_combinations:
-            benchmark = {"matrix": var_combination}
-            benchmark["before"] = interpolate_commands(run_config.before, var_combination)
-            benchmark["after"] = interpolate_commands(run_config.after, var_combination)
-            benchmark["benchmark"] = {}
+            before = interpolate_commands(run_config.before, var_combination)
+            after = interpolate_commands(run_config.after, var_combination)
+            bench = {}
             for name in run_config.benchmark:
-                benchmark["benchmark"][name] = interpolate_commands(
+                bench[name] = interpolate_commands(
                     run_config.benchmark[name], var_combination
                 )
-            benchmark["metrics"] = get_metrics_functions(
-                run_config.metrics, var_combination
+            metrics = get_metrics_functions(run_config.metrics, var_combination)
+            benchmark = Benchmark(
+                matrix=var_combination,
+                before=before,
+                benchmark=bench,
+                after=after,
+                metrics=metrics,
             )
             benchmarks.append(benchmark)
     logger.info("Finished preparing benchmarks.")
