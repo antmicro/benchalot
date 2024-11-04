@@ -65,13 +65,21 @@ class RunSection(BaseModel):
     save_output: str | None = Field(default=None, alias="save-output")
     before_all: list[str] = Field(default=[], alias="before-all")
     before: list[str] = []
-    benchmark: list[str] | dict[str, list]
+    benchmark: dict[str, list]
     after: list[str] = []
     after_all: list[str] = Field(default=[], alias="after-all")
     cwd: str | None = None
     metrics: list[str | dict] = ["time"]
     env: dict[str, str] = {}
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    def name_stages(self):
+        """Transform list of commands to dictionary of lists of commands."""
+        if type(self["benchmark"]) is list:
+            self["benchmark"] = {"onlystage": self["benchmark"]}
+            return self
+        return self
 
     @field_validator("cwd")
     @classmethod
@@ -321,13 +329,13 @@ class ConfigFile(BaseModel):
         return self
 
 
-def validate_config(config) -> dict:
+def validate_config(config) -> ConfigFile:
     logger.info("Validating config...")
     try:
         config_validator = ConfigFile(**config)
     except ValidationError as e:
         error_and_exit(e)
-    normalized_config = config_validator.model_dump(by_alias=True)
+    normalized_config = config_validator
     logger.info("Successfully validated config.")
     logger.debug(normalized_config)
     return normalized_config

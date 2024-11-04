@@ -67,25 +67,6 @@ def interpolate_commands(commands: list, variables: dict[str, str | int]) -> lis
     return prepared_commands
 
 
-def name_benchmark_stages(
-    benchmarks: list[str] | dict[str, list[str]]
-) -> dict[str, list[str]]:
-    """Transform list of commands to dictionary of lists of commands.
-
-    Args:
-        benchmarks: List or dictionary of lists of commands.
-
-    Returns:
-        dict[str, list[str]]: Stage names paired with lists of commands.
-    """
-    if type(benchmarks) is dict:
-        return benchmarks
-    elif type(benchmarks) is list:
-        return {"onlystage": benchmarks}
-    assert "Unreachable!"
-    return None  # type: ignore
-
-
 def prepare_before_after_all_commands(
     run_config: RunSection, matrix: dict[str, list]
 ) -> tuple[list[str], list[str]]:
@@ -170,8 +151,10 @@ def prepare_benchmarks(
     """
     if isolate_cpus:
         for name in run_config.benchmark:
-            for i, c in enumerate(run_config.benchmark[name]):
-                run_config.benchmark[name][i] = "cset shield --exec -- " + c
+            commands = run_config.benchmark[name]
+            if type(commands) is list:
+                for i, c in enumerate(commands):
+                    run_config.benchmark[name][i] = "cset shield --exec -- " + c
     benchmarks = []
     logger.info("Preparing benchmarks...")
     if not matrix:

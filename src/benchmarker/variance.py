@@ -82,8 +82,8 @@ def modify_system_state(system_options: SystemSection) -> None:
         system_state["isolate-cpus"] = "yes"
     if system_options.governor_performance:
         cpus = (
-            system_options["isolate-cpus"]
-            if system_options["isolate-cpus"]
+            system_options.isolate_cpus
+            if system_options.isolate_cpus
             else range(cpu_count())
         )
         logger.debug(f"Setting CPU governor for CPUs {cpus}...")

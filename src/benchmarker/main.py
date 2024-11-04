@@ -3,7 +3,6 @@ from sys import argv, executable
 from benchmarker.validation import validate_config
 from benchmarker.preparation import (
     prepare_benchmarks,
-    name_benchmark_stages,
     prepare_before_after_all_commands,
 )
 from benchmarker.execution import (
@@ -25,6 +24,7 @@ from logging import getLogger
 from atexit import unregister
 from os import environ
 from pathlib import Path
+from benchmarker.validation import ConfigFile
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -38,7 +38,7 @@ def main():
     config = validate_config(config_file)
 
     if args.update_output:  # Update output and exit
-        update_output(args.update_output, config["output"], config["matrix"])
+        update_output(args.update_output, config.output, config.matrix)
         exit_benchmarker()
     if args.split:  # Split configuration file and exit
         generate_config_files(config, args.config_filename, args.split)
@@ -50,42 +50,41 @@ def main():
             exit(1)
 
     is_root = geteuid() == 0
-    if config["system"]["modify"] and not is_root:
+    if config.system.modify and not is_root:
         print(
             "To perform system configuration, root privileges are required. Running sudo..."
         )
         execvp("sudo", ["sudo", executable] + argv)
 
-    run_config = config["run"]
-    run_config["benchmark"] = name_benchmark_stages(run_config["benchmark"])
+    run_config = config.run
     benchmarks = prepare_benchmarks(
-        run_config, config["matrix"], config["system"]["isolate-cpus"]
+        run_config, config.matrix, config.system.isolate_cpus
     )
     before_all_commands, after_all_commands = prepare_before_after_all_commands(
-        run_config, config["matrix"]
+        run_config, config.matrix
     )
 
-    if config["run"]["save-output"]:
-        setup_command_logging(config["run"]["save-output"])
-    set_working_directory(config["run"]["cwd"])
-    environ.update(config["run"]["env"])
+    if config.run.save_output:
+        setup_command_logging(config.run.save_output)
+    set_working_directory(config.run.cwd)
+    environ.update(config.run.env)
 
     execute_section(before_all_commands, "before-all")
 
-    if config["system"]["modify"]:
-        modify_system_state(config["system"])
+    if config.system.modify:
+        modify_system_state(config.system)
 
-    results = perform_benchmarks(benchmarks, config["run"]["samples"])
+    results = perform_benchmarks(benchmarks, config.run.samples)
 
-    if config["system"]["modify"]:
-        restore_system_state(config["system"])
+    if config.system.modify:
+        restore_system_state()
 
     execute_section(after_all_commands, "after-all")
 
     output_results_from_dict(
         results,
-        config["output"],
-        config["matrix"],
+        config.output,
+        config.matrix,
         args.include,
     )
 
@@ -180,7 +179,7 @@ def load_configuration_file(filename):
     return config
 
 
-def generate_config_files(config: dict, config_filename: str, split: list[str]) -> None:
+def generate_config_files(config: ConfigFile, config_filename: str, split: list[str]) -> None:
     """Create multiple configuration files.
 
     Args:
@@ -205,10 +204,11 @@ def generate_config_files(config: dict, config_filename: str, split: list[str]) 
         return ret
 
     for var in split:
-        if var not in config["matrix"]:
+        if var not in config.matrix:
             logger.critical(f"Variable '{var}' not found.")
             exit(1)
     logger.info("Spliting configuration file...")
+    config = config.model_dump(by_alias=True)
     config["system"].pop("modify")  # remove calculated field from config file
     matrices = split_matrix(config["matrix"], split)
     command = "benchmarker " + config_filename + " -u"
