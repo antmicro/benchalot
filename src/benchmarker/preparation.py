@@ -12,7 +12,6 @@ from re import sub, findall
 from collections.abc import Callable
 from typing import Any
 
-
 logger = getLogger(f"benchmarker.{__name__}")
 
 VAR_REGEX = r"{{([a-zA-Z0-9_\-.]+)}}"
