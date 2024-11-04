@@ -77,7 +77,7 @@ def handle_output(
 def execute_and_handle_output(
     command: str, capture_stdout=False, capture_stderr=False
 ) -> str:
-    """Execute command, handle its output and check its return code.
+    """Execute command, log its output and check its return code.
 
     Args:
         command: Command to be executed.
@@ -95,7 +95,7 @@ def execute_and_handle_output(
 
 
 def execute_section(commands: list[str], section_name: str = "") -> None:
-    """Execute and handle output of a whole section of commands
+    """Execute and log output multiple of commands.
 
     Args:
         commands: List of commands to be executed.

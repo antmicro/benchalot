@@ -93,12 +93,18 @@ def main():
 
 
 def exit_benchmarker():
+    """Exit Benchmarker normally."""
     logger.info("Exiting Benchmarker...")
     unregister(crash_msg_log_file)
     exit(0)
 
 
 def get_argument_parser() -> ArgumentParser:
+    """Create argument parser for Benchmarker command line arguments.
+
+    Returns:
+        ArgumentParser: Parser object.
+    """
     parser = ArgumentParser(
         prog="benchmarker",
         description="Benchmarker is a tool used for automatic benchmarking of software.",
@@ -174,7 +180,15 @@ def load_configuration_file(filename):
     return config
 
 
-def generate_config_files(config: dict, config_filename: str, split: list[str]):
+def generate_config_files(config: dict, config_filename: str, split: list[str]) -> None:
+    """Create multiple configuration files.
+
+    Args:
+        config: Configuration file.
+        config_filename: Name of the configuration file. Used to name output.
+        split: List of variable names which will be used to split the configuration file.
+    """
+
     def split_matrix(matrix, along):
         if not along:
             return [matrix]
@@ -224,7 +238,16 @@ def generate_config_files(config: dict, config_filename: str, split: list[str]):
     logger.info("Finished spliting configuration file.")
 
 
-def update_output(old_outputs: list[str], output_config: dict, matrix: dict[str, list]):
+def update_output(
+    old_outputs: list[str], output_config: dict, matrix: dict[str, list]
+) -> None:
+    """Regenerate output based on previous result.
+
+    Args:
+        old_outputs: List of previous result file names.
+        output_config: Configuration file's output section.
+        matrix: Configuration file's matrix section.
+    """
     for file in old_outputs:
         if not isfile(file):
             logger.critical(f"File '{file}' not found")

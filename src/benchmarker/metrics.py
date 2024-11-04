@@ -108,7 +108,7 @@ def custom_metric(
     metric_command: str, metric_name: str, benchmarks: dict[str, list[str]]
 ) -> dict:
     """Execute all the benchmark commands, then execute custom metric command and process its output.
-    If output has more than one line treat output as csv file, with each column representing separate stage.
+    If output has more than one line, treat output as csv file, with each column representing separate stage.
     Sum stages under `metric_name`.
 
     Args:

@@ -95,7 +95,7 @@ def modify_system_state(system_options: dict) -> None:
 
 
 def restore_system_state(system_options: dict) -> None:
-    """Restore operating system's state.
+    """Restore operating system's state from before Benchmarker's modifications.
 
     Args:
         system_options: Configuration file's system section.
