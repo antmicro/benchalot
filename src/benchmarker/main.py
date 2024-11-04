@@ -24,68 +24,14 @@ from benchmarker.log import (
 from logging import getLogger
 from atexit import unregister
 from os import environ
+from pathlib import Path
 from pprint import pprint
 
 logger = getLogger(f"benchmarker.{__name__}")
 
 
-# load configuration file
-def load_configuration_file(filename):
-    try:
-        config_file = open(filename, "r")
-    except FileNotFoundError:
-        logger.critical(f"File '{filename}' not found.")
-        exit(1)
-    else:
-        with config_file:
-            config = yaml.safe_load(config_file)
-
-    return config
-
-
 def main():
-    parser = ArgumentParser(
-        prog="benchmarker",
-        description="Benchmarker is a tool used for automatic benchmarking of software.",
-    )
-    parser.add_argument("config_filename", help="a path to YAML configuration file")
-    parser.add_argument(
-        "-d",
-        "--debug",
-        dest="debug",
-        default=False,
-        action="store_true",
-        help="print debug information during Benchmarker execution",
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        default=False,
-        action="store_true",
-        dest="verbose",
-        help="print basic information during Benchmarker execution",
-    )
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
-        "-i",
-        "--include",
-        nargs="+",
-        dest="include",
-        metavar="CSV_FILE",
-        default=[],
-        help="append previous results to the new output",
-    )
-
-    group.add_argument(
-        "-u",
-        "--update-output",
-        dest="update_output",
-        metavar="CSV_FILE",
-        default=False,
-        help="regenerate the output without re-running benchmarks",
-        nargs="+",
-    )
-
+    parser = get_argument_parser()
     args = parser.parse_args()
     setup_benchmarker_logging(args.verbose, args.debug)
 
@@ -96,28 +42,8 @@ def main():
 
     config_file = load_configuration_file(args.config_filename)
     config = validate_config(config_file)
-
-    def split_matrix(matrix, along):
-        if not along:
-            return [matrix]
-        along_key = along[0]
-        mul_m = split_matrix(
-            {key: value for key, value in matrix.items() if key != along_key}, along[1:]
-        )
-        ret = []
-        for m in mul_m:
-            for value in matrix[along_key]:
-                new_m = {key: value for key, value in m.items()}
-                new_m[along_key] = [value]
-                ret.append(new_m)
-        return ret
-
-    matrices = split_matrix(config["matrix"], ["tag", "thread"])
-    for i, matrix in enumerate(matrices):
-        c = {k: v for k, v in config.items() if k != "matrix"}
-        c["matrix"] = matrix
-        with open(f"tmp{i}", "w") as file:
-            yaml.dump(c, file)
+    if args.split:
+        generate_config_files(config, args.split)
     exit(1)
     if not args.update_output:
         is_root = geteuid() == 0
@@ -164,3 +90,97 @@ def main():
         output_results_from_file(config["output"], old_outputs, config["matrix"])
     logger.info("Exiting Benchmarker...")
     unregister(crash_msg_log_file)
+
+
+def get_argument_parser() -> ArgumentParser:
+    parser = ArgumentParser(
+        prog="benchmarker",
+        description="Benchmarker is a tool used for automatic benchmarking of software.",
+    )
+    parser.add_argument("config_filename", help="a path to YAML configuration file")
+    parser.add_argument(
+        "-d",
+        "--debug",
+        dest="debug",
+        default=False,
+        action="store_true",
+        help="print debug information during Benchmarker execution",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        default=False,
+        action="store_true",
+        dest="verbose",
+        help="print basic information during Benchmarker execution",
+    )
+    mul_input_split_group = parser.add_mutually_exclusive_group()
+    include_update_group = mul_input_split_group.add_mutually_exclusive_group()
+    include_update_group.add_argument(
+        "-i",
+        "--include",
+        nargs="+",
+        dest="include",
+        metavar="CSV_FILE",
+        default=[],
+        help="append previous results to the new output",
+    )
+
+    include_update_group.add_argument(
+        "-u",
+        "--update-output",
+        dest="update_output",
+        metavar="CSV_FILE",
+        default=False,
+        help="regenerate the output without re-running benchmarks",
+        nargs="+",
+    )
+    mul_input_split_group.add_argument(
+        "-s",
+        "--split",
+        nargs="+",
+        dest="split",
+        metavar="VAR_NAME",
+        default=[],
+        help="create new configuration file for each VAR_NAME",
+    )
+    return parser
+
+
+# load configuration file
+def load_configuration_file(filename):
+    try:
+        config_file = open(filename, "r")
+    except FileNotFoundError:
+        logger.critical(f"File '{filename}' not found.")
+        exit(1)
+    else:
+        with config_file:
+            config = yaml.safe_load(config_file)
+
+    return config
+
+
+def generate_config_files(config: dict, split: list[str]):
+    def split_matrix(matrix, along):
+        if not along:
+            return [matrix]
+        along_key = along[0]
+        mul_m = split_matrix(
+            {key: value for key, value in matrix.items() if key != along_key}, along[1:]
+        )
+        ret = []
+        for m in mul_m:
+            for value in matrix[along_key]:
+                new_m = {key: value for key, value in m.items()}
+                new_m[along_key] = [value]
+                ret.append(new_m)
+        return ret
+
+    matrices = split_matrix(config["matrix"], split)
+    for i, matrix in enumerate(matrices):
+        c = {k: v for k, v in config.items() if k != "matrix"}
+        c["matrix"] = matrix
+        Path("configs").mkdir(exist_ok=True)
+        with open(f"configs/config{i}.yml", "w") as file:
+            yaml.dump(c, file)
