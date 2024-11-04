@@ -15,7 +15,7 @@ from typing import Any
 
 logger = getLogger(f"benchmarker.{__name__}")
 
-VAR_REGEX = r"{{[a-zA-Z0-9_\-.]*}}"
+VAR_REGEX = r"{{([a-zA-Z0-9_\-.]+)}}"
 
 
 def create_variable_combinations(**kwargs):
@@ -29,7 +29,7 @@ def create_variable_combinations(**kwargs):
         yield dict(zip(keys, instance))
 
 
-def prepare_command(command: str, variables: dict[str, str | int]) -> str:
+def interpolate_command(command: str, variables: dict[str, str | int]) -> str:
     """Replace variable references with values.
 
     Args:
@@ -41,7 +41,7 @@ def prepare_command(command: str, variables: dict[str, str | int]) -> str:
     """
 
     def replace_substring(match):
-        variable_name = match.group(0).removeprefix("{{").removesuffix("}}")
+        variable_name = match.group(1)
         try:
             return str(variables[variable_name])
         except KeyError:
@@ -52,7 +52,7 @@ def prepare_command(command: str, variables: dict[str, str | int]) -> str:
     return new_command
 
 
-def prepare_commands(commands: list, variables: dict[str, str | int]) -> list[str]:
+def interpolate_commands(commands: list, variables: dict[str, str | int]) -> list[str]:
     """Replace variable references with values in multiple commands.
 
     Args:
@@ -63,7 +63,7 @@ def prepare_commands(commands: list, variables: dict[str, str | int]) -> list[st
     """
     prepared_commands = []
     for command in commands:
-        prepared_commands.append(prepare_command(command, variables))
+        prepared_commands.append(interpolate_command(command, variables))
     return prepared_commands
 
 
@@ -106,13 +106,13 @@ def prepare_before_after_all_commands(
             vars = set()
             for command in run_config[section]:
                 for var_name in findall(VAR_REGEX, command):
-                    vars.add(var_name.removeprefix("{{").removesuffix("}}"))
+                    vars.add(var_name)
             if vars:
                 var_combinations = create_variable_combinations(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
                 for var_combination in var_combinations:
-                    curr_section_commands += prepare_commands(
+                    curr_section_commands += interpolate_commands(
                         run_config[section], var_combination
                     )
             else:
@@ -148,7 +148,7 @@ def get_metrics_functions(
             metric_command = list(metric.items())[0][1]  # type: ignore
             metric_name = list(metric.items())[0][0]  # type: ignore
             if variables:
-                metric_command = prepare_command(metric_command, variables)
+                metric_command = interpolate_command(metric_command, variables)
             metrics_functions.append(
                 partial(custom_metric, metric_command, metric_name)
             )
@@ -186,12 +186,12 @@ def prepare_benchmarks(
         for var_combination in var_combinations:
             benchmark = {"matrix": var_combination}
             for section in ["before", "after"]:
-                benchmark[section] = prepare_commands(
+                benchmark[section] = interpolate_commands(
                     run_config[section], var_combination
                 )
             benchmark["benchmark"] = {}
             for name in run_config["benchmark"]:
-                benchmark["benchmark"][name] = prepare_commands(
+                benchmark["benchmark"][name] = interpolate_commands(
                     run_config["benchmark"][name], var_combination
                 )
             benchmark["metrics"] = get_metrics_functions(
