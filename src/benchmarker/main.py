@@ -153,8 +153,15 @@ def get_argument_parser() -> ArgumentParser:
     return parser
 
 
-# load configuration file
 def load_configuration_file(filename):
+    """Load `YAML` configuration file
+
+    Args:
+        filename: Name of the configuration file.
+
+    Returns:
+        dict: Parsed configuration file.
+    """
     try:
         config_file = open(filename, "r")
     except FileNotFoundError:
