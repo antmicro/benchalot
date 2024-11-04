@@ -147,14 +147,13 @@ def prepare_benchmarks(
         isolate_cpus: Whether to prepend `cset shield --exec -- ` to `benchmark` commands.
 
     Returns:
-        list[dict]: List of unique benchmarks containing their variable combination, modified commands and metrics.
+        list[Benchmark]: List of unique benchmarks containing their variable combination, modified commands and metrics.
     """
     if isolate_cpus:
         for name in run_config.benchmark:
             commands = run_config.benchmark[name]
-            if type(commands) is list:
-                for i, c in enumerate(commands):
-                    run_config.benchmark[name][i] = "cset shield --exec -- " + c
+            for i, c in enumerate(commands):
+                run_config.benchmark[name][i] = "cset shield --exec -- " + c
     benchmarks: list[Benchmark] = []
     logger.info("Preparing benchmarks...")
     if not matrix:

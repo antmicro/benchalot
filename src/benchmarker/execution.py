@@ -117,7 +117,7 @@ def perform_benchmarks(benchmarks: list[Benchmark], samples: int) -> dict[str, l
     """Perform benchmarks and return their results.
 
     Args:
-        benchmarks: Structured list of benchmarks, each containing variable values, preprocessed commands and callable metrics.
+        benchmarks: List of benchmarks, each containing variable values, preprocessed commands and callable metrics.
         samples: How many times each benchmark needs to be repeated.
 
     Returns:
