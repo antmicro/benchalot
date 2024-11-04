@@ -19,3 +19,9 @@ class PreparedBenchmark:
     benchmark: dict[str, list[str]]
     after: list[str]
     metrics: list[Callable[[dict], dict]]
+
+@dataclass
+class BenchmarkResult:
+    metric_name: str
+    has_failed: bool
+    measurements: dict[str,float|str]

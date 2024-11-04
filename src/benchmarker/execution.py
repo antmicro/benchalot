@@ -25,7 +25,6 @@ def check_return_code(command: str, code: int) -> None:
     """
     if code != 0:
         logger.error(f"Subprocess '{command}' exited abnormally (exit code {code})")
-        exit(1)
 
 
 def execute_command(command: str) -> Popen:
