@@ -2,7 +2,7 @@ from subprocess import Popen, PIPE
 from logging import getLogger, INFO, ERROR
 from tqdm import tqdm
 from os import getcwd
-from benchmarker.structs import Benchmark
+from benchmarker.structs import PreparedBenchmark
 
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -113,7 +113,9 @@ def execute_section(commands: list[str], section_name: str = "") -> None:
     logger.info(f"Execution of '{section_name}' section finished.")
 
 
-def perform_benchmarks(benchmarks: list[Benchmark], samples: int) -> dict[str, list]:
+def perform_benchmarks(
+    benchmarks: list[PreparedBenchmark], samples: int
+) -> dict[str, list]:
     """Perform benchmarks and return their results.
 
     Args:
@@ -149,7 +151,6 @@ def perform_benchmarks(benchmarks: list[Benchmark], samples: int) -> dict[str, l
                         f"Executing {text[:20] + '...' if len(text)>20 else text}"
                     )
 
-                    bar.set_description(f"Benchmarking `{text}`")
                     partial_result = metric(benchmark.benchmark)
                     bar.refresh(nolock=True)
                     partial_results.update(partial_result)

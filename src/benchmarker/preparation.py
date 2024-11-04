@@ -10,7 +10,7 @@ from functools import partial
 from re import sub, findall
 from collections.abc import Callable
 from typing import Any
-from benchmarker.structs import Benchmark
+from benchmarker.structs import PreparedBenchmark
 from benchmarker.validation import RunSection
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -94,7 +94,9 @@ def prepare_before_after_all_commands(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
                 for var_combination in var_combinations:
-                    curr_section_commands += interpolate_commands(section, var_combination)
+                    curr_section_commands += interpolate_commands(
+                        section, var_combination
+                    )
             else:
                 curr_section_commands += section
         ret.append(curr_section_commands)
@@ -138,7 +140,7 @@ def get_metrics_functions(
 
 def prepare_benchmarks(
     run_config: RunSection, matrix: dict[str, list[str]], isolate_cpus: bool
-) -> list[Benchmark]:
+) -> list[PreparedBenchmark]:
     """Prepare `before`, `benchmark` and `after` commands so that they can be executed as part of one benchmark.
 
     Args:
@@ -147,18 +149,18 @@ def prepare_benchmarks(
         isolate_cpus: Whether to prepend `cset shield --exec -- ` to `benchmark` commands.
 
     Returns:
-        list[Benchmark]: List of unique benchmarks containing their variable combination, modified commands and metrics.
+        list[PreparedBenchmark]: List of unique benchmarks containing their variable combination, modified commands and metrics.
     """
     if isolate_cpus:
         for name in run_config.benchmark:
             commands = run_config.benchmark[name]
             for i, c in enumerate(commands):
                 run_config.benchmark[name][i] = "cset shield --exec -- " + c
-    benchmarks: list[Benchmark] = []
+    benchmarks: list[PreparedBenchmark] = []
     logger.info("Preparing benchmarks...")
     if not matrix:
         logger.debug("`matrix` not found in the config.")
-        benchmark = Benchmark(
+        benchmark = PreparedBenchmark(
             matrix={},
             before=run_config.before,
             benchmark=run_config.benchmark,
@@ -179,7 +181,7 @@ def prepare_benchmarks(
                     run_config.benchmark[name], var_combination
                 )
             metrics = get_metrics_functions(run_config.metrics, var_combination)
-            benchmark = Benchmark(
+            benchmark = PreparedBenchmark(
                 matrix=var_combination,
                 before=before,
                 benchmark=bench,

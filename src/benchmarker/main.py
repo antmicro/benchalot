@@ -179,7 +179,9 @@ def load_configuration_file(filename):
     return config
 
 
-def generate_config_files(config: ConfigFile, config_filename: str, split: list[str]) -> None:
+def generate_config_files(
+    config: ConfigFile, config_filename: str, split: list[str]
+) -> None:
     """Create multiple configuration files.
 
     Args:
@@ -208,13 +210,13 @@ def generate_config_files(config: ConfigFile, config_filename: str, split: list[
             logger.critical(f"Variable '{var}' not found.")
             exit(1)
     logger.info("Spliting configuration file...")
-    config = config.model_dump(by_alias=True)
-    config["system"].pop("modify")  # remove calculated field from config file
-    matrices = split_matrix(config["matrix"], split)
+    config_dict = config.model_dump(by_alias=True)
+    config_dict["system"].pop("modify")  # remove calculated field from config file
+    matrices = split_matrix(config_dict["matrix"], split)
     command = "benchmarker " + config_filename + " -u"
     directory = "out"
     for i, matrix in enumerate(matrices):
-        new_config = {k: v for k, v in config.items() if k != "matrix"}
+        new_config = {k: v for k, v in config_dict.items() if k != "matrix"}
         new_config["matrix"] = matrix
         unique_name = f"{config_filename}.part{i}"
         output_file_name = f"{unique_name}.csv"

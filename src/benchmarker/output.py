@@ -270,6 +270,7 @@ def _output_results(
                 y_axis=output.y_axis,
                 color=output.color,
                 facet=output.facet,
+                stat=output.stat,
             )
             plot.save(
                 output.filename,

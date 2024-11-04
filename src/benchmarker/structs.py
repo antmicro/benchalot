@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Benchmark:
+class PreparedBenchmark:
     """Structure representing a single benchmark.
 
     Attributes:
