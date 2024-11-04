@@ -9,7 +9,6 @@ from pydantic import (
 )
 from typing import Literal
 from logging import getLogger
-from os import getcwd
 from os.path import isdir
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -69,7 +68,7 @@ class RunSection(BaseModel):
     benchmark: list[str] | dict[str, list]
     after: list[str] = []
     after_all: list[str] = Field(default=[], alias="after-all")
-    cwd: str = getcwd()
+    cwd: str | None = None
     metrics: list[str | dict] = ["time"]
     env: dict[str, str] = {}
     model_config = ConfigDict(extra="forbid")

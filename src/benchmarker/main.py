@@ -24,6 +24,7 @@ from benchmarker.log import (
 from logging import getLogger
 from atexit import unregister
 from os import environ
+from pprint import pprint
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -96,6 +97,28 @@ def main():
     config_file = load_configuration_file(args.config_filename)
     config = validate_config(config_file)
 
+    def split_matrix(matrix, along):
+        if not along:
+            return [matrix]
+        along_key = along[0]
+        mul_m = split_matrix(
+            {key: value for key, value in matrix.items() if key != along_key}, along[1:]
+        )
+        ret = []
+        for m in mul_m:
+            for value in matrix[along_key]:
+                new_m = {key: value for key, value in m.items()}
+                new_m[along_key] = [value]
+                ret.append(new_m)
+        return ret
+
+    matrices = split_matrix(config["matrix"], ["tag", "thread"])
+    for i, matrix in enumerate(matrices):
+        c = {k: v for k, v in config.items() if k != "matrix"}
+        c["matrix"] = matrix
+        with open(f"tmp{i}", "w") as file:
+            yaml.dump(c, file)
+    exit(1)
     if not args.update_output:
         is_root = geteuid() == 0
         if config["system"]["modify"] and not is_root:
