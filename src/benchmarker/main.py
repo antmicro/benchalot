@@ -43,6 +43,7 @@ def main():
             config.output,
             list(config.matrix.keys()),
             list(config.run.benchmark.keys()),
+            args.include_failed,
         )
         exit_benchmarker()
     if args.split:  # Split configuration file and exit
@@ -92,6 +93,7 @@ def main():
         list(config.matrix.keys()),
         list(config.run.benchmark.keys()),
         args.include,
+        args.include_failed,
     )
 
     exit_benchmarker()
@@ -161,6 +163,14 @@ def get_argument_parser() -> ArgumentParser:
         default=[],
         help="create new configuration file for each value of VAR_NAME and put them in 'out' directory",
     )
+    parser.add_argument(
+        "--include-failed",
+        dest="include_failed",
+        action="store_true",
+        default=False,
+        help="include failed benchmarks in the output files other than CSV.",
+    )
+
     return parser
 
 
@@ -251,6 +261,7 @@ def update_output(
     output_config: dict,
     variable_names: list[str],
     measurement_columns: list[str],
+    include_failed: bool,
 ) -> None:
     """Regenerate output based on previous result.
 
@@ -264,5 +275,5 @@ def update_output(
             logger.critical(f"File '{file}' not found")
             exit(1)
     output_results_from_file(
-        output_config, old_outputs, variable_names, measurement_columns
+        output_config, old_outputs, variable_names, measurement_columns, include_failed
     )

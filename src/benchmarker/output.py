@@ -14,9 +14,9 @@ from logging import getLogger
 from datetime import timezone, datetime
 import numpy as np
 import os
-from pandas.api.types import is_string_dtype
 from uuid import uuid4
 from benchmarker.validation import BarChartOutput, CsvOutput, TableMdOutput
+from sys import argv
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -38,6 +38,7 @@ def read_old_outputs(include: list[str]) -> pd.DataFrame:
         logger.debug(f"Reading file '{file}'")
         old_output = pd.read_csv(file)
         logger.debug(old_output.head())
+        old_output = old_output.fillna("")
         results_df = pd.concat([results_df, old_output], ignore_index=True)
     return results_df
 
@@ -48,6 +49,7 @@ def output_results_from_dict(
     variable_names: list[str],
     measurement_columns: list[str],
     include: list,
+    include_failed: bool,
 ) -> None:
     """Create output for the results, optionally including old results.
 
@@ -66,7 +68,9 @@ def output_results_from_dict(
     )
     old_outputs = read_old_outputs(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
-    _output_results(results_df, output_config, variable_names, measurement_columns)
+    _output_results(
+        results_df, output_config, variable_names, measurement_columns, include_failed
+    )
 
 
 def output_results_from_file(
@@ -74,6 +78,7 @@ def output_results_from_file(
     include: list,
     variable_names: list[str],
     measurement_columns: list[str],
+    include_failed: bool,
 ) -> None:
     """Create output for the results contained in files.
 
@@ -83,7 +88,9 @@ def output_results_from_file(
         matrix: Configuration file's matrix section.
     """
     old_outputs = read_old_outputs(include)
-    _output_results(old_outputs, output_config, variable_names, measurement_columns)
+    _output_results(
+        old_outputs, output_config, variable_names, measurement_columns, include_failed
+    )
 
 
 def get_stat_table(
@@ -107,7 +114,7 @@ def get_stat_table(
         results_df[measurement_columns] = results_df[measurement_columns].apply(
             pd.to_numeric
         )
-    except ValueError:
+    except (ValueError, TypeError):
         is_numeric = False
 
     result_columns = []
@@ -145,15 +152,19 @@ def get_stat_table(
             table_df = results_df.drop_duplicates().reset_index(drop=True)
         return table_df
     else:
-        statistics = ["min", "median", "max"]
         table_df = results_df.loc[:, show_columns + result_columns]
-        math_df = table_df.groupby(show_columns, observed=False)
-        for col in result_columns:
-            if is_numeric:
-                for stat in statistics:
-                    col_name = col + " " + metric
-                    table_df[stat + " " + col_name] = math_df[col].transform(stat)
-                table_df = table_df.drop(col, axis=1).reset_index(drop=True)
+        if is_numeric:
+            grouped_df = table_df.groupby(show_columns, observed=True)[
+                result_columns
+            ].agg(["min", "median", "max"])
+            new_column_names = []
+            for old_col in grouped_df.columns:
+                col_name = old_col[0]
+                stat_name = old_col[1]
+                new_name = stat_name + " " + col_name
+                new_column_names.append(new_name)
+            grouped_df.columns = pd.Index(new_column_names)
+            table_df = grouped_df.reset_index()
         table_df = table_df.drop_duplicates().reset_index(drop=True)
         return table_df
 
@@ -188,7 +199,7 @@ def get_bar_chart(
         output_df[measurement_columns] = output_df[measurement_columns].apply(
             pd.to_numeric
         )
-    except ValueError:
+    except (ValueError, TypeError):
         logger.error(
             f"y-axis ({y_axis}) of bar-chart has non-numeric type; bar-chart will not be generated"
         )
@@ -251,6 +262,7 @@ def _output_results(
     output_config: dict[str, CsvOutput | TableMdOutput | BarChartOutput],
     variable_names: list[str],
     measurement_columns: list[str],
+    include_failed: bool,
 ) -> None:
     """Create output based on results and configuration.
 
@@ -260,11 +272,10 @@ def _output_results(
         matrix: Configuration file's matrix section.
 
     """
-    # Convert all string columns to categorical to prevent rearranging by plotnine
+    # Convert all variable columns to categorical to prevent rearranging by plotnine
     for column in variable_names:
-        if is_string_dtype(results_df[column]):
-            series = results_df[column]
-            results_df[column] = pd.Categorical(series, categories=series.unique())
+        series = results_df[column]
+        results_df[column] = pd.Categorical(series, categories=series.unique())
 
     logger.info("Outputting results...")
     logger.debug(results_df)
@@ -274,16 +285,37 @@ def _output_results(
     )
     if os.getuid() == 0:
         prev_umask = os.umask(0)
-    for key in output_config:
-        output = output_config[key]
-        logger.debug(f"Creating output for {output}")
+
+    has_used_filtered_output = False
+    csv_output_filename = ""
+    failed_benchmarks = results_df[results_df["has_failed"] == True]  # noqa: E712
+    n_failed = failed_benchmarks.shape[0]
+    output_df: pd.DataFrame
+    if n_failed > 0 and not include_failed:
+        logger.error(f"{n_failed} benchmarks failed!")
+        logger.warning("Failed benchmarks:\n" + failed_benchmarks.to_markdown())
+        output_df = pd.DataFrame(
+            results_df.loc[results_df["has_failed"] == False]  # noqa: E712
+        )
+    else:
         output_df = results_df
-        logger.debug(output_df.head())
+
+    def check_outputting_without_failed(output_name):
+        nonlocal has_used_filtered_output, n_failed
+        if n_failed > 0 and not include_failed:
+            logger.warning(f"Creating '{output_name}' without failed benchmarks.")
+            has_used_filtered_output = True
+
+    for output_name, output in output_config.items():
+        logger.debug(f"Creating output for {output}")
+        logger.debug(results_df.head())
         if output.format == "csv":
             logger.debug("Outputting .csv file.")
-            output_df.to_csv(output.filename, encoding="utf-8", index=False)
+            results_df.to_csv(output.filename, encoding="utf-8", index=False)
+            csv_output_filename = output.filename
         elif output.format == "bar-chart":
             logger.debug("Outputting bar chart.")
+            check_outputting_without_failed(output_name)
             plot = get_bar_chart(
                 input_df=output_df,
                 variable_names=variable_names,
@@ -307,16 +339,21 @@ def _output_results(
 
         elif output.format == "table-md":
             logger.debug("Outputting markdown table.")
-            result_column = output.result_column
+            check_outputting_without_failed(output_name)
             table = get_stat_table(
-                results_df,
+                output_df,
                 measurement_columns=measurement_columns,
                 show_columns=output.columns,
-                metric=result_column,
+                metric=output.result_column,
             )
             table.to_markdown(output.filename, index=False)
             print_table = table
+
     if os.getuid() == 0:
         os.umask(prev_umask)
+    if has_used_filtered_output:
+        logger.warning(
+            f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {csv_output_filename} --include-failed"
+        )
     print(print_table.to_markdown(index=False))
     logger.info("Finished outputting results.")
