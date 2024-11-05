@@ -15,8 +15,7 @@ logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
 
 
-
-def measure_time(benchmarks: dict[str, list[str]]) -> Result:
+def measure_time(benchmarks: dict[str, list[str]]) -> BenchmarkResult:
     """Measure execution time of the commands.
 
     Args:
@@ -26,25 +25,24 @@ def measure_time(benchmarks: dict[str, list[str]]) -> Result:
         dict: Containing execution time of each stage and total execution time.
     """
     has_failed = False
+
     def _measure_stage_time(commands: list[str]) -> float:
         nonlocal has_failed
         elapsed_time = 0.0
         for command in commands:
             start = monotonic_ns()
             process = execute_command(command)
-            process.wait()
+            code = process.wait()
             elapsed_time += monotonic_ns() - start
             handle_output(process)
-            success = check_return_code(command)
+            success = check_return_code(command, code)
             if not success:
                 has_failed = True
         return elapsed_time / 1e9
 
-    measurements = dict()
+    measurements: dict[str, float] = {}
     for stage, commands in benchmarks.items():
-        measurements[stage] = _measure_stage_time(
-            commands
-        )
+        measurements[stage] = _measure_stage_time(commands)
     measurements["total"] = sum(measurements.values())
     if len(benchmarks) == 1:
         measurements = {"total": measurements["total"]}
@@ -65,6 +63,7 @@ def _gather_output(
         dict: Containing `stderr` or `stdout` of each stage and their total. If possible, output will be converted to float.
     """
     has_failed = False
+
     def _gather_stage_output(commands: list[str]) -> str | float:
         nonlocal has_failed
         total = ""
@@ -78,14 +77,14 @@ def _gather_output(
             total += ret
 
             if not success:
-                has_failed = False
+                has_failed = True
         try:
             return float(total)
         except ValueError:
             pass
         return total
 
-    measurements = dict()
+    measurements: dict[str, float | str] = {}
     total_float = 0.0
     total_str = ""
     output_float = True
@@ -102,23 +101,24 @@ def _gather_output(
     else:
         measurements["total"] = total_str
     if len(benchmarks) == 1:
-        measurements = {"total": measurements["total"]}, success
-    return measurements, success
+        measurements = {"total": measurements["total"]}
+    result = BenchmarkResult(output, has_failed, measurements)
+    return result
 
 
-def gather_stdout(benchmarks: dict[str, list[str]]) -> tuple(dict,bool):
+def gather_stdout(benchmarks: dict[str, list[str]]) -> BenchmarkResult:
     """Calls `_gather_output` with `output` set to "stdout"."""
     return _gather_output(benchmarks, "stdout")
 
 
-def gather_stderr(benchmarks: dict[str, list[str]]) -> tuple(dict,bool):
+def gather_stderr(benchmarks: dict[str, list[str]]) -> BenchmarkResult:
     """Calls `_gather_output` with `output` set to "stderr"."""
     return _gather_output(benchmarks, "stderr")
 
 
 def custom_metric(
     metric_command: str, metric_name: str, benchmarks: dict[str, list[str]]
-) -> tuple(dict, bool):
+) -> BenchmarkResult:
     """Execute all the benchmark commands, then execute custom metric command and process its output.
     If output has more than one line, treat output as csv file, with each column representing separate stage.
     Sum stages under `metric_name`.
@@ -131,22 +131,25 @@ def custom_metric(
     Returns:
         dict: Containing multistage result with its total, or just total if metric's command outputs one line.
     """
-    succes = True
-    for name, commands in benchmarks.items():
+    has_failed = False
+    for _, commands in benchmarks.items():
         for command in commands:
-            _, _success = execute_and_handle_output(command)
-            if not _success:
-                succes = False
+            _, success = execute_and_handle_output(command)
+            if not success:
+                has_failed = True
     process = execute_command(metric_command)
     output = handle_output(process, capture_stdout=True)
-    result = process.wait()
-    check_return_code(metric_command, result)
+    metric_return_code = process.wait()
+    check_return_code(metric_command, metric_return_code)
+    if metric_return_code != 0:
+        exit(1)
+
     if len(output.splitlines()) == 1:
         try:
-            return {metric_name: float(output)}
+            return BenchmarkResult(metric_name, has_failed, {"total": float(output)})
         except ValueError:
             pass
-        return {metric_name: output}, succes
+        return BenchmarkResult(metric_name, has_failed, {"total": output})
 
     output_stream = StringIO(output)
     reader = DictReader(output_stream)
@@ -157,8 +160,8 @@ def custom_metric(
     total_float = 0.0
     total_str = ""
     output_float = True
-    for key in tmp_dict:
-        value = tmp_dict[key]
+    for stage in tmp_dict:
+        value = tmp_dict[stage]
         total_str += " " + value
         try:
             value = float(value)
@@ -168,9 +171,10 @@ def custom_metric(
             total_float += value
         else:
             output_float = False
-        output_dict[_FORMAT.format(name=metric_name, stage=key)] = value
+        output_dict[stage] = value
     if output_float:
-        output_dict[metric_name] = total_float
+        output_dict["total"] = total_float
     else:
-        output_dict[metric_name] = total_str
-    return output_dict, success
+        output_dict["total"] = total_str
+    result = BenchmarkResult(metric_name, has_failed, output_dict)
+    return result

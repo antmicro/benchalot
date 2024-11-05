@@ -2,7 +2,7 @@ from subprocess import Popen, PIPE
 from logging import getLogger, INFO, ERROR
 from tqdm import tqdm
 from os import getcwd
-from benchmarker.structs import PreparedBenchmark
+from benchmarker.structs import PreparedBenchmark, BenchmarkResult
 
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -16,7 +16,7 @@ def set_working_directory(cwd: str) -> None:
     working_directory = cwd
 
 
-def check_return_code(command: str, code: int) -> None:
+def check_return_code(command: str, code: int) -> bool:
     """Check return code of the command and exit Benchmarker if it is not 0
 
     Args:
@@ -25,6 +25,8 @@ def check_return_code(command: str, code: int) -> None:
     """
     if code != 0:
         logger.error(f"Subprocess '{command}' exited abnormally (exit code {code})")
+        return False
+    return True
 
 
 def execute_command(command: str) -> Popen:
@@ -76,7 +78,7 @@ def handle_output(
 
 def execute_and_handle_output(
     command: str, capture_stdout=False, capture_stderr=False
-) -> str:
+) -> tuple[str, bool]:
     """Execute command, log its output and check its return code.
 
     Args:
@@ -90,8 +92,8 @@ def execute_and_handle_output(
     process = execute_command(command)
     total = handle_output(process, capture_stdout, capture_stderr)
     result = process.wait()
-    check_return_code(command, result)
-    return total
+    success = check_return_code(command, result)
+    return total, success
 
 
 def execute_section(commands: list[str], section_name: str = "") -> None:
@@ -136,7 +138,6 @@ def perform_benchmarks(
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
-                partial_results = dict()
                 for metric in benchmark.metrics:
                     logger.debug(f"Running benchmark: {benchmark}")
 
@@ -150,17 +151,24 @@ def perform_benchmarks(
                         f"Executing {text[:20] + '...' if len(text)>20 else text}"
                     )
 
-                    partial_result = metric(benchmark.benchmark)
+                    partial_result: BenchmarkResult = metric(benchmark.benchmark)
                     bar.refresh(nolock=True)
-                    partial_results.update(partial_result)
 
                     execute_section(benchmark.after, "after")
                     bar.update(1)
-                for key in benchmark.matrix:
-                    results.setdefault(key, []).append(benchmark.matrix[key])
 
-                for key in partial_results:
-                    results.setdefault(key, []).append(partial_results[key])
+                    for variable in benchmark.matrix:
+                        results.setdefault(variable, []).append(
+                            benchmark.matrix[variable]
+                        )
+                    results.setdefault("has_failed", []).append(
+                        partial_result.has_failed
+                    )
+                    results.setdefault("metric", []).append(partial_result.metric_name)
+                    for stage in partial_result.measurements:
+                        results.setdefault(stage, []).append(
+                            partial_result.measurements[stage]
+                        )
 
         except KeyboardInterrupt:
             logger.warning("Stopped benchmarks.")

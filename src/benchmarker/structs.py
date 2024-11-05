@@ -1,5 +1,13 @@
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Mapping
+
+
+@dataclass
+class BenchmarkResult:
+    metric_name: str
+    has_failed: bool
+    measurements: Mapping[str, float | str]
 
 
 @dataclass
@@ -18,10 +26,4 @@ class PreparedBenchmark:
     before: list[str]
     benchmark: dict[str, list[str]]
     after: list[str]
-    metrics: list[Callable[[dict], dict]]
-
-@dataclass
-class BenchmarkResult:
-    metric_name: str
-    has_failed: bool
-    measurements: dict[str,float|str]
+    metrics: list[Callable[[dict], BenchmarkResult]]

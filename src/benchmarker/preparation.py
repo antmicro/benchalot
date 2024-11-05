@@ -10,7 +10,7 @@ from functools import partial
 from re import sub, findall
 from collections.abc import Callable
 from typing import Any
-from benchmarker.structs import PreparedBenchmark
+from benchmarker.structs import BenchmarkResult, PreparedBenchmark
 from benchmarker.validation import RunSection
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -107,7 +107,7 @@ def prepare_before_after_all_commands(
 def get_metrics_functions(
     metrics: list[str | dict[str, str]],
     variables: dict[str, str | int] | None = None,
-) -> list[Callable[[dict], dict]]:
+) -> list[Callable[[dict], BenchmarkResult]]:
     """Get list of callable metrics functions.
 
     Args:
@@ -117,7 +117,7 @@ def get_metrics_functions(
     Returns:
         list[Callable[[dict],dict]]: List of callable objects that perform specified measurements.
     """
-    metrics_functions: list[Callable[[dict[Any, Any]], dict[Any, Any]]] = []
+    metrics_functions: list[Callable[[dict[Any, Any]], BenchmarkResult]] = []
     for metric in metrics:
         if metric == "time":
             metrics_functions.append(measure_time)
