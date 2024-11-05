@@ -94,9 +94,7 @@ def prepare_before_after_all_commands(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
                 for var_combination in var_combinations:
-                    curr_section_commands += interpolate_commands(
-                        section, var_combination
-                    )
+                    curr_section_commands += interpolate_commands(section, var_combination)
             else:
                 curr_section_commands += section
         ret.append(curr_section_commands)
