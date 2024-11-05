@@ -22,6 +22,9 @@ def check_return_code(command: str, code: int) -> bool:
     Args:
         command: Command string, used in logging.
         code: Return code of the command.
+
+    Returns:
+        bool: True if program returned 0, False otherwise.
     """
     if code != 0:
         logger.error(f"Subprocess '{command}' exited abnormally (exit code {code})")
@@ -87,7 +90,7 @@ def execute_and_handle_output(
         capture_stderr: If true, return `stderr` of the process.
 
     Returns:
-        str: Containing `stdout` and/or `stderr` of the process.
+        (str, bool): String containing `stdout` and/or `stderr` of the process and bool set to True if program returned 0.
     """
     process = execute_command(command)
     total = handle_output(process, capture_stdout, capture_stderr)

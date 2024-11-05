@@ -22,7 +22,7 @@ def measure_time(benchmarks: dict[str, list[str]]) -> BenchmarkResult:
         benchmarks: Commands divided into stages.
 
     Returns:
-        dict: Containing execution time of each stage and total execution time.
+        BenchmarkResult: Containing execution time of each stage.
     """
     has_failed = False
 
@@ -57,7 +57,7 @@ def _gather_output(
         output: Set  to "stderr" to gather `stderr` or set to "stdout" to gather `stdout`.
 
     Returns:
-        dict: Containing `stderr` or `stdout` of each stage and their total. If possible, output will be converted to float.
+        BenchmarkResult: Containing `stderr` or `stdout` of each stage. If possible, output will be converted to float.
     """
     has_failed = False
 
@@ -112,7 +112,7 @@ def custom_metric(
         benchmarks: Stages with their commands.
 
     Returns:
-        dict: Containing multistage result with its total, or just total if metric's command outputs one line.
+        BenchmarkResult: Containing single or multi stage result.
     """
     has_failed = False
     for _, commands in benchmarks.items():

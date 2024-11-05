@@ -5,6 +5,14 @@ from typing import Mapping
 
 @dataclass
 class BenchmarkResult:
+    """Structure representing benchmark result for single variable value and metric combination.
+
+    Attributes:
+        metric_name: Name of the metric gathered during benchmarking.
+        has_failed: Whether the one of the commands returned abnormally.
+        measurements: Stages paired with their measurements.
+    """
+
     metric_name: str
     has_failed: bool
     measurements: Mapping[str, float | str]
