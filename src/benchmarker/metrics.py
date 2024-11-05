@@ -43,9 +43,6 @@ def measure_time(benchmarks: dict[str, list[str]]) -> BenchmarkResult:
     measurements: dict[str, float] = {}
     for stage, commands in benchmarks.items():
         measurements[stage] = _measure_stage_time(commands)
-    measurements["total"] = sum(measurements.values())
-    if len(benchmarks) == 1:
-        measurements = {"total": measurements["total"]}
     result = BenchmarkResult("time", has_failed, measurements)
     return result
 
@@ -85,23 +82,9 @@ def _gather_output(
         return total
 
     measurements: dict[str, float | str] = {}
-    total_float = 0.0
-    total_str = ""
-    output_float = True
+
     for stage, command in benchmarks.items():
-        value = _gather_stage_output(command)
-        measurements[stage] = value
-        if type(value) is float:
-            total_float += value
-        else:
-            output_float = False
-        total_str += str(value)
-    if output_float:
-        measurements["total"] = total_float
-    else:
-        measurements["total"] = total_str
-    if len(benchmarks) == 1:
-        measurements = {"total": measurements["total"]}
+        measurements[stage] = _gather_stage_output(command)
     result = BenchmarkResult(output, has_failed, measurements)
     return result
 
@@ -140,8 +123,7 @@ def custom_metric(
     process = execute_command(metric_command)
     output = handle_output(process, capture_stdout=True)
     metric_return_code = process.wait()
-    check_return_code(metric_command, metric_return_code)
-    if metric_return_code != 0:
+    if not check_return_code(metric_command, metric_return_code):
         exit(1)
 
     if len(output.splitlines()) == 1:
@@ -157,24 +139,12 @@ def custom_metric(
     for row in reader:
         tmp_dict = row
     output_dict = {}
-    total_float = 0.0
-    total_str = ""
-    output_float = True
     for stage in tmp_dict:
         value = tmp_dict[stage]
-        total_str += " " + value
         try:
             value = float(value)
         except ValueError:
             pass
-        if type(value) is float:
-            total_float += value
-        else:
-            output_float = False
         output_dict[stage] = value
-    if output_float:
-        output_dict["total"] = total_float
-    else:
-        output_dict["total"] = total_str
     result = BenchmarkResult(metric_name, has_failed, output_dict)
     return result

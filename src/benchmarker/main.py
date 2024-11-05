@@ -90,7 +90,7 @@ def main():
         results,
         config.output,
         list(config.matrix.keys()),
-        list(config.run.benchmark.keys()) + ["total"],
+        list(config.run.benchmark.keys()),
         args.include,
     )
 

@@ -14,7 +14,7 @@ from logging import getLogger
 from datetime import timezone, datetime
 import numpy as np
 import os
-from pandas.api.types import is_numeric_dtype, is_string_dtype
+from pandas.api.types import is_string_dtype
 from uuid import uuid4
 from benchmarker.validation import BarChartOutput, CsvOutput, TableMdOutput
 
@@ -87,7 +87,7 @@ def output_results_from_file(
 
 
 def get_stat_table(
-    results_df: pd.DataFrame,
+    input_df: pd.DataFrame,
     result_column: str,
     measurement_columns: list[str],
     show_columns: list[str] | None = None,
@@ -99,13 +99,28 @@ def get_stat_table(
         result_column: A name of a metric which will be included in the table.
         show_columns: Variable names which will be included in the table.
     """
+    results_df = input_df.copy()
     results_df = results_df.loc[results_df["metric"] == result_column]
-    if not show_columns:
-        if results_df[TIME_STAMP_COLUMN].nunique() == 1:
-            results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
-        if is_numeric_dtype(results_df[result_column]):
+    is_numeric = True
+    try:
+        results_df[measurement_columns] = results_df[measurement_columns].apply(
+            pd.to_numeric
+        )
+    except ValueError:
+        is_numeric = False
+    result_columns = measurement_columns.copy()
+    if len(measurement_columns) > 1:
+        results_df["total"] = results_df[measurement_columns].sum(axis=1)
+        result_columns.append("total")
+    group_table = len(show_columns) > 0
+    if results_df[TIME_STAMP_COLUMN].nunique() == 1:
+        results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
+    else:
+        show_columns = [TIME_STAMP_COLUMN] + show_columns
+    if not group_table:
+        if is_numeric:
             result_stat = dict()
-            for col in measurement_columns:
+            for col in result_column:
                 col_name = col + " " + result_column
                 result_stat["min " + col_name] = [results_df[col].min()]
                 result_stat["median " + col_name] = [results_df[col].min()]
@@ -115,37 +130,21 @@ def get_stat_table(
             table_df = results_df.drop_duplicates().reset_index(drop=True)
         return table_df
     else:
-        if results_df[TIME_STAMP_COLUMN].nunique() == 1:
-            results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
-        else:
-            show_columns = [TIME_STAMP_COLUMN] + show_columns
-        return _get_grouped_stat_table(
-            results_df, measurement_columns, result_column, show_columns
-        )
-
-
-def _get_grouped_stat_table(
-    results_df: pd.DataFrame,
-    measurement_columns: list[str],
-    result_column: str,
-    show_columns: list[str],
-) -> pd.DataFrame:
-    """Helper function for the `get_stat_table` which performs column grouping."""
-    statistics = ["min", "median", "max"]
-    table_df = results_df.loc[:, show_columns + measurement_columns]
-    math_df = table_df.groupby(show_columns, observed=False)
-    for col in measurement_columns:
-        if is_numeric_dtype(table_df["total"]):
-            for stat in statistics:
-                col_name = col + " " + result_column
-                table_df[stat + " " + col_name] = math_df[col].transform(stat)
-            table_df = table_df.drop(col, axis=1).reset_index(drop=True)
-    table_df = table_df.drop_duplicates().reset_index(drop=True)
-    return table_df
+        statistics = ["min", "median", "max"]
+        table_df = results_df.loc[:, show_columns + result_columns]
+        math_df = table_df.groupby(show_columns, observed=False)
+        for col in result_columns:
+            if is_numeric:
+                for stat in statistics:
+                    col_name = col + " " + result_column
+                    table_df[stat + " " + col_name] = math_df[col].transform(stat)
+                table_df = table_df.drop(col, axis=1).reset_index(drop=True)
+        table_df = table_df.drop_duplicates().reset_index(drop=True)
+        return table_df
 
 
 def get_bar_chart(
-    output_df: pd.DataFrame,
+    input_df: pd.DataFrame,
     variable_names: list[str],
     measurement_columns: list[str],
     x_axis: str | None,
@@ -167,9 +166,13 @@ def get_bar_chart(
     Returns:
         ggplot: The bar chart object.
     """
+    output_df = input_df.copy()
     output_df = output_df.loc[output_df["metric"] == y_axis]
-    print(output_df["total"].dtype)
-    if not is_numeric_dtype(output_df["total"]):
+    try:
+        output_df[measurement_columns] = output_df[measurement_columns].apply(
+            pd.to_numeric
+        )
+    except ValueError:
         logger.error(
             f"y-axis ({y_axis}) of bar-chart has non-numeric type; bar-chart will not be generated"
         )
@@ -177,18 +180,19 @@ def get_bar_chart(
     stack = len(measurement_columns) > 1
     if stack and color:
         logger.warning("'bar-chart': color setting is present, bars won't be stacked.")
-    stack_columns = [col for col in measurement_columns if col != "total"]
+
     if stack and not color:
-        output_df = output_df.drop(columns=["total"])
         output_df = output_df.melt(
             id_vars=list(variable_names),
-            value_vars=stack_columns,
+            value_vars=measurement_columns,
             var_name="stage",
             value_name="total",
         )
         # prevent rearranging by plotnine
         series = output_df["stage"]
         output_df["stage"] = pd.Categorical(series, categories=series.unique())
+    else:
+        output_df["total"] = output_df[measurement_columns].sum(axis=1)
 
     plot = ggplot(output_df, aes(y="total"))
     if x_axis:
@@ -207,7 +211,7 @@ def get_bar_chart(
     if stack and not color:
         plot += aes(fill="stage")
         plot += geom_bar(position="stack", stat="summary", fun_y=funcs[stat])
-        plot += scale_fill_discrete(labels=stack_columns)
+        plot += scale_fill_discrete(labels=measurement_columns)
     else:
         plot += geom_bar(position="dodge", stat="summary", fun_y=funcs[stat])
 
@@ -263,7 +267,7 @@ def _output_results(
         elif output.format == "bar-chart":
             logger.debug("Outputting bar chart.")
             plot = get_bar_chart(
-                output_df=output_df,
+                input_df=output_df,
                 variable_names=variable_names,
                 measurement_columns=measurement_columns,
                 x_axis=output.x_axis,
