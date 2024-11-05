@@ -77,7 +77,7 @@ class RunSection(BaseModel):
     def name_stages(self):
         """Transform list of commands to dictionary of lists of commands."""
         if type(self["benchmark"]) is list:
-            self["benchmark"] = {"total": self["benchmark"]}
+            self["benchmark"] = {"result": self["benchmark"]}
             return self
         return self
 
