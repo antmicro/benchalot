@@ -88,7 +88,7 @@ def output_results_from_file(
 
 def get_stat_table(
     input_df: pd.DataFrame,
-    result_column: str,
+    metric: str,
     measurement_columns: list[str],
     show_columns: list[str] | None = None,
 ) -> pd.DataFrame:
@@ -100,7 +100,8 @@ def get_stat_table(
         show_columns: Variable names which will be included in the table.
     """
     results_df = input_df.copy()
-    results_df = results_df.loc[results_df["metric"] == result_column]
+    results_df = results_df.loc[results_df["metric"] == metric]
+
     is_numeric = True
     try:
         results_df[measurement_columns] = results_df[measurement_columns].apply(
@@ -108,23 +109,37 @@ def get_stat_table(
         )
     except ValueError:
         is_numeric = False
-    result_columns = measurement_columns.copy()
+
+    result_columns = []
+
     if len(measurement_columns) > 1:
+        result_columns = measurement_columns.copy()
         results_df["total"] = results_df[measurement_columns].sum(axis=1)
         result_columns.append("total")
+    elif len(measurement_columns) == 1:
+        results_df = results_df.rename(columns={measurement_columns[0]: metric})
+        result_columns = [metric]
+    else:
+        assert "Unreachable"
+
+    if show_columns is None:
+        show_columns = []
+
     group_table = len(show_columns) > 0
+
     if results_df[TIME_STAMP_COLUMN].nunique() == 1:
         results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
     else:
         show_columns = [TIME_STAMP_COLUMN] + show_columns
+
     if not group_table:
         if is_numeric:
             result_stat = dict()
-            for col in result_column:
-                col_name = col + " " + result_column
+            for col in result_columns:
+                col_name = col + " " + metric
                 result_stat["min " + col_name] = [results_df[col].min()]
-                result_stat["median " + col_name] = [results_df[col].min()]
-                result_stat["max " + col_name] = [results_df[col].min()]
+                result_stat["median " + col_name] = [results_df[col].median()]
+                result_stat["max " + col_name] = [results_df[col].max()]
             table_df = pd.DataFrame(result_stat)
         else:
             table_df = results_df.drop_duplicates().reset_index(drop=True)
@@ -136,7 +151,7 @@ def get_stat_table(
         for col in result_columns:
             if is_numeric:
                 for stat in statistics:
-                    col_name = col + " " + result_column
+                    col_name = col + " " + metric
                     table_df[stat + " " + col_name] = math_df[col].transform(stat)
                 table_df = table_df.drop(col, axis=1).reset_index(drop=True)
         table_df = table_df.drop_duplicates().reset_index(drop=True)
@@ -168,6 +183,7 @@ def get_bar_chart(
     """
     output_df = input_df.copy()
     output_df = output_df.loc[output_df["metric"] == y_axis]
+
     try:
         output_df[measurement_columns] = output_df[measurement_columns].apply(
             pd.to_numeric
@@ -177,24 +193,26 @@ def get_bar_chart(
             f"y-axis ({y_axis}) of bar-chart has non-numeric type; bar-chart will not be generated"
         )
         return None
+
     stack = len(measurement_columns) > 1
     if stack and color:
         logger.warning("'bar-chart': color setting is present, bars won't be stacked.")
 
+    dummy_y_axis = str(uuid4())
     if stack and not color:
         output_df = output_df.melt(
             id_vars=list(variable_names),
             value_vars=measurement_columns,
             var_name="stage",
-            value_name="total",
+            value_name=dummy_y_axis,
         )
         # prevent rearranging by plotnine
         series = output_df["stage"]
         output_df["stage"] = pd.Categorical(series, categories=series.unique())
     else:
-        output_df["total"] = output_df[measurement_columns].sum(axis=1)
+        output_df[dummy_y_axis] = output_df[measurement_columns].sum(axis=1)
 
-    plot = ggplot(output_df, aes(y="total"))
+    plot = ggplot(output_df, aes(y=dummy_y_axis))
     if x_axis:
         plot += aes(x=x_axis)
     else:
@@ -294,7 +312,7 @@ def _output_results(
                 results_df,
                 measurement_columns=measurement_columns,
                 show_columns=output.columns,
-                result_column=result_column,
+                metric=result_column,
             )
             table.to_markdown(output.filename, index=False)
             print_table = table
