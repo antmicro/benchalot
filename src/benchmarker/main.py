@@ -38,7 +38,12 @@ def main():
     config = validate_config(config_file)
 
     if args.update_output:  # Update output and exit
-        update_output(args.update_output, config.output, config.matrix)
+        update_output(
+            args.update_output,
+            config.output,
+            list(config.matrix.keys()),
+            list(config.run.benchmark.keys()),
+        )
         exit_benchmarker()
     if args.split:  # Split configuration file and exit
         generate_config_files(config, args.config_filename, args.split)
@@ -84,7 +89,8 @@ def main():
     output_results_from_dict(
         results,
         config.output,
-        config.matrix,
+        list(config.matrix.keys()),
+        list(config.run.benchmark.keys()) + ["total"],
         args.include,
     )
 
@@ -241,7 +247,10 @@ def generate_config_files(
 
 
 def update_output(
-    old_outputs: list[str], output_config: dict, matrix: dict[str, list]
+    old_outputs: list[str],
+    output_config: dict,
+    variable_names: list[str],
+    measurement_columns: list[str],
 ) -> None:
     """Regenerate output based on previous result.
 
@@ -254,4 +263,6 @@ def update_output(
         if not isfile(file):
             logger.critical(f"File '{file}' not found")
             exit(1)
-    output_results_from_file(output_config, old_outputs, matrix)
+    output_results_from_file(
+        output_config, old_outputs, variable_names, measurement_columns
+    )
