@@ -2,6 +2,7 @@ from atexit import register, unregister
 from subprocess import run
 from multiprocessing import cpu_count
 from logging import getLogger
+from benchmarker.validation import SystemSection
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -48,23 +49,23 @@ def set(filename: str, value: str) -> None:
 system_state: dict[str, str] = {}
 
 
-def modify_system_state(system_options: dict) -> None:
+def modify_system_state(system_options: SystemSection) -> None:
     """Apply variance reducing measures to the operating system.
 
     Args:
         system_options: Configuration file's system section.
     """
     logger.info("Modifying system state...")
-    register(restore_system_state, system_options)
-    if system_options.get("disable-aslr"):
+    register(restore_system_state)
+    if system_options.disable_aslr:
         logger.debug("Disabling ASLR...")
         system_state["aslr"] = get_and_set(
             "/proc/sys/kernel/randomize_va_space", str(0)
         )
         logger.debug("Disabled ASLR.")
-    if system_options["isolate-cpus"]:
+    if system_options.isolate_cpus:
         cpu_str = ""
-        for cpu in system_options["isolate-cpus"]:
+        for cpu in system_options.isolate_cpus:
             cpu_str += str(cpu) + ","
         cpu_str = cpu_str[:-1]
         logger.debug(f"Shielding CPUs {cpu_str}...")
@@ -79,7 +80,7 @@ def modify_system_state(system_options: dict) -> None:
             logger.critical(str(result.stdout))
             exit(1)
         system_state["isolate-cpus"] = "yes"
-    if system_options.get("governor-performance"):
+    if system_options.governor_performance:
         cpus = (
             system_options["isolate-cpus"]
             if system_options["isolate-cpus"]
@@ -91,21 +92,21 @@ def modify_system_state(system_options: dict) -> None:
                 f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor",
                 "performance",
             )
+        system_state["governor-performance"] = "yes"
         logger.debug(f"Set CPU governor for CPUs {cpu_str}.")
 
 
-def restore_system_state(system_options: dict) -> None:
-    """Restore operating system's state from before Benchmarker's modifications.
+def restore_system_state() -> None:
+    """Restore operating system's state.
 
     Args:
         system_options: Configuration file's system section.
     """
     logger.info("Restoring system state...")
-    logger.debug(f"Saved system state: {system_options}")
     if system_state.get("isolate-cpus"):
         run("cset shield --reset", shell=True, capture_output=True)
         logger.debug("Removed CPU shield.")
-    if system_options.get("governor-performance"):
+    if system_state.get("governor-performance"):
         logger.debug("Restoring CPU governors...")
         for cpu in range(cpu_count()):
             key = f"governor{cpu}"
@@ -116,7 +117,7 @@ def restore_system_state(system_options: dict) -> None:
                 )
         logger.debug("Restored CPU governors.")
     logger.debug("Restoring ASLR...")
-    if system_options.get("disable-aslr"):
+    if system_state.get("disable-aslr"):
         set("/proc/sys/kernel/randomize_va_space", system_state["aslr"])
     logger.debug("Restored ASLR.")
     unregister(restore_system_state)

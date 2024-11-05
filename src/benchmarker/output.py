@@ -16,6 +16,7 @@ import numpy as np
 import os
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 from uuid import uuid4
+from benchmarker.validation import BarChartOutput, CsvOutput, TableMdOutput
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -43,7 +44,7 @@ def read_old_outputs(include: list[str]) -> pd.DataFrame:
 
 def output_results_from_dict(
     results: dict,
-    output_config: dict,
+    output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
     matrix: dict[str, list],
     include: list,
 ) -> None:
@@ -67,7 +68,9 @@ def output_results_from_dict(
 
 
 def output_results_from_file(
-    output_config: dict, include: list, matrix: dict[str, list]
+    output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
+    include: list,
+    matrix: dict[str, list],
 ) -> None:
     """Create output for the results contained in files.
 
@@ -221,7 +224,9 @@ def get_bar_chart(
 
 
 def _output_results(
-    results_df: pd.DataFrame, output_config: dict, matrix: dict[str, list]
+    results_df: pd.DataFrame,
+    output_config: dict[str, CsvOutput | TableMdOutput | BarChartOutput],
+    matrix: dict[str, list],
 ) -> None:
     """Create output based on results and configuration.
 
@@ -248,12 +253,12 @@ def _output_results(
         logger.debug(f"Creating output for {output}")
         output_df = results_df
         logger.debug(output_df.head())
-        if output["format"] == "csv":
+        if output.format == "csv":
             logger.debug("Outputting .csv file.")
-            output_df.to_csv(output["filename"], encoding="utf-8", index=False)
-        elif output["format"] == "bar-chart":
+            output_df.to_csv(output.filename, encoding="utf-8", index=False)
+        elif output.format == "bar-chart":
             logger.debug("Outputting bar chart.")
-            if not is_numeric_dtype(output_df[output["y-axis"]]):
+            if not is_numeric_dtype(output_df[output.y_axis]):
                 logger.error(
                     f"y-axis of output {key} has non-numeric type; bar-chart will not be generated"
                 )
@@ -261,30 +266,29 @@ def _output_results(
             plot = get_bar_chart(
                 output_df=output_df,
                 variable_names=list(matrix.keys()),
-                x_axis=output["x-axis"],
-                y_axis=output["y-axis"],
-                color=output["color"],
-                facet=output["facet"],
-                stat=output["stat"],
+                x_axis=output.x_axis,
+                y_axis=output.y_axis,
+                color=output.color,
+                facet=output.facet,
             )
             plot.save(
-                output["filename"],
-                width=output["width"],
-                height=output["height"],
-                dpi=output["dpi"],
+                output.filename,
+                width=output.width,
+                height=output.height,
+                dpi=output.dpi,
                 limitsize=False,
                 verbose=False,
             )
 
-        elif output["format"] == "table-md":
+        elif output.format == "table-md":
             logger.debug("Outputting markdown table.")
-            result_column = output["result-column"]
+            result_column = output.result_column
             table = get_stat_table(
                 results_df,
-                show_columns=output["columns"],
+                show_columns=output.columns,
                 result_column=result_column,
             )
-            table.to_markdown(output["filename"], index=False)
+            table.to_markdown(output.filename, index=False)
             print_table = table
     if os.getuid() == 0:
         os.umask(prev_umask)

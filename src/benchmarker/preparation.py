@@ -11,6 +11,7 @@ from copy import deepcopy
 from re import sub, findall
 from collections.abc import Callable
 from typing import Any
+from benchmarker.validation import RunSection
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -86,7 +87,7 @@ def name_benchmark_stages(
 
 
 def prepare_before_after_all_commands(
-    run_config: dict, matrix: dict[str, list]
+    run_config: RunSection, matrix: dict[str, list]
 ) -> tuple[list[str], list[str]]:
     """Create command variants for each combination of values of variables present in before-all and after-all sections.
 
@@ -98,12 +99,13 @@ def prepare_before_after_all_commands(
         tuple[list[str], list[str]]: Two lists with command combinations for each section.
     """
     logger.info("Preparing 'before-all' and 'after-all' commands...")
+
     ret = []
-    for section in ["before-all", "after-all"]:
+    for section in [run_config.before_all, run_config.after_all]:
         curr_section_commands = []
-        if run_config[section]:
+        if section:
             vars = set()
-            for command in run_config[section]:
+            for command in section:
                 for var_name in findall(VAR_REGEX, command):
                     vars.add(var_name)
             if vars:
@@ -111,12 +113,11 @@ def prepare_before_after_all_commands(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
                 for var_combination in var_combinations:
-                    curr_section_commands += interpolate_commands(
-                        run_config[section], var_combination
-                    )
+                    curr_section_commands += interpolate_commands(section, var_combination)
             else:
-                curr_section_commands += run_config[section]
+                curr_section_commands += section
         ret.append(curr_section_commands)
+
     logger.info("Finished preparing 'before-all' and 'after-all' commands.")
     logger.debug(ret)
     return (ret[0], ret[1])
@@ -155,7 +156,7 @@ def get_metrics_functions(
 
 
 def prepare_benchmarks(
-    run_config: dict, matrix: dict[str, list[str]], isolate_cpus: bool
+    run_config: RunSection, matrix: dict[str, list[str]], isolate_cpus: bool
 ) -> list[dict]:
     """Prepare `before`, `benchmark` and `after` commands so that they can be executed as part of one benchmark.
 
@@ -168,33 +169,35 @@ def prepare_benchmarks(
         list[dict]: List of unique benchmarks containing their variable combination, modified commands and metrics.
     """
     if isolate_cpus:
-        for name in run_config["benchmark"]:
-            for i, c in enumerate(run_config["benchmark"][name]):
-                run_config["benchmark"][name][i] = "cset shield --exec -- " + c
+        for name in run_config.benchmark:
+            for i, c in enumerate(run_config.benchmark[name]):
+                run_config.benchmark[name][i] = "cset shield --exec -- " + c
     benchmarks = []
     logger.info("Preparing benchmarks...")
     if not matrix:
         logger.debug("`matrix` not found in the config.")
-        benchmarks.append(deepcopy(run_config))
-        benchmarks[0]["matrix"] = {}
-        benchmarks[0]["metrics"] = get_metrics_functions(metrics=run_config["metrics"])
+        benchmark = {}
+        benchmark["before"] = deepcopy(run_config.before)
+        benchmark["benchmark"] = deepcopy(run_config.benchmark)
+        benchmark["after"] = deepcopy(run_config.after)
+        benchmark["matrix"] = {}
+        benchmark["metrics"] = get_metrics_functions(metrics=run_config["metrics"])
+        benchmarks.append(benchmark)
     else:
         logger.debug("Creating variable combinations...")
         var_combinations = list(create_variable_combinations(**matrix))
         logger.debug(f"Variable combinations {var_combinations}")
         for var_combination in var_combinations:
             benchmark = {"matrix": var_combination}
-            for section in ["before", "after"]:
-                benchmark[section] = interpolate_commands(
-                    run_config[section], var_combination
-                )
+            benchmark["before"] = interpolate_commands(run_config.before, var_combination)
+            benchmark["after"] = interpolate_commands(run_config.after, var_combination)
             benchmark["benchmark"] = {}
-            for name in run_config["benchmark"]:
+            for name in run_config.benchmark:
                 benchmark["benchmark"][name] = interpolate_commands(
-                    run_config["benchmark"][name], var_combination
+                    run_config.benchmark[name], var_combination
                 )
             benchmark["metrics"] = get_metrics_functions(
-                run_config["metrics"], var_combination
+                run_config.metrics, var_combination
             )
             benchmarks.append(benchmark)
     logger.info("Finished preparing benchmarks.")
