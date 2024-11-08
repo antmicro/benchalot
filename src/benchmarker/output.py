@@ -289,16 +289,13 @@ def _output_results(
     logger.info("Outputting results...")
     logger.debug(results_df)
 
-    first_metric = results_df["metric"][0]
-    table_df = results_df.loc[results_df["metric"] == first_metric]
-    table_df = table_df.dropna(axis=1, how="all")
-    var_names, measurement_cols = extract_columns(list(table_df.columns))
-    print_table = get_stat_table(table_df, first_metric, measurement_cols, var_names)
+    # The summary table
+    print_table: pd.DataFrame | None = None
 
+    output_df: pd.DataFrame
     csv_output_filename = ""
     failed_benchmarks = results_df[results_df["has_failed"] == True]  # noqa: E712
     n_failed = failed_benchmarks.shape[0]
-    output_df: pd.DataFrame
     outputs_without_failed = []
     if n_failed > 0 and not include_failed:
         logger.error(f"{n_failed} benchmarks failed!")
@@ -370,5 +367,13 @@ def _output_results(
             f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {csv_output_filename} --include-failed"
         )
     else:
+        if not print_table:
+            first_metric = output_df["metric"][0]
+            table_df = output_df.loc[output_df["metric"] == first_metric]
+            table_df = table_df.dropna(axis=1, how="all")
+            var_names, measurement_cols = extract_columns(list(table_df.columns))
+            print_table = get_stat_table(
+                table_df, first_metric, measurement_cols, var_names
+            )
         print(print_table.to_markdown(index=False))
     logger.info("Finished outputting results.")
