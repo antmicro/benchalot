@@ -22,6 +22,9 @@ from sys import argv
 logger = getLogger(f"benchmarker.{__name__}")
 
 TIME_STAMP_COLUMN = "benchmark_date"
+HAS_FAILED_COLUMN = "has_failed"
+METRIC_COLUMN = "metric"
+CONSTANT_COLUMNS = [TIME_STAMP_COLUMN, HAS_FAILED_COLUMN, METRIC_COLUMN]
 
 
 def read_old_outputs(include: list[str]) -> pd.DataFrame:
@@ -46,6 +49,7 @@ def read_old_outputs(include: list[str]) -> pd.DataFrame:
 def output_results_from_dict(
     results: dict,
     output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
+    variable_names: list[str],
     include: list,
     include_failed: bool,
 ) -> None:
@@ -54,6 +58,7 @@ def output_results_from_dict(
     Args:
         results: Dictionary containing columns with results and values of the variables.
         output_config: Configuration file's output section.
+        variable_names: List of variable names.
         include: Lit of previous results file names to be combined with new results.
         include_failed: Whether to filter out failed benchmarks.
     """
@@ -67,11 +72,12 @@ def output_results_from_dict(
     )
     old_outputs = read_old_outputs(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
-    _output_results(results_df, output_config, include_failed)
+    _output_results(results_df, output_config, variable_names, include_failed)
 
 
 def output_results_from_file(
     output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
+    variable_names: list[str],
     include: list,
     include_failed: bool,
 ) -> None:
@@ -79,12 +85,12 @@ def output_results_from_file(
 
     Args:
         output_config: Configuration file's output section.
+        variable_names: List of variable names.
         include: List of file names with old results.
         include_failed: Whether to filter out failed benchmarks.
     """
     old_outputs = read_old_outputs(include)
-    variable_names, measurement_columns = extract_columns(list(old_outputs.columns))
-    _output_results(old_outputs, output_config, include_failed)
+    _output_results(old_outputs, output_config, variable_names, include_failed)
 
 
 def get_stat_table(
@@ -245,42 +251,26 @@ def get_bar_chart(
     return plot
 
 
-def extract_columns(column_names: list[str]) -> tuple[list[str], list[str]]:
-    """Get variable column names and measurement column names.
+def extract_measurement_columns(
+    column_names: list[str], variable_names: list[str]
+) -> list[str]:
+    """Get measurement column names.
 
     Args:
         column_names: List of all column names.
+        variable_names: List of variable names.
 
     Returns:
-        tupe[list[str], list[str]]: Variable column names and measurement column names.
+        list[str]: Measurement column names.
     """
-    matrix_columns: list[str] = []
-    measurement_columns: list[str] = []
-
-    is_reading_matrix_columns = False
-    is_reading_measurement_columns = False
-
-    # |benchmark_date|var1|var2|var3|has_failed|metric|stage1|stage2|
-    for col in column_names:
-        if col == TIME_STAMP_COLUMN:
-            is_reading_matrix_columns = True
-        elif col == "has_failed":
-            is_reading_matrix_columns = False
-        elif is_reading_matrix_columns:
-            matrix_columns.append(col)
-        elif col == "metric":
-            is_reading_measurement_columns = True
-        elif is_reading_measurement_columns:
-            measurement_columns.append(col)
-        else:
-            raise ValueError(f"Incorrect metric {col}")
-
-    return matrix_columns, measurement_columns
+    not_measurement_columns = set(variable_names + CONSTANT_COLUMNS)
+    return [col for col in column_names if col not in not_measurement_columns]
 
 
 def _output_results(
     results_df: pd.DataFrame,
     output_config: dict[str, CsvOutput | TableMdOutput | BarChartOutput],
+    variable_names: list[str],
     include_failed: bool,
 ) -> None:
     """Create output based on results and configuration.
@@ -288,6 +278,7 @@ def _output_results(
     Args:
         results_df: Dataframe containing benchmark results.
         output_config: Configuration file's output section.
+        variable_names: List of variable names.
         include_failed: Whether to filter out failed benchmarks.
     """
     # Convert all variable columns to categorical to prevent rearranging by plotnine
@@ -304,14 +295,14 @@ def _output_results(
 
     output_df: pd.DataFrame
     csv_output_filename = ""
-    failed_benchmarks = results_df[results_df["has_failed"] == True]  # noqa: E712
+    failed_benchmarks = results_df[results_df[HAS_FAILED_COLUMN] == True]  # noqa: E712
     n_failed = failed_benchmarks.shape[0]
     outputs_without_failed = []
     if n_failed > 0 and not include_failed:
         logger.error(f"{n_failed} benchmarks failed!")
         logger.warning("Failed benchmarks:\n" + failed_benchmarks.to_markdown())
         output_df = pd.DataFrame(
-            results_df.loc[results_df["has_failed"] == False]  # noqa: E712
+            results_df.loc[results_df[HAS_FAILED_COLUMN] == False]  # noqa: E712
         )
     else:
         output_df = results_df
@@ -330,9 +321,11 @@ def _output_results(
 
         if n_failed > 0:
             outputs_without_failed.append(output_name)
-        filtered_df = output_df.loc[output_df["metric"] == output.metric]
+        filtered_df = output_df.loc[output_df[METRIC_COLUMN] == output.metric]
         filtered_df = filtered_df = filtered_df.dropna(axis=1, how="all")
-        variable_names, measurement_columns = extract_columns(list(filtered_df.columns))
+        measurement_columns = extract_measurement_columns(
+            list(filtered_df.columns), variable_names
+        )
         if output.format == "bar-chart":
             logger.debug("Outputting bar chart.")
             plot = get_bar_chart(
@@ -378,12 +371,14 @@ def _output_results(
         )
     else:
         if print_table is None:
-            first_metric = output_df["metric"][0]
-            table_df = output_df.loc[output_df["metric"] == first_metric]
+            first_metric = output_df[METRIC_COLUMN][0]
+            table_df = output_df.loc[output_df[METRIC_COLUMN] == first_metric]
             table_df = table_df.dropna(axis=1, how="all")
-            var_names, measurement_cols = extract_columns(list(table_df.columns))
+            measurement_cols = extract_measurement_columns(
+                list(table_df.columns), variable_names
+            )
             print_table = get_stat_table(
-                table_df, first_metric, measurement_cols, var_names
+                table_df, first_metric, measurement_cols, variable_names
             )
         print(print_table.to_markdown(index=False))
     logger.info("Finished outputting results.")
