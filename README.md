@@ -211,7 +211,6 @@ stage1,stage2
 19.3,30.12
 ```
 Benchmarker will store `19.3` as the measurement for `stage1` and `30.12` as the measurement for `stage2`.
-Benchmarker will also combine `stage1` and `stage2` to create a column with their sum under the custom metric's name.
 
 ## Arguments
 
