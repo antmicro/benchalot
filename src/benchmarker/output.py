@@ -377,7 +377,7 @@ def _output_results(
             f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {csv_output_filename} --include-failed"
         )
     else:
-        if not print_table:
+        if print_table is None:
             first_metric = output_df["metric"][0]
             table_df = output_df.loc[output_df["metric"] == first_metric]
             table_df = table_df.dropna(axis=1, how="all")

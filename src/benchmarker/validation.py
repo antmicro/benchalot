@@ -105,6 +105,7 @@ class OutputField(BaseModel):
     Attributes:
         filename: Name of the output file.
         format: Name of the output format.
+        metric: Name of the metric shown in the output.
     """
 
     filename: str
@@ -176,7 +177,7 @@ class BarChartOutput(OutputField):
     Attributes:
         format: Must be "bar-chart".
         x_axis: Name of a variable which will used as x-axis of the chart.
-        y_axis: Name of a metric which will used as y-axis of the chart.
+        metric: Name of a metric which will used as y-axis of the chart.
         facet: Name of a variable which will be used to facet the chart.
         color: Name of a variable which will be used as color channel of the chart.
         width: Resulting plot image width in inches.
@@ -213,7 +214,7 @@ class TableMdOutput(OutputField):
     Attributes:
         format: Must be "table-md".
         columns: List of variables which will be included in the output table.
-        result_column: Metric which will be included in the table.
+        metric: Metric which will be included in the table.
     """
 
     format: Literal["table-md"]
