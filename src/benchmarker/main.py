@@ -44,7 +44,6 @@ def main():
                 exit(1)
         output_results_from_file(config.output, args.update_output, args.include_failed)
         exit_benchmarker()
-
     elif args.split:  # Split configuration file and exit
         generate_config_files(config, args.config_filename, args.split)
         exit_benchmarker()
@@ -165,7 +164,7 @@ def get_argument_parser() -> ArgumentParser:
         dest="include_failed",
         action="store_true",
         default=False,
-        help="include failed benchmarks in the output files other than CSV.",
+        help="do not filter out failed benchmarks when creating output.",
     )
 
     return parser

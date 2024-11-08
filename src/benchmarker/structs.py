@@ -27,7 +27,7 @@ class PreparedBenchmark:
         before: Commands to be executed before the measurement.
         benchmark: Commands to be measured.
         after: Commands to be executed after the measurement.
-        metric: Functions used to execute and gather results of the benchmark.
+        metric: Function used to execute and gather results of the benchmark.
     """
 
     matrix: dict[str, str]
