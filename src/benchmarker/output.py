@@ -117,7 +117,7 @@ def get_stat_table(
         results_df = results_df.rename(columns={measurement_columns[0]: metric})
         measurement_columns = [metric]
     else:
-        assert "Unreachable"
+        raise ValueError("No measurement columns specified.")
 
     if show_columns is None:
         show_columns = []
@@ -273,7 +273,7 @@ def extract_columns(column_names: list[str]) -> tuple[list[str], list[str]]:
         elif is_reading_measurement_columns:
             measurement_columns.append(col)
         else:
-            assert "Unreachable!"
+            raise ValueError(f"Incorrect metric {col}")
 
     return matrix_columns, measurement_columns
 
