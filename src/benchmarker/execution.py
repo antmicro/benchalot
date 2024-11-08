@@ -130,6 +130,7 @@ def perform_benchmarks(
         dict[str, list]: Dictionary containing results.
     """
     results: dict[str, list] = dict()
+    n_rows = 0
     logger.info("Performing benchmarks...")
     bar = tqdm(
         desc="Performing benchmarks.",
@@ -169,14 +170,17 @@ def perform_benchmarks(
                     )
                     results.setdefault("metric", []).append(partial_result.metric_name)
                     for stage in partial_result.measurements:
-                        results.setdefault(stage, []).append(
-                            partial_result.measurements[stage]
-                        )
+                        stage_column = results.setdefault(stage, [])
+                        stage_column += [None] * (n_rows - len(stage_column))
+                        stage_column.append(partial_result.measurements[stage])
+                    n_rows += 1
 
         except KeyboardInterrupt:
             logger.warning("Stopped benchmarks.")
             logger.warning("Creating output...")
             break
+    for _, col in results.items():
+        col += [None] * (n_rows - len(col))
     bar.close()
     logger.info("Finished performing benchmarks.")
     logger.debug(f"Benchmark results: {results}")
