@@ -9,7 +9,6 @@ from benchmarker.metrics import (
 from functools import partial
 from re import sub, findall
 from collections.abc import Callable
-from typing import Any
 from benchmarker.structs import BenchmarkResult, PreparedBenchmark
 from benchmarker.validation import RunSection
 
@@ -106,36 +105,31 @@ def prepare_before_after_all_commands(
     return (ret[0], ret[1])
 
 
-def get_metrics_functions(
-    metrics: list[str | dict[str, str]],
+def get_metric_function(
+    metric: str | dict[str, str],
     variables: dict[str, str | int] | None = None,
-) -> list[Callable[[dict], BenchmarkResult]]:
+) -> Callable[[dict], BenchmarkResult]:
     """Get list of callable metrics functions.
 
     Args:
-        metrics: List of metric names.
+        metric: Metric's name.
         variables: Variable names paired with their values. Used with custom metrics.
 
     Returns:
-        list[Callable[[dict],dict]]: List of callable objects that perform specified measurements.
+        Callable[[dict],dict]: Callable object that perform specified measurement.
     """
-    metrics_functions: list[Callable[[dict[Any, Any]], BenchmarkResult]] = []
-    for metric in metrics:
-        if metric == "time":
-            metrics_functions.append(measure_time)
-        elif metric == "stdout":
-            metrics_functions.append(gather_stdout)
-        elif metric == "stderr":
-            metrics_functions.append(gather_stderr)
-        else:
-            metric_command = list(metric.items())[0][1]  # type: ignore
-            metric_name = list(metric.items())[0][0]  # type: ignore
-            if variables:
-                metric_command = interpolate_command(metric_command, variables)
-            metrics_functions.append(
-                partial(custom_metric, metric_command, metric_name)
-            )
-    return metrics_functions
+    if metric == "time":
+        return measure_time
+    elif metric == "stdout":
+        return gather_stdout
+    elif metric == "stderr":
+        return gather_stderr
+    else:
+        metric_command = list(metric.items())[0][1]  # type: ignore
+        metric_name = list(metric.items())[0][0]  # type: ignore
+        if variables:
+            metric_command = interpolate_command(metric_command, variables)
+        return partial(custom_metric, metric_command, metric_name)
 
 
 def prepare_benchmarks(
@@ -160,35 +154,36 @@ def prepare_benchmarks(
     logger.info("Preparing benchmarks...")
     if not matrix:
         logger.debug("`matrix` not found in the config.")
-        benchmark = PreparedBenchmark(
-            matrix={},
-            before=run_config.before,
-            benchmark=run_config.benchmark,
-            after=run_config.after,
-            metrics=get_metrics_functions(run_config.metrics),
-        )
-        benchmarks.append(benchmark)
+        for metric in run_config.metrics:
+            benchmark = PreparedBenchmark(
+                matrix={},
+                before=run_config.before,
+                benchmark=run_config.benchmark,
+                after=run_config.after,
+                metric=get_metric_function(metric),
+            )
+            benchmarks.append(benchmark)
     else:
         logger.debug("Creating variable combinations...")
         var_combinations = list(create_variable_combinations(**matrix))
         logger.debug(f"Variable combinations {var_combinations}")
         for var_combination in var_combinations:
-            before = interpolate_commands(run_config.before, var_combination)
-            after = interpolate_commands(run_config.after, var_combination)
-            bench = {}
-            for name in run_config.benchmark:
-                bench[name] = interpolate_commands(
-                    run_config.benchmark[name], var_combination
+            for metric in run_config.metrics:
+                before = interpolate_commands(run_config.before, var_combination)
+                after = interpolate_commands(run_config.after, var_combination)
+                bench = {}
+                for name in run_config.benchmark:
+                    bench[name] = interpolate_commands(
+                        run_config.benchmark[name], var_combination
+                    )
+                benchmark = PreparedBenchmark(
+                    matrix=var_combination,
+                    before=before,
+                    benchmark=bench,
+                    after=after,
+                    metric=get_metric_function(metric, var_combination),
                 )
-            metrics = get_metrics_functions(run_config.metrics, var_combination)
-            benchmark = PreparedBenchmark(
-                matrix=var_combination,
-                before=before,
-                benchmark=bench,
-                after=after,
-                metrics=metrics,
-            )
-            benchmarks.append(benchmark)
+                benchmarks.append(benchmark)
     logger.info("Finished preparing benchmarks.")
     logger.debug(f"Prepared benchmarks: {benchmarks}")
     return benchmarks

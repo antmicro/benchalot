@@ -39,7 +39,6 @@ def read_old_outputs(include: list[str]) -> pd.DataFrame:
         logger.debug(f"Reading file '{file}'")
         old_output = pd.read_csv(file)
         logger.debug(old_output.head())
-        old_output = old_output.fillna("")
         results_df = pd.concat([results_df, old_output], ignore_index=True)
     return results_df
 

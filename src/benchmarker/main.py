@@ -42,7 +42,7 @@ def main():
             if not isfile(file):
                 logger.critical(f"File '{file}' not found")
                 exit(1)
-        output_results_from_file(args.update_output, config.output, args.include_failed)
+        output_results_from_file(config.output, args.update_output, args.include_failed)
         exit_benchmarker()
 
     elif args.split:  # Split configuration file and exit

@@ -34,4 +34,4 @@ class PreparedBenchmark:
     before: list[str]
     benchmark: dict[str, list[str]]
     after: list[str]
-    metrics: list[Callable[[dict], BenchmarkResult]]
+    metric: Callable[[dict], BenchmarkResult]

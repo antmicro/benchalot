@@ -120,8 +120,8 @@ class OutputField(BaseModel):
         """
         if self.metric is None:
             if len(metrics) != 1:
-                raise ValueError("'metric' not specified")
-            self.y_axis = (
+                raise ValueError(f"Metric for '{self.filename}' not specified")
+            self.metric = (
                 metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
             )
 
@@ -187,6 +187,7 @@ class BarChartOutput(OutputField):
 
     format: Literal["bar-chart"]
     x_axis: str = Field(default=None, alias="x-axis")
+    metric: str = Field(default=None, alias="y-axis")
     facet: str | None = None
     color: str | None = None
     width: int = Field(default=10, ge=1)
@@ -217,6 +218,7 @@ class TableMdOutput(OutputField):
 
     format: Literal["table-md"]
     columns: list[str] | None = None
+    metric: str = Field(default=None, alias="result-column")
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):

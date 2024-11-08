@@ -134,7 +134,7 @@ def perform_benchmarks(
     logger.info("Performing benchmarks...")
     bar = tqdm(
         desc="Performing benchmarks.",
-        total=(len(benchmarks) * samples * len(benchmarks[0].metrics)),
+        total=(len(benchmarks) * samples),
         unit="benchmark",
         leave=False,
         mininterval=1,
@@ -142,39 +142,32 @@ def perform_benchmarks(
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
-                for metric in benchmark.metrics:
-                    logger.debug(f"Running benchmark: {benchmark}")
+                logger.debug(f"Running benchmark: {benchmark}")
 
-                    execute_section(benchmark.before, "before")
-                    text = str(
-                        [benchmark.benchmark[key] for key in benchmark.benchmark]
-                    )
-                    text = text.replace("[", "")
-                    text = text.replace("]", "")
-                    bar.set_description(
-                        f"Executing {text[:20] + '...' if len(text)>20 else text}"
-                    )
+                execute_section(benchmark.before, "before")
+                text = str([benchmark.benchmark[key] for key in benchmark.benchmark])
+                text = text.replace("[", "")
+                text = text.replace("]", "")
+                bar.set_description(
+                    f"Executing {text[:20] + '...' if len(text)>20 else text}"
+                )
 
-                    partial_result: BenchmarkResult = metric(benchmark.benchmark)
-                    bar.refresh(nolock=True)
+                partial_result: BenchmarkResult = benchmark.metric(benchmark.benchmark)
+                bar.refresh(nolock=True)
 
-                    execute_section(benchmark.after, "after")
-                    bar.update(1)
+                execute_section(benchmark.after, "after")
+                bar.update(1)
 
-                    for variable in benchmark.matrix:
-                        results.setdefault(variable, []).append(
-                            benchmark.matrix[variable]
-                        )
-                    results.setdefault("has_failed", []).append(
-                        partial_result.has_failed
-                    )
-                    results.setdefault("metric", []).append(partial_result.metric_name)
-                    for stage in partial_result.measurements:
-                        stage_column = results.setdefault(stage, [])
-                        # pad columns so that they have the same length
-                        stage_column += [None] * (n_rows - len(stage_column))
-                        stage_column.append(partial_result.measurements[stage])
-                    n_rows += 1
+                for variable in benchmark.matrix:
+                    results.setdefault(variable, []).append(benchmark.matrix[variable])
+                results.setdefault("has_failed", []).append(partial_result.has_failed)
+                results.setdefault("metric", []).append(partial_result.metric_name)
+                for stage in partial_result.measurements:
+                    stage_column = results.setdefault(stage, [])
+                    # pad columns so that they have the same length
+                    stage_column += [None] * (n_rows - len(stage_column))
+                    stage_column.append(partial_result.measurements[stage])
+                n_rows += 1
 
         except KeyboardInterrupt:
             logger.warning("Stopped benchmarks.")
