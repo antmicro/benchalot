@@ -152,7 +152,7 @@ def perform_benchmarks(
                     f"Executing {text[:20] + '...' if len(text)>20 else text}"
                 )
 
-                partial_result: BenchmarkResult = benchmark.metric(benchmark.benchmark)
+                single_result: BenchmarkResult = benchmark.metric(benchmark.benchmark)
                 bar.refresh(nolock=True)
 
                 execute_section(benchmark.after, "after")
@@ -160,13 +160,13 @@ def perform_benchmarks(
 
                 for variable in benchmark.matrix:
                     results.setdefault(variable, []).append(benchmark.matrix[variable])
-                results.setdefault("has_failed", []).append(partial_result.has_failed)
-                results.setdefault("metric", []).append(partial_result.metric_name)
-                for stage in partial_result.measurements:
+                results.setdefault("has_failed", []).append(single_result.has_failed)
+                results.setdefault("metric", []).append(single_result.metric_name)
+                for stage in single_result.measurements:
                     stage_column = results.setdefault(stage, [])
                     # pad columns so that they have the same length
                     stage_column += [None] * (n_rows - len(stage_column))
-                    stage_column.append(partial_result.measurements[stage])
+                    stage_column.append(single_result.measurements[stage])
                 n_rows += 1
 
         except KeyboardInterrupt:
