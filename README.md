@@ -239,7 +239,7 @@ benchmarker config.yml --split tag
 ```
 
 In case one of the benchmarks fails (its exit code is not equal 0) Benchmarker will filter out the failed results when creating outputs (the `csv` file will still include the failed benchmarks).
-To generate output with failed benchmark, use `--include-failed`:
+To generate outputs with failed benchmarks, use `--include-failed`:
 <!--name="failed"-->
 ```bash
 benchmarker config.yml --u result.csv --include-failed
