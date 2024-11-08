@@ -44,8 +44,8 @@ def main():
                 exit(1)
         output_results_from_file(
             config.output,
-            args.update_output,
             list(config.matrix.keys()),
+            args.update_output,
             args.include_failed,
         )
         exit_benchmarker()
