@@ -3,6 +3,7 @@ from logging import getLogger, INFO, ERROR
 from tqdm import tqdm
 from os import getcwd
 from benchmarker.structs import PreparedBenchmark, BenchmarkResult
+from benchmarker.output import HAS_FAILED_COLUMN, METRIC_COLUMN
 
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -160,8 +161,10 @@ def perform_benchmarks(
 
                 for variable in benchmark.matrix:
                     results.setdefault(variable, []).append(benchmark.matrix[variable])
-                results.setdefault("has_failed", []).append(single_result.has_failed)
-                results.setdefault("metric", []).append(single_result.metric_name)
+                results.setdefault(HAS_FAILED_COLUMN, []).append(
+                    single_result.has_failed
+                )
+                results.setdefault(METRIC_COLUMN, []).append(single_result.metric_name)
                 for stage in single_result.measurements:
                     stage_column = results.setdefault(stage, [])
                     # pad columns so that they have the same length
