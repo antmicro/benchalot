@@ -118,18 +118,19 @@ def get_metric_function(
     Returns:
         Callable[[dict],dict]: Callable object that perform specified measurement.
     """
-    if metric == "time":
-        return measure_time
-    elif metric == "stdout":
-        return gather_stdout
-    elif metric == "stderr":
-        return gather_stderr
-    else:
-        metric_command = list(metric.items())[0][1]  # type: ignore
-        metric_name = list(metric.items())[0][0]  # type: ignore
-        if variables:
-            metric_command = interpolate_command(metric_command, variables)
-        return partial(custom_metric, metric_command, metric_name)
+    match metric:
+        case "time":
+            return measure_time
+        case "stdout":
+            return gather_stdout
+        case "stderr":
+            return gather_stderr
+        case _:
+            metric_command = list(metric.items())[0][1]  # type: ignore
+            metric_name = list(metric.items())[0][0]  # type: ignore
+            if variables:
+                metric_command = interpolate_command(metric_command, variables)
+            return partial(custom_metric, metric_command, metric_name)
 
 
 def prepare_benchmarks(
