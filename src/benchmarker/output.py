@@ -14,6 +14,7 @@ from logging import getLogger
 from datetime import timezone, datetime
 import numpy as np
 import os
+from pandas.api.types import is_string_dtype
 from uuid import uuid4
 from benchmarker.validation import BarChartOutput, CsvOutput, TableMdOutput
 from sys import argv
@@ -66,10 +67,7 @@ def output_results_from_dict(
     )
     old_outputs = read_old_outputs(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
-    variable_names, measurement_columns = extract_columns(list(results_df.columns))
-    _output_results(
-        results_df, output_config, variable_names, measurement_columns, include_failed
-    )
+    _output_results(results_df, output_config, include_failed)
 
 
 def output_results_from_file(
@@ -86,9 +84,7 @@ def output_results_from_file(
     """
     old_outputs = read_old_outputs(include)
     variable_names, measurement_columns = extract_columns(list(old_outputs.columns))
-    _output_results(
-        old_outputs, output_config, variable_names, measurement_columns, include_failed
-    )
+    _output_results(old_outputs, output_config, include_failed)
 
 
 def get_stat_table(
@@ -105,8 +101,6 @@ def get_stat_table(
         show_columns: Variable names which will be included in the table.
     """
     results_df = input_df.copy()
-    results_df = results_df.loc[results_df["metric"] == metric]
-
     is_numeric = True
     try:
         results_df[measurement_columns] = results_df[measurement_columns].apply(
@@ -115,15 +109,12 @@ def get_stat_table(
     except (ValueError, TypeError):
         is_numeric = False
 
-    result_columns = []
-
     if len(measurement_columns) > 1:
-        result_columns = measurement_columns.copy()
         results_df["total"] = results_df[measurement_columns].sum(axis=1)
-        result_columns.append("total")
+        measurement_columns.append("total")
     elif len(measurement_columns) == 1:
         results_df = results_df.rename(columns={measurement_columns[0]: metric})
-        result_columns = [metric]
+        measurement_columns = [metric]
     else:
         assert "Unreachable"
 
@@ -140,7 +131,7 @@ def get_stat_table(
     if not group_table:
         if is_numeric:
             result_stat = dict()
-            for col in result_columns:
+            for col in measurement_columns:
                 col_name = col + " " + metric
                 result_stat["min " + col_name] = [results_df[col].min()]
                 result_stat["median " + col_name] = [results_df[col].median()]
@@ -150,10 +141,10 @@ def get_stat_table(
             table_df = results_df.drop_duplicates().reset_index(drop=True)
         return table_df
     else:
-        table_df = results_df.loc[:, show_columns + result_columns]
+        table_df = results_df.loc[:, show_columns + measurement_columns]
         if is_numeric:
             grouped_df = table_df.groupby(show_columns, observed=True)[
-                result_columns
+                measurement_columns
             ].agg(["min", "median", "max"])
             new_column_names = []
             for old_col in grouped_df.columns:
@@ -192,6 +183,7 @@ def get_bar_chart(
     """
     output_df = input_df.copy()
     output_df = output_df.loc[output_df["metric"] == y_axis]
+    output_df = output_df.dropna(axis=1, how="all")
 
     try:
         output_df[measurement_columns] = output_df[measurement_columns].apply(
@@ -283,8 +275,6 @@ def extract_columns(column_names: list[str]) -> tuple[list[str], list[str]]:
 def _output_results(
     results_df: pd.DataFrame,
     output_config: dict[str, CsvOutput | TableMdOutput | BarChartOutput],
-    variable_names: list[str],
-    measurement_columns: list[str],
     include_failed: bool,
 ) -> None:
     """Create output based on results and configuration.
@@ -296,16 +286,20 @@ def _output_results(
 
     """
     # Convert all variable columns to categorical to prevent rearranging by plotnine
-    for column in variable_names:
-        series = results_df[column]
-        results_df[column] = pd.Categorical(series, categories=series.unique())
+    for column in results_df.columns:
+        if is_string_dtype(results_df[column]):
+            series = results_df[column]
+            results_df[column] = pd.Categorical(series, categories=series.unique())
 
     logger.info("Outputting results...")
     logger.debug(results_df)
+
     first_metric = results_df["metric"][0]
-    print_table = get_stat_table(
-        results_df, first_metric, measurement_columns, variable_names
-    )
+    table_df = results_df.loc[results_df["metric"] == first_metric]
+    table_df = table_df.dropna(axis=1, how="all")
+    var_names, measurement_cols = extract_columns(list(table_df.columns))
+    print(table_df)
+    print_table = get_stat_table(table_df, first_metric, measurement_cols, var_names)
     if os.getuid() == 0:
         prev_umask = os.umask(0)
 
@@ -336,15 +330,21 @@ def _output_results(
             logger.debug("Outputting .csv file.")
             results_df.to_csv(output.filename, encoding="utf-8", index=False)
             csv_output_filename = output.filename
-        elif output.format == "bar-chart":
+            continue
+
+        filtered_df = output_df.loc[output_df["metric"] == output.metric]
+        filtered_df = filtered_df = filtered_df.dropna(axis=1, how="all")
+        print(filtered_df)
+        variable_names, measurement_columns = extract_columns(list(filtered_df.columns))
+        if output.format == "bar-chart":
             logger.debug("Outputting bar chart.")
             check_outputting_without_failed(output_name)
             plot = get_bar_chart(
-                input_df=output_df,
+                input_df=filtered_df,
                 variable_names=variable_names,
                 measurement_columns=measurement_columns,
                 x_axis=output.x_axis,
-                y_axis=output.y_axis,
+                y_axis=output.metric,  # type: ignore
                 color=output.color,
                 facet=output.facet,
                 stat=output.stat,
@@ -364,10 +364,10 @@ def _output_results(
             logger.debug("Outputting markdown table.")
             check_outputting_without_failed(output_name)
             table = get_stat_table(
-                output_df,
+                filtered_df,
                 measurement_columns=measurement_columns,
                 show_columns=output.columns,
-                metric=output.result_column,
+                metric=output.metric,  # type: ignore
             )
             table.to_markdown(output.filename, index=False)
             print_table = table

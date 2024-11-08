@@ -109,6 +109,7 @@ class OutputField(BaseModel):
 
     filename: str
     format: str
+    metric: str | None = None
 
     def apply_default_values(self, matrix, metrics):
         """Apply default values to missing fields.
@@ -117,7 +118,12 @@ class OutputField(BaseModel):
             matrix: `matrix` section from the configuration file.
             metrics: `run.metrics` section from the configuration file.
         """
-        pass
+        if self.metric is None:
+            if len(metrics) != 1:
+                raise ValueError("'metric' not specified")
+            self.y_axis = (
+                metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
+            )
 
     def check_vars_exist(self, matrix):
         """Verify if variables used in the output are present in the `matrix` section.
@@ -130,7 +136,7 @@ class OutputField(BaseModel):
         """
         pass
 
-    def check_metric_exists(self, metric_name, metrics):
+    def check_metric_exists(self, metrics):
         """Check if metric is present in the `run.metrics` section.
 
         Args:
@@ -143,19 +149,8 @@ class OutputField(BaseModel):
         metric_names = [
             name if type(name) is str else list(name.keys())[0] for name in metrics
         ]
-        if metric_name not in metric_names:
-            raise ValueError(f"metric '{metric_name}' not found")
-
-    def check_metrics_exist(self, metrics):
-        """Check if metrics used in the output are present in the `run.metrics` section.
-
-        Args:
-            metrics: `run.metrics` section.
-
-        Raises:
-            ValueError
-        """
-        pass
+        if self.metric not in metric_names:
+            raise ValueError(f"metric '{self.metric}' not found")
 
 
 class CsvOutput(OutputField):
@@ -167,6 +162,12 @@ class CsvOutput(OutputField):
 
     format: Literal["csv"]
     model_config = ConfigDict(extra="forbid")
+
+    def check_metric_exists(self, metrics):
+        pass
+
+    def apply_default_values(self, matrix, metrics):
+        pass
 
 
 class BarChartOutput(OutputField):
@@ -186,7 +187,6 @@ class BarChartOutput(OutputField):
 
     format: Literal["bar-chart"]
     x_axis: str = Field(default=None, alias="x-axis")
-    y_axis: str = Field(default=None, alias="y-axis")
     facet: str | None = None
     color: str | None = None
     width: int = Field(default=10, ge=1)
@@ -194,24 +194,6 @@ class BarChartOutput(OutputField):
     dpi: int = Field(default=100, ge=50)
     stat: Literal["min", "mean", "median", "max"] = "median"
     model_config = ConfigDict(extra="forbid")
-
-    def apply_default_values(self, matrix, metrics):
-        """Apply default values to missing fields.
-        Set y-axis (if missing) to the only metric specified in the config.
-
-        Args:
-            matrix: `matrix` section from the configuration file.
-            metrics: `run.metrics` section from the configuration file.
-
-        Raises:
-            ValueError: If there are more than one metrics in `run.metrics` section and y-axis is `None`.
-        """
-        if self.y_axis is None:
-            if len(metrics) != 1:
-                raise ValueError("'y-axis' not specified")
-            self.y_axis = (
-                metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
-            )
 
     def check_vars_exist(self, matrix):
         """Check if facet, x-axis and color are present in the matrix section
@@ -222,9 +204,6 @@ class BarChartOutput(OutputField):
         check_var_exists(self.facet, matrix)
         check_var_exists(self.x_axis, matrix)
         check_var_exists(self.color, matrix)
-
-    def check_metrics_exist(self, metrics):
-        super().check_metric_exists(self.y_axis, metrics)
 
 
 class TableMdOutput(OutputField):
@@ -238,7 +217,6 @@ class TableMdOutput(OutputField):
 
     format: Literal["table-md"]
     columns: list[str] | None = None
-    result_column: str = Field(default=None, alias="result-column")
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):
@@ -250,22 +228,14 @@ class TableMdOutput(OutputField):
             ValueError: If there are more than one metrics in `run.metrics` section and `result_column` is `None`.
 
         """
+        super().apply_default_values(matrix, metrics)
         if self.columns is None:
             self.columns = list(matrix.keys())
-        if self.result_column is None:
-            if len(metrics) != 1:
-                raise ValueError("'result-column' not specified")
-            self.result_column = (
-                metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
-            )
 
     def check_vars_exist(self, matrix):
         """Check if columns contain valid variables' names."""
         for column in self.columns:
             check_var_exists(column, matrix)
-
-    def check_metrics_exist(self, metrics):
-        super().check_metric_exists(self.result_column, metrics)
 
 
 def check_var_exists(var_key, matrix):
@@ -325,7 +295,7 @@ class ConfigFile(BaseModel):
         """Check whether metrics used in outputs are present in the `run.metrics` section."""
         for output_key in self.output:
             output = self.output[output_key]
-            output.check_metrics_exist(self.run.metrics)
+            output.check_metric_exists(self.run.metrics)
         return self
 
 
