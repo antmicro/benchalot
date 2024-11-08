@@ -238,7 +238,7 @@ To split configuration file into many smaller ones, use `--split`:
 benchmarker config.yml --split tag
 ```
 
-In case that one of the benchmarks fails (command return code is not equal 0) the Benchmarker will filter out the failed results when creating output (`csv` file will still include the failed benchmarks).
+In case one of the benchmarks fails (its exit code is not equal 0) Benchmarker will filter out the failed results when creating outputs (the `csv` file will still include the failed benchmarks).
 To generate output with failed benchmark, use `--include-failed`:
 <!--name="failed"-->
 ```bash
