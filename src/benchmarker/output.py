@@ -157,7 +157,7 @@ def get_stat_table(
             for old_col in grouped_df.columns:
                 col_name = old_col[0]
                 stat_name = old_col[1]
-                new_name = stat_name + " " + col_name
+                new_name = stat_name + " " + col_name + " " + metric
                 new_column_names.append(new_name)
             grouped_df.columns = pd.Index(new_column_names)
             table_df = grouped_df.reset_index()
@@ -362,7 +362,7 @@ def _output_results(
 
     if os.getuid() == 0:
         os.umask(prev_umask)
-    if len(outputs_without_failed) > 1 and not include_failed:
+    if len(outputs_without_failed) >= 1 and not include_failed:
         logger.warning(
             f"Outputs generated without failed benchmarks: {', '.join(outputs_without_failed)}"
         )
@@ -371,14 +371,17 @@ def _output_results(
         )
     else:
         if print_table is None:
-            first_metric = output_df[METRIC_COLUMN][0]
-            table_df = output_df.loc[output_df[METRIC_COLUMN] == first_metric]
-            table_df = table_df.dropna(axis=1, how="all")
-            measurement_cols = extract_measurement_columns(
-                list(table_df.columns), variable_names
-            )
-            print_table = get_stat_table(
-                table_df, first_metric, measurement_cols, variable_names
-            )
-        print(print_table.to_markdown(index=False))
+            for metric in output_df[METRIC_COLUMN].unique():
+                table_df = output_df.loc[output_df[METRIC_COLUMN] == metric]
+                table_df = table_df.dropna(axis=1, how="all")
+                measurement_cols = extract_measurement_columns(
+                    list(table_df.columns), variable_names
+                )
+                print_table = get_stat_table(
+                    table_df, metric, measurement_cols, variable_names
+                )
+                print(f"{metric}:")
+                print(print_table.to_markdown(index=False))
+        else:
+            print(print_table.to_markdown(index=False))
     logger.info("Finished outputting results.")
