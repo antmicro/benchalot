@@ -24,7 +24,7 @@ def check_return_code(command: str, code: int) -> bool:
         code: Return code of the command.
 
     Returns:
-        bool: True if program returned 0, False otherwise.
+        bool: True if program returned 0, otherwise False .
     """
     if code != 0:
         logger.error(f"Subprocess '{command}' exited abnormally (exit code {code})")
@@ -171,6 +171,7 @@ def perform_benchmarks(
                     results.setdefault("metric", []).append(partial_result.metric_name)
                     for stage in partial_result.measurements:
                         stage_column = results.setdefault(stage, [])
+                        # pad columns so that they have the same length
                         stage_column += [None] * (n_rows - len(stage_column))
                         stage_column.append(partial_result.measurements[stage])
                     n_rows += 1
@@ -179,6 +180,7 @@ def perform_benchmarks(
             logger.warning("Stopped benchmarks.")
             logger.warning("Creating output...")
             break
+    # pad columns so that they have the same length
     for _, col in results.items():
         col += [None] * (n_rows - len(col))
     bar.close()

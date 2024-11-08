@@ -370,5 +370,6 @@ def _output_results(
         logger.warning(
             f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {csv_output_filename} --include-failed"
         )
-    print(print_table.to_markdown(index=False))
+    else:
+        print(print_table.to_markdown(index=False))
     logger.info("Finished outputting results.")

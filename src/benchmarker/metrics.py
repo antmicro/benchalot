@@ -65,7 +65,7 @@ def _gather_output(
         nonlocal has_failed
         total = ""
         for command in commands:
-            success = True
+            success: bool
             ret = ""
             if output == "stdout":
                 ret, success = execute_and_handle_output(command, capture_stdout=True)
@@ -122,9 +122,7 @@ def custom_metric(
                 has_failed = True
     process = execute_command(metric_command)
     output = handle_output(process, capture_stdout=True)
-    metric_return_code = process.wait()
-    if not check_return_code(metric_command, metric_return_code):
-        exit(1)
+    process.wait()
 
     if len(output.splitlines()) == 1:
         try:
@@ -134,19 +132,23 @@ def custom_metric(
         except ValueError:
             pass
         return BenchmarkResult(metric_name, has_failed, {metric_name: output})
-
-    output_stream = StringIO(output)
-    reader = DictReader(output_stream)
-    tmp_dict = {}
-    for row in reader:
-        tmp_dict = row
-    output_dict = {}
-    for stage in tmp_dict:
-        value = tmp_dict[stage]
-        try:
-            value = float(value)
-        except ValueError:
-            pass
-        output_dict[stage] = value
-    result = BenchmarkResult(metric_name, has_failed, output_dict)
-    return result
+    elif len(output.splitlines()) == 2:
+        output_stream = StringIO(output)
+        reader = DictReader(output_stream)
+        tmp_dict = {}
+        for row in reader:
+            tmp_dict = row
+        output_dict = {}
+        for stage in tmp_dict:
+            value = tmp_dict[stage]
+            try:
+                value = float(value)
+            except ValueError:
+                pass
+            output_dict[stage] = value
+        result = BenchmarkResult(metric_name, has_failed, output_dict)
+        return result
+    else:
+        logger.critical("Invalid custom metric output format:")
+        logger.critical(output)
+        exit(1)
