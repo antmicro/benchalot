@@ -50,8 +50,8 @@ assert_file_exists file_size.csv
 rm result.csv
 mv file_size.csv result.csv
 eval $RUN_INCLUDE
+eval $RUN_FAILED
 echo "$CONFIG" > config.yml
 eval $RUN_SPLIT
 assert_file_exists "out/config.yml.part0.yml"
 assert_file_exists "out/config.yml.part1.yml"
-eval $RUN_FAILED
