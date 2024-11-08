@@ -17,6 +17,7 @@ HELP_INFORMATION=$(tuttest README.md help-information)
 RUN_UPDATE=$(tuttest README.md update-output)
 RUN_INCLUDE=$(tuttest README.md include)
 RUN_SPLIT=$(tuttest README.md split)
+RUN_FAILED=$(tuttest README.md failed)
 SIZE_CONFIG=$(tuttest README.md size-config)
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
@@ -53,3 +54,4 @@ echo "$CONFIG" > config.yml
 eval $RUN_SPLIT
 assert_file_exists "out/config.yml.part0.yml"
 assert_file_exists "out/config.yml.part1.yml"
+eval $RUN_FAILED
