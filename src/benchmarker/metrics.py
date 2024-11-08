@@ -128,10 +128,12 @@ def custom_metric(
 
     if len(output.splitlines()) == 1:
         try:
-            return BenchmarkResult(metric_name, has_failed, {"total": float(output)})
+            return BenchmarkResult(
+                metric_name, has_failed, {metric_name: float(output)}
+            )
         except ValueError:
             pass
-        return BenchmarkResult(metric_name, has_failed, {"total": output})
+        return BenchmarkResult(metric_name, has_failed, {metric_name: output})
 
     output_stream = StringIO(output)
     reader = DictReader(output_stream)

@@ -182,9 +182,6 @@ def get_bar_chart(
         ggplot: The bar chart object.
     """
     output_df = input_df.copy()
-    output_df = output_df.loc[output_df["metric"] == y_axis]
-    output_df = output_df.dropna(axis=1, how="all")
-
     try:
         output_df[measurement_columns] = output_df[measurement_columns].apply(
             pd.to_numeric
@@ -217,10 +214,9 @@ def get_bar_chart(
     if x_axis:
         plot += aes(x=x_axis)
     else:
+        # create dummy column since geom_bar always needs to have an x-axis
         dummy_column = str(uuid4())
-        output_df[dummy_column] = (
-            0  # create dummy column since geom_bar always needs to have an x-axis
-        )
+        output_df[dummy_column] = 0
         plot += aes(x=dummy_column)
 
     funcs = {"mean": np.mean, "median": np.median, "min": np.min, "max": np.max}
@@ -298,16 +294,15 @@ def _output_results(
     table_df = results_df.loc[results_df["metric"] == first_metric]
     table_df = table_df.dropna(axis=1, how="all")
     var_names, measurement_cols = extract_columns(list(table_df.columns))
-    print(table_df)
     print_table = get_stat_table(table_df, first_metric, measurement_cols, var_names)
     if os.getuid() == 0:
         prev_umask = os.umask(0)
 
-    has_used_filtered_output = False
     csv_output_filename = ""
     failed_benchmarks = results_df[results_df["has_failed"] == True]  # noqa: E712
     n_failed = failed_benchmarks.shape[0]
     output_df: pd.DataFrame
+    outputs_without_failed = []
     if n_failed > 0 and not include_failed:
         logger.error(f"{n_failed} benchmarks failed!")
         logger.warning("Failed benchmarks:\n" + failed_benchmarks.to_markdown())
@@ -316,12 +311,6 @@ def _output_results(
         )
     else:
         output_df = results_df
-
-    def check_outputting_without_failed(output_name):
-        nonlocal has_used_filtered_output, n_failed
-        if n_failed > 0 and not include_failed:
-            logger.warning(f"Creating '{output_name}' without failed benchmarks.")
-            has_used_filtered_output = True
 
     for output_name, output in output_config.items():
         logger.debug(f"Creating output for {output}")
@@ -332,13 +321,13 @@ def _output_results(
             csv_output_filename = output.filename
             continue
 
+        if n_failed > 0:
+            outputs_without_failed.append(output_name)
         filtered_df = output_df.loc[output_df["metric"] == output.metric]
         filtered_df = filtered_df = filtered_df.dropna(axis=1, how="all")
-        print(filtered_df)
         variable_names, measurement_columns = extract_columns(list(filtered_df.columns))
         if output.format == "bar-chart":
             logger.debug("Outputting bar chart.")
-            check_outputting_without_failed(output_name)
             plot = get_bar_chart(
                 input_df=filtered_df,
                 variable_names=variable_names,
@@ -362,7 +351,6 @@ def _output_results(
 
         elif output.format == "table-md":
             logger.debug("Outputting markdown table.")
-            check_outputting_without_failed(output_name)
             table = get_stat_table(
                 filtered_df,
                 measurement_columns=measurement_columns,
@@ -374,7 +362,10 @@ def _output_results(
 
     if os.getuid() == 0:
         os.umask(prev_umask)
-    if has_used_filtered_output:
+    if len(outputs_without_failed) > 1 and not include_failed:
+        logger.warning(
+            f"Outputs generated without failed benchmarks: {', '.join(outputs_without_failed)}"
+        )
         logger.warning(
             f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {csv_output_filename} --include-failed"
         )

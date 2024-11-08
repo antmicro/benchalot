@@ -38,13 +38,14 @@ def main():
     config = validate_config(config_file)
 
     if args.update_output:  # Update output and exit
-        update_output(
-            args.update_output,
-            config.output,
-            args.include_failed,
-        )
+        for file in args.update_output:
+            if not isfile(file):
+                logger.critical(f"File '{file}' not found")
+                exit(1)
+        output_results_from_file(args.update_output, config.output, args.include_failed)
         exit_benchmarker()
-    if args.split:  # Split configuration file and exit
+
+    elif args.split:  # Split configuration file and exit
         generate_config_files(config, args.config_filename, args.split)
         exit_benchmarker()
 
@@ -250,22 +251,3 @@ def generate_config_files(
     print("To combine results of their execution use: ")
     print("\t" + command)
     logger.info("Finished spliting configuration file.")
-
-
-def update_output(
-    old_outputs: list[str],
-    output_config: dict,
-    include_failed: bool,
-) -> None:
-    """Regenerate output based on previous result.
-
-    Args:
-        old_outputs: List of previous result file names.
-        output_config: Configuration file's output section.
-        matrix: Configuration file's matrix section.
-    """
-    for file in old_outputs:
-        if not isfile(file):
-            logger.critical(f"File '{file}' not found")
-            exit(1)
-    output_results_from_file(output_config, old_outputs, include_failed)
