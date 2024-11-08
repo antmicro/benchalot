@@ -54,7 +54,8 @@ def output_results_from_dict(
     Args:
         results: Dictionary containing columns with results and values of the variables.
         output_config: Configuration file's output section.
-        matrix: Configuration file's matrix section.
+        include: Lit of previous results file names to be combined with new results.
+        include_failed: Whether to filter out failed benchmarks.
     """
     try:
         results_df = pd.DataFrame(results)
@@ -79,7 +80,7 @@ def output_results_from_file(
     Args:
         output_config: Configuration file's output section.
         include: List of file names with old results.
-        matrix: Configuration file's matrix section.
+        include_failed: Whether to filter out failed benchmarks.
     """
     old_outputs = read_old_outputs(include)
     variable_names, measurement_columns = extract_columns(list(old_outputs.columns))
@@ -97,6 +98,7 @@ def get_stat_table(
     Args:
         results_df: Dataframe containing the results.
         result_column: A name of a metric which will be included in the table.
+        measurement_columns: List of column names containing measurements.
         show_columns: Variable names which will be included in the table.
     """
     results_df = input_df.copy()
@@ -172,6 +174,7 @@ def get_bar_chart(
     Args:
         output_df: Dataframe containing benchmark results.
         variable_names: List of variable names.
+        measurement_columns: List of column names containing measurements.
         x_axis: Name of the variable used as x-axis of the plot.
         y_axis: Name of the variable used as y-axis of the plot.
         color: Name of the variable used as color channel of the plot.
@@ -243,6 +246,14 @@ def get_bar_chart(
 
 
 def extract_columns(column_names: list[str]) -> tuple[list[str], list[str]]:
+    """Get variable column names and measurement column names.
+
+    Args:
+        column_names: List of all column names.
+
+    Returns:
+        tupe[list[str], list[str]]: Variable column names and measurement column names.
+    """
     matrix_columns: list[str] = []
     measurement_columns: list[str] = []
 
@@ -277,8 +288,7 @@ def _output_results(
     Args:
         results_df: Dataframe containing benchmark results.
         output_config: Configuration file's output section.
-        matrix: Configuration file's matrix section.
-
+        include_failed: Whether to filter out failed benchmarks.
     """
     # Convert all variable columns to categorical to prevent rearranging by plotnine
     for column in results_df.columns:
