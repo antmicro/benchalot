@@ -46,8 +46,6 @@ def read_old_outputs(include: list[str]) -> pd.DataFrame:
 def output_results_from_dict(
     results: dict,
     output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
-    variable_names: list[str],
-    measurement_columns: list[str],
     include: list,
     include_failed: bool,
 ) -> None:
@@ -68,6 +66,7 @@ def output_results_from_dict(
     )
     old_outputs = read_old_outputs(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
+    variable_names, measurement_columns = extract_columns(list(results_df.columns))
     _output_results(
         results_df, output_config, variable_names, measurement_columns, include_failed
     )
@@ -76,8 +75,6 @@ def output_results_from_dict(
 def output_results_from_file(
     output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
     include: list,
-    variable_names: list[str],
-    measurement_columns: list[str],
     include_failed: bool,
 ) -> None:
     """Create output for the results contained in files.
@@ -88,6 +85,7 @@ def output_results_from_file(
         matrix: Configuration file's matrix section.
     """
     old_outputs = read_old_outputs(include)
+    variable_names, measurement_columns = extract_columns(list(old_outputs.columns))
     _output_results(
         old_outputs, output_config, variable_names, measurement_columns, include_failed
     )
@@ -255,6 +253,31 @@ def get_bar_chart(
             axis_ticks_x=element_blank(),
         )
     return plot
+
+
+def extract_columns(column_names: list[str]) -> tuple[list[str], list[str]]:
+    matrix_columns: list[str] = []
+    measurement_columns: list[str] = []
+
+    is_reading_matrix_columns = False
+    is_reading_measurement_columns = False
+
+    # |benchmark_date|var1|var2|var3|has_failed|metric|stage1|stage2|
+    for col in column_names:
+        if col == TIME_STAMP_COLUMN:
+            is_reading_matrix_columns = True
+        elif col == "has_failed":
+            is_reading_matrix_columns = False
+        elif is_reading_matrix_columns:
+            matrix_columns.append(col)
+        elif col == "metric":
+            is_reading_measurement_columns = True
+        elif is_reading_measurement_columns:
+            measurement_columns.append(col)
+        else:
+            assert "Unreachable!"
+
+    return matrix_columns, measurement_columns
 
 
 def _output_results(

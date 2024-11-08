@@ -41,8 +41,6 @@ def main():
         update_output(
             args.update_output,
             config.output,
-            list(config.matrix.keys()),
-            list(config.run.benchmark.keys()),
             args.include_failed,
         )
         exit_benchmarker()
@@ -90,8 +88,6 @@ def main():
     output_results_from_dict(
         results,
         config.output,
-        list(config.matrix.keys()),
-        list(config.run.benchmark.keys()),
         args.include,
         args.include_failed,
     )
@@ -259,8 +255,6 @@ def generate_config_files(
 def update_output(
     old_outputs: list[str],
     output_config: dict,
-    variable_names: list[str],
-    measurement_columns: list[str],
     include_failed: bool,
 ) -> None:
     """Regenerate output based on previous result.
@@ -274,6 +268,4 @@ def update_output(
         if not isfile(file):
             logger.critical(f"File '{file}' not found")
             exit(1)
-    output_results_from_file(
-        output_config, old_outputs, variable_names, measurement_columns, include_failed
-    )
+    output_results_from_file(output_config, old_outputs, include_failed)
