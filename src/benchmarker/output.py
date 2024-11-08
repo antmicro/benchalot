@@ -295,8 +295,6 @@ def _output_results(
     table_df = table_df.dropna(axis=1, how="all")
     var_names, measurement_cols = extract_columns(list(table_df.columns))
     print_table = get_stat_table(table_df, first_metric, measurement_cols, var_names)
-    if os.getuid() == 0:
-        prev_umask = os.umask(0)
 
     csv_output_filename = ""
     failed_benchmarks = results_df[results_df["has_failed"] == True]  # noqa: E712
@@ -311,6 +309,9 @@ def _output_results(
         )
     else:
         output_df = results_df
+
+    if os.getuid() == 0:
+        prev_umask = os.umask(0)
 
     for output_name, output in output_config.items():
         logger.debug(f"Creating output for {output}")
