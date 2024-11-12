@@ -67,10 +67,10 @@ def main():
 
     run_config = config.run
     benchmarks = prepare_benchmarks(
-        run_config, config.matrix, config.system.isolate_cpus
+        run_config, config.matrix, config.exclude_matrix, config.system.isolate_cpus
     )
     before_all_commands, after_all_commands = prepare_before_after_all_commands(
-        run_config, config.matrix
+        run_config, config.matrix, config.exclude_matrix
     )
 
     if config.run.save_output:

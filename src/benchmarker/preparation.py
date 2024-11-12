@@ -67,7 +67,9 @@ def interpolate_commands(commands: list, variables: dict[str, str | int]) -> lis
 
 
 def prepare_before_after_all_commands(
-    run_config: RunSection, matrix: dict[str, list]
+    run_config: RunSection,
+    matrix: dict[str, list],
+    exclude_matrix: list[dict[str, int | str | float]],
 ) -> tuple[list[str], list[str]]:
     """Create command variants for each combination of values of variables present in before-all and after-all sections.
 
@@ -93,6 +95,10 @@ def prepare_before_after_all_commands(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
                 for var_combination in var_combinations:
+                    for exclusion in exclude_matrix:
+                        if var_combination == exclude_matrix:
+                            print("HERE")
+                            continue
                     curr_section_commands += interpolate_commands(
                         section, var_combination
                     )
@@ -134,7 +140,10 @@ def get_metric_function(
 
 
 def prepare_benchmarks(
-    run_config: RunSection, matrix: dict[str, list[str]], isolate_cpus: bool
+    run_config: RunSection,
+    matrix: dict[str, list[str]],
+    exclude_matrix: list[dict[str, int | str | float]],
+    isolate_cpus: bool,
 ) -> list[PreparedBenchmark]:
     """Prepare `before`, `benchmark` and `after` commands so that they can be executed as part of one benchmark.
 
@@ -169,6 +178,11 @@ def prepare_benchmarks(
         var_combinations = list(create_variable_combinations(**matrix))
         logger.debug(f"Variable combinations {var_combinations}")
         for var_combination in var_combinations:
+            for exclusion in exclude_matrix:
+                print(exclusion, var_combination)
+                if var_combination == exclusion:
+                    print("HERE")
+                    continue
             for metric in run_config.metrics:
                 before = interpolate_commands(run_config.before, var_combination)
                 after = interpolate_commands(run_config.after, var_combination)
