@@ -19,7 +19,7 @@ RUN_INCLUDE=$(tuttest README.md include)
 RUN_SPLIT=$(tuttest README.md split)
 RUN_FAILED=$(tuttest README.md failed)
 SIZE_CONFIG=$(tuttest README.md size-config)
-EXCLUSION=$(tuttest README.md exclusion)
+EXCLUSION=$(tuttest README.md exclusions)
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
@@ -45,7 +45,7 @@ if [ $ret -ne 0 ]; then
     exit 1
 fi
 
-echo "$EXCLUSION ">> config.yml
+printf "\n%s" "$EXCLUSION" >> config.yml
 rm plot.png
 rm table.md
 rm result.csv

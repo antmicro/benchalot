@@ -92,10 +92,10 @@ To exclude given variable values combination, use `exclusions` section:
 <!-- name="exclusions" -->
 ```yaml
 exclusions:
-    - tag: slow
-      input: data1
-    - tag: fast
-      thread: 2
+  - tag: slow
+    input: data1
+  - tag: fast
+    thread: 2
 ```
 Benchmarker will not create benchmarks for these value combinations.
 

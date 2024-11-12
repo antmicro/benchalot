@@ -70,6 +70,15 @@ def exclude(
     var_combination: dict[str, int | float | str],
     exclusions: list[dict[str, int | str | float]],
 ) -> bool:
+    """Check if var_combination should be excluded based on exclusions list.
+
+    Args:
+        var_combination: Combination of variable values.
+        exclusions: List of exclusions.
+
+    Returns:
+        bool: `True` if variable combination should be excluded, otherwiese `False`.
+    """
     for exclusion in exclusions:
         if exclusion.items() <= var_combination.items():
             return True
