@@ -262,6 +262,7 @@ class ConfigFile(BaseModel):
     system: SystemSection = SystemSection()
     run: RunSection
     output: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
+    model_config = ConfigDict(extra="forbid")
 
     @field_validator("output")
     @classmethod
