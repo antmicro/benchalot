@@ -69,13 +69,14 @@ def interpolate_commands(commands: list, variables: dict[str, str | int]) -> lis
 def prepare_before_after_all_commands(
     run_config: RunSection,
     matrix: dict[str, list],
-    exclude_matrix: list[dict[str, int | str | float]],
+    exclusions: list[dict[str, int | str | float]],
 ) -> tuple[list[str], list[str]]:
     """Create command variants for each combination of values of variables present in before-all and after-all sections.
 
     Args:
         run_config: Configuration file's `run` section.
         matrix: Configuration file's `matrix` section.
+        exclusions: Configuration file's `exclusions` section, which excludes given var combinations.
 
     Returns:
         tuple[list[str], list[str]]: Two lists with command combinations for each section.
@@ -95,7 +96,7 @@ def prepare_before_after_all_commands(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
                 for var_combination in var_combinations:
-                    if var_combination in exclude_matrix:
+                    if var_combination in exclusions:
                         continue
                     curr_section_commands += interpolate_commands(
                         section, var_combination
@@ -140,7 +141,7 @@ def get_metric_function(
 def prepare_benchmarks(
     run_config: RunSection,
     matrix: dict[str, list[str]],
-    exclude_matrix: list[dict[str, int | str | float]],
+    exclusions: list[dict[str, int | str | float]],
     isolate_cpus: bool,
 ) -> list[PreparedBenchmark]:
     """Prepare `before`, `benchmark` and `after` commands so that they can be executed as part of one benchmark.
@@ -148,6 +149,7 @@ def prepare_benchmarks(
     Args:
         run_config: Configuration file's `run` section.
         matrix: Configuration file's `matrix` section.
+        exclusions: Configuration file's `exclusions` section, which excludes given var combinations.
         isolate_cpus: Whether to prepend `cset shield --exec -- ` to `benchmark` commands.
 
     Returns:
@@ -176,7 +178,7 @@ def prepare_benchmarks(
         var_combinations = list(create_variable_combinations(**matrix))
         logger.debug(f"Variable combinations {var_combinations}")
         for var_combination in var_combinations:
-            if var_combination in exclude_matrix:
+            if var_combination in exclusions:
                 continue
             for metric in run_config.metrics:
                 before = interpolate_commands(run_config.before, var_combination)

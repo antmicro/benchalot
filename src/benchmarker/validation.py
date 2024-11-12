@@ -258,9 +258,7 @@ class ConfigFile(BaseModel):
     """
 
     matrix: dict[str, list] = {}
-    exclude_matrix: list[dict[str, str | int | float]] = Field(
-        default={}, alias="exclude-matrix"
-    )
+    exclusions: list[dict[str, str | int | float]] = []
     system: SystemSection = SystemSection()
     run: RunSection
     output: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
