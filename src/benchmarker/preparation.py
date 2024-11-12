@@ -66,6 +66,16 @@ def interpolate_commands(commands: list, variables: dict[str, str | int]) -> lis
     return prepared_commands
 
 
+def exclude(
+    var_combination: dict[str, int | float | str],
+    exclusions: list[dict[str, int | str | float]],
+) -> bool:
+    for exclusion in exclusions:
+        if exclusion.items() <= var_combination.items():
+            return True
+    return False
+
+
 def prepare_before_after_all_commands(
     run_config: RunSection,
     matrix: dict[str, list],
@@ -96,7 +106,7 @@ def prepare_before_after_all_commands(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
                 for var_combination in var_combinations:
-                    if var_combination in exclusions:
+                    if exclude(var_combination, exclusions):
                         continue
                     curr_section_commands += interpolate_commands(
                         section, var_combination
@@ -178,7 +188,7 @@ def prepare_benchmarks(
         var_combinations = list(create_variable_combinations(**matrix))
         logger.debug(f"Variable combinations {var_combinations}")
         for var_combination in var_combinations:
-            if var_combination in exclusions:
+            if exclude(var_combination, exclusions):
                 continue
             for metric in run_config.metrics:
                 before = interpolate_commands(run_config.before, var_combination)
