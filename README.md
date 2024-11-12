@@ -85,6 +85,20 @@ The above configuration will result in runs:
 in total creating 18 combinations of variable values.
 If there is no `matrix` section, Benchmarker will execute the `run` section once.
 
+#### Exclusions
+
+To exclude given variable values combination, use `exclusions` section:
+
+<!-- name="exclusions" -->
+```yaml
+exclusions:
+    - tag: slow
+      input: data1
+    - tag: fast
+      thread: 2
+```
+Benchmarker will not create benchmarks for these value combinations.
+
 ### Run
 
 * `benchmark` contains the commands to be benchmarked.

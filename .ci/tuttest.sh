@@ -19,6 +19,7 @@ RUN_INCLUDE=$(tuttest README.md include)
 RUN_SPLIT=$(tuttest README.md split)
 RUN_FAILED=$(tuttest README.md failed)
 SIZE_CONFIG=$(tuttest README.md size-config)
+EXCLUSION=$(tuttest README.md exclusion)
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
@@ -41,6 +42,21 @@ cmp plot.png previous.png
 ret=$?
 if [ $ret -ne 0 ]; then
     echo "Plots are not the same."
+    exit 1
+fi
+
+echo "$EXCLUSION ">> config.yml
+rm plot.png
+rm table.md
+rm result.csv
+eval "$RUN"
+assert_file_exists plot.png
+assert_file_exists table.md
+assert_file_exists result.csv
+cmp plot.png previous.png
+ret=$?
+if [ $ret -eq 0 ]; then
+    echo "Plots are the same. Exclusion did not work."
     exit 1
 fi
 
