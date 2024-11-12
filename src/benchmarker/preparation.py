@@ -95,10 +95,8 @@ def prepare_before_after_all_commands(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
                 for var_combination in var_combinations:
-                    for exclusion in exclude_matrix:
-                        if var_combination == exclude_matrix:
-                            print("HERE")
-                            continue
+                    if var_combination in exclude_matrix:
+                        continue
                     curr_section_commands += interpolate_commands(
                         section, var_combination
                     )
@@ -178,11 +176,8 @@ def prepare_benchmarks(
         var_combinations = list(create_variable_combinations(**matrix))
         logger.debug(f"Variable combinations {var_combinations}")
         for var_combination in var_combinations:
-            for exclusion in exclude_matrix:
-                print(exclusion, var_combination)
-                if var_combination == exclusion:
-                    print("HERE")
-                    continue
+            if var_combination in exclude_matrix:
+                continue
             for metric in run_config.metrics:
                 before = interpolate_commands(run_config.before, var_combination)
                 after = interpolate_commands(run_config.after, var_combination)

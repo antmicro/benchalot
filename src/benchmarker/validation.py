@@ -251,6 +251,7 @@ class ConfigFile(BaseModel):
 
     Attributes:
         matrix: Section containing variables and their values.
+        exclude_matrix: Section containing combinations of variable values for which no benchmarks will be created.
         system: Section containing variance reducing, system modifying options.
         run: Section containing commands.
         output: Section containing desired outputs.
