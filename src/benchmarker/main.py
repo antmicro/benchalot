@@ -44,7 +44,6 @@ def main():
                 exit(1)
         output_results_from_file(
             config.output,
-            list(config.matrix.keys()),
             args.update_output,
             args.include_failed,
         )
@@ -93,7 +92,6 @@ def main():
     output_results_from_dict(
         results,
         config.output,
-        list(config.matrix.keys()),
         args.include,
         args.include_failed,
     )
