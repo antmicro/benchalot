@@ -17,18 +17,12 @@ def get_and_set(filename: str, value: str) -> str:
     Returns:
         str: Contents of the file.
     """
-    try:
-        file = open(filename, "r")
-        ret = file.read()
-        file.close()
-        set(filename, value)
-    except FileNotFoundError as e:
-        logger.critical(f"Failed to read {filename} {e.strerror}")
-        exit(1)
+    ret = get_contents(filename)
+    set_contents(filename, value)
     return ret
 
 
-def set(filename: str, value: str) -> None:
+def set_contents(filename: str, value: str) -> None:
     """Write value to a file.
 
     Args:
@@ -46,7 +40,24 @@ def set(filename: str, value: str) -> None:
     logger.debug(f"Wrote  '{value_str}' to '{filename}'.")
 
 
-system_state: dict[str, str] = {}
+def get_contents(filename: str) -> str:
+    """Write value to a file.
+
+    Args:
+        filename: Name of the file.
+        value: Value to be written.
+    """
+    try:
+        file = open(filename, "r")
+        ret = file.read()
+        file.close()
+    except FileNotFoundError as e:
+        logger.critical(f"Failed to read {filename} {e.strerror}")
+        exit(1)
+    return ret
+
+
+system_state: dict = {}
 
 
 def modify_system_state(system_options: SystemSection) -> None:
@@ -94,6 +105,28 @@ def modify_system_state(system_options: SystemSection) -> None:
             )
         system_state["governor-performance"] = "yes"
         logger.debug(f"Set CPU governor for CPUs {cpu_str}.")
+    if system_options.disable_hyper_threading:
+        cpus = (
+            system_options.isolate_cpus
+            if system_options.isolate_cpus
+            else range(cpu_count())
+        )
+        disabled_pairs = set()
+        previous_settings = {}
+        for cpu in cpus:
+            pair_str = get_contents(
+                f"/sys/devices/system/cpu/cpu{cpu}/topology/thread_siblings_list"
+            ).strip()
+            pair = tuple(pair_str.split(","))
+            if len(pair) == 2:
+                if pair not in disabled_pairs:
+                    previous_settings[
+                        f"/sys/devices/system/cpu/cpu{pair[1]}/online"
+                    ] = get_and_set(
+                        f"/sys/devices/system/cpu/cpu{pair[1]}/online", str(0)
+                    )
+                disabled_pairs.add(pair)
+                system_state["disable-hyper-threading"] = previous_settings
 
 
 def restore_system_state() -> None:
@@ -111,14 +144,20 @@ def restore_system_state() -> None:
         for cpu in range(cpu_count()):
             key = f"governor{cpu}"
             if key in system_state:
-                set(
+                set_contents(
                     f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor",
                     system_state[key],
                 )
         logger.debug("Restored CPU governors.")
     logger.debug("Restoring ASLR...")
     if system_state.get("disable-aslr"):
-        set("/proc/sys/kernel/randomize_va_space", system_state["aslr"])
+        set_contents("/proc/sys/kernel/randomize_va_space", system_state["aslr"])
     logger.debug("Restored ASLR.")
+
+    logger.debug("Restoring hyper-threading...")
+    if system_state.get("disable-hyper-threading"):
+        for cpu, value in system_state["disable-hyper-threading"].items:
+            set_contents(cpu, value)  # type: ignore
+    logger.debug("Restored hyper-threading.")
     unregister(restore_system_state)
     logger.info("Finished restoring system state.")

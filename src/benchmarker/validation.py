@@ -34,6 +34,9 @@ class SystemSection(BaseModel):
 
     isolate_cpus: list[int] | None = Field(default=None, alias="isolate-cpus")
     disable_aslr: bool = Field(default=False, alias="disable-aslr")
+    disable_hyper_threading: bool = Field(
+        default=False, alias="disable-hyper-threading"
+    )
     governor_performance: bool = Field(default=False, alias="governor-performance")
     model_config = ConfigDict(extra="forbid")
 
@@ -42,7 +45,12 @@ class SystemSection(BaseModel):
     def modify(self) -> bool:
         """ "Whether the system will need to be modified."""
         isolate_cpus_empty = not self.isolate_cpus
-        return self.disable_aslr or self.governor_performance or not isolate_cpus_empty
+        return (
+            self.disable_aslr
+            or self.governor_performance
+            or not isolate_cpus_empty
+            or self.disable_hyper_threading
+        )
 
 
 class RunSection(BaseModel):
