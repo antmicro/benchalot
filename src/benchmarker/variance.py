@@ -3,12 +3,14 @@ from subprocess import run
 from multiprocessing import cpu_count
 from logging import getLogger
 from benchmarker.validation import SystemSection
+from os.path import isfile
 
 logger = getLogger(f"benchmarker.{__name__}")
 
 
 def get_and_set(filename: str, value: str) -> str:
     """First read the file, then overwrite with value.
+    The function will crash the Benchmarker if the `filename` is not found.
 
     Args:
         filename: Name of the file.
@@ -17,7 +19,14 @@ def get_and_set(filename: str, value: str) -> str:
     Returns:
         str: Contents of the file.
     """
-    ret = get_contents(filename)
+    try:
+        file = open(filename, "r")
+    except (FileNotFoundError, PermissionError) as e:
+        logger.critical(f"Failed to read {filename} {e.strerror}")
+        exit(1)
+    else:
+        with file:
+            ret = file.read()
     set_contents(filename, value)
     return ret
 
@@ -38,23 +47,6 @@ def set_contents(filename: str, value: str) -> None:
         exit(1)
     value_str = value.strip()
     logger.debug(f"Wrote  '{value_str}' to '{filename}'.")
-
-
-def get_contents(filename: str) -> str:
-    """Write value to a file.
-
-    Args:
-        filename: Name of the file.
-        value: Value to be written.
-    """
-    try:
-        file = open(filename, "r")
-        ret = file.read()
-        file.close()
-    except FileNotFoundError as e:
-        logger.critical(f"Failed to read {filename} {e.strerror}")
-        exit(1)
-    return ret
 
 
 system_state: dict = {}
@@ -114,19 +106,22 @@ def modify_system_state(system_options: SystemSection) -> None:
         disabled_pairs = set()
         previous_settings = {}
         for cpu in cpus:
-            pair_str = get_contents(
+            sibling_str = (
                 f"/sys/devices/system/cpu/cpu{cpu}/topology/thread_siblings_list"
-            ).strip()
-            pair = tuple(pair_str.split(","))
-            if len(pair) == 2:
-                if pair not in disabled_pairs:
-                    previous_settings[
-                        f"/sys/devices/system/cpu/cpu{pair[1]}/online"
-                    ] = get_and_set(
-                        f"/sys/devices/system/cpu/cpu{pair[1]}/online", str(0)
-                    )
-                disabled_pairs.add(pair)
-                system_state["disable-hyper-threading"] = previous_settings
+            )
+            if isfile(sibling_str):
+                with open(sibling_str, "r") as file:
+                    pair_str = file.read().strip()
+                pair = tuple(pair_str.split(","))
+                if len(pair) == 2:
+                    if pair not in disabled_pairs:
+                        previous_settings[
+                            f"/sys/devices/system/cpu/cpu{pair[1]}/online"
+                        ] = get_and_set(
+                            f"/sys/devices/system/cpu/cpu{pair[1]}/online", str(0)
+                        )
+                    disabled_pairs.add(pair)
+        system_state["disable-hyper-threading"] = previous_settings
 
 
 def restore_system_state() -> None:
