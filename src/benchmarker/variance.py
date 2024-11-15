@@ -136,6 +136,7 @@ def restore_system_state() -> None:
         system_options: Configuration file's system section.
     """
     logger.info("Restoring system state...")
+    logger.debug(system_state)
     if system_state.get("isolate-cpus"):
         run("cset shield --reset", shell=True, capture_output=True)
         logger.debug("Removed CPU shield.")
@@ -156,7 +157,7 @@ def restore_system_state() -> None:
 
     logger.debug("Restoring hyper-threading...")
     if system_state.get("disable-hyper-threading"):
-        for cpu, value in system_state["disable-hyper-threading"].items:
+        for cpu, value in system_state["disable-hyper-threading"].items():
             set_contents(cpu, value)  # type: ignore
     logger.debug("Restored hyper-threading.")
     unregister(restore_system_state)
