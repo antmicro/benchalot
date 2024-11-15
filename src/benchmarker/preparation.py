@@ -67,20 +67,20 @@ def interpolate_commands(commands: list, variables: dict[str, str | int]) -> lis
 
 
 def exclude(
-    var_combination: dict[str, int | float | str],
+    var_value_assignments: dict[str, int | float | str],
     exclusions: list[dict[str, int | str | float]],
 ) -> bool:
-    """Check if var_combination should be excluded based on exclusions list.
+    """Check if given set of value assignments should be excluded based on exclusions list.
 
     Args:
-        var_combination: Combination of variable values.
+        var_value_assignments:  Assignment of variable values.
         exclusions: List of exclusions.
 
     Returns:
-        bool: `True` if variable combination should be excluded, otherwiese `False`.
+        bool: `True` if assignment should be excluded, otherwiese `False`.
     """
     for exclusion in exclusions:
-        if exclusion.items() <= var_combination.items():
+        if exclusion.items() <= var_value_assignments.items():
             return True
     return False
 
