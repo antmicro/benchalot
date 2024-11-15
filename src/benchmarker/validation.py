@@ -29,6 +29,7 @@ class SystemSection(BaseModel):
     Attributes:
         isolate_cpus: CPU cores which will be shielded by `cpuset`.
         disable_aslr: Option to disable address space layout randomization.
+        disable_hyper_threading: Option to disable hyper-threading.
         governor_performance: Option to change CPU governor to performance.
     """
 
