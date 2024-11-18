@@ -190,9 +190,9 @@ And this `table.md`:
 
 #### Multiplying output
 
-To create multiple outputs from one rule you can use variables in filenames.
+To create multiple outputs from one rule you use variables in filenames.
 
-For example, if you want to create a separate bar chart for each value of variable `tag`, then your `bar-chart` configuration should look like this:
+For example, to create a separate bar chart for each value of variable `tag`, your configuration should look like this:
 
 <!-- name="mul" -->
 ```

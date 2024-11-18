@@ -12,7 +12,7 @@ from logging import getLogger
 from os.path import isdir
 from benchmarker.structs import DISPLAYABLE_COLUMNS
 from re import findall
-from benchmarker.utils import VAR_REGEX
+from benchmarker.interpolation import VAR_REGEX
 
 logger = getLogger(f"benchmarker.{__name__}")
 

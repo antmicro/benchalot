@@ -16,7 +16,7 @@ import numpy as np
 import os
 from uuid import uuid4
 from benchmarker.validation import BarChartOutput, CsvOutput, TableMdOutput
-from benchmarker.utils import (
+from benchmarker.interpolation import (
     create_variable_combinations,
     VAR_REGEX,
     interpolate_variables,
