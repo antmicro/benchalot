@@ -32,6 +32,7 @@ from benchmarker.structs import (
 from sys import argv
 from re import findall
 from atexit import register, unregister
+from collections.abc import Generator
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -258,6 +259,17 @@ def create_non_csv_output(
     print(f"Created '{output_filename}'")
 
 
+def get_combination_filtered_dfs(
+    df: pd.DataFrame, variables_in_filename: list[str]
+) -> Generator[tuple[dict, pd.DataFrame]]:
+    variables = {}
+    for variable_name in variables_in_filename:
+        variables[variable_name] = df[variable_name].unique()
+    combinations = create_variable_combinations(**variables)
+    for comb in combinations:
+        yield comb, df.loc[(df[list(comb.keys())] == pd.Series(comb)).all(axis=1)]
+
+
 def _output_results(
     results_df: pd.DataFrame,
     output_config: dict[str, CsvOutput | TableMdOutput | BarChartOutput],
@@ -274,6 +286,12 @@ def _output_results(
     logger.info("Outputting results...")
     logger.debug(results_df)
 
+    # Convert all columns except result column to categorical to prevent rearranging by plotnine and help with grouping.
+    for column in results_df.columns:
+        if column != RESULT_COLUMN:
+            series = results_df[column]
+            results_df[column] = pd.Categorical(series, categories=series.unique())
+
     # If is root, set file permissions for other users
     if os.getuid() == 0:
         prev_umask = os.umask(0)
@@ -284,9 +302,20 @@ def _output_results(
     for output_name, output in output_config.items():
         if output.format == "csv":
             logger.debug("Outputting .csv file.")
-            results_df.to_csv(output.filename, encoding="utf-8", index=False)
-            print(f"Created '{output.filename}'")
-            csv_output_filename = output.filename
+            variables_in_filename = findall(VAR_REGEX, output.filename)
+            if not variables_in_filename:
+                results_df.to_csv(output.filename, encoding="utf-8", index=False)
+                csv_output_filename = output.filename
+                print(f"Created '{output.filename}'")
+            else:
+                for comb, combination_df in get_combination_filtered_dfs(
+                    results_df, variables_in_filename
+                ):
+                    overwrite_filename = interpolate_variables(output.filename, comb)
+                    combination_df.to_csv(
+                        overwrite_filename, encoding="utf-8", index=False
+                    )
+                    print(f"Created '{overwrite_filename}'")
         else:
             non_csv_outputs.append(output_name)
 
@@ -312,14 +341,6 @@ def _output_results(
                 results_df.loc[results_df[HAS_FAILED_COLUMN] == False]  # noqa: E712
             )
 
-    # Convert all columns except result column to categorical to prevent rearranging by plotnine and help with grouping.
-    for column in without_failed_df.columns:
-        if column != RESULT_COLUMN:
-            series = without_failed_df[column]
-            without_failed_df[column] = pd.Categorical(
-                series, categories=series.unique()
-            )
-
     # Output non-csv file formats.
     for output_name in non_csv_outputs:
         output = output_config[output_name]
@@ -334,14 +355,9 @@ def _output_results(
         if not variables_in_filename:
             create_non_csv_output(single_metric_df, output)  # type: ignore
         else:
-            variables = {}
-            for variable_name in variables_in_filename:
-                variables[variable_name] = single_metric_df[variable_name].unique()
-            combinations = create_variable_combinations(**variables)
-            for comb in combinations:
-                combination_df = single_metric_df.loc[
-                    (single_metric_df[list(comb.keys())] == pd.Series(comb)).all(axis=1)
-                ]
+            for comb, combination_df in get_combination_filtered_dfs(
+                single_metric_df, variables_in_filename
+            ):
                 overwrite_filename = interpolate_variables(output.filename, comb)
                 create_non_csv_output(combination_df, output, overwrite_filename)  # type: ignore
 
