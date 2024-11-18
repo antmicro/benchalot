@@ -263,10 +263,19 @@ def create_non_csv_output(
 
 
 def get_combination_filtered_dfs(
-    df: pd.DataFrame, variables_in_filename: list[str]
+    df: pd.DataFrame, columns: list[str]
 ) -> Generator[tuple[dict, pd.DataFrame]]:
+    """For each combination of values in given columns, return a filtered dataframe.
+
+    Args:
+        df: Data to be filtered.
+        columns: Names of columns which will be used to create combinations.
+
+    Returns:
+        Generator[tuple[dict, pd.DataFrame]]: Generator of tuples, where each tuple contains dictionary containing combination and filtered data.
+    """
     variables = {}
-    for variable_name in variables_in_filename:
+    for variable_name in columns:
         variables[variable_name] = df[variable_name].unique()
     combinations = create_variable_combinations(**variables)
     for comb in combinations:
