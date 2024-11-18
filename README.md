@@ -163,7 +163,7 @@ Available are: `min`, `mean`, `median` and `max`.
 
 `table-md` will result in a text file containing a markdown table. 
 Configured using these options:
-* `columns` (optional, default - include variable columns and stage column): contains an array of variable names which will be used to group the results in the table.
+* `columns` (optional, default - include variable columns): contains an array of variable names which will be used to group the results in the table.
 * `result-column` (optional, default = `"time"`): name of a metric which will be included in the resulting table.
 
 Additionally instead of using variable names you can use one of the following:

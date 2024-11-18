@@ -10,7 +10,7 @@ from pydantic import (
 from typing import Literal
 from logging import getLogger
 from os.path import isdir
-from benchmarker.structs import DISPLAYABLE_COLUMNS, STAGE_COLUMN
+from benchmarker.structs import DISPLAYABLE_COLUMNS
 from re import findall
 from benchmarker.utils import VAR_REGEX
 
@@ -240,7 +240,7 @@ class TableMdOutput(OutputField):
 
     def apply_default_values(self, matrix, metrics):
         """Apply default values.
-        If `None`, set `columns` to contain all variables from `matrix` section and the stage column.
+        If `None`, set `columns` to contain all variables from `matrix` section.
         If `None`, set `result_column` to the only metric in `run.metrics` section.
 
         Raises:
@@ -249,7 +249,7 @@ class TableMdOutput(OutputField):
         """
         super().apply_default_values(matrix, metrics)
         if self.columns is None:
-            self.columns = list(matrix.keys()) + [STAGE_COLUMN]
+            self.columns = list(matrix.keys())
 
     def check_options_exist(self, matrix):
         """Check if columns contain valid variables' names."""
