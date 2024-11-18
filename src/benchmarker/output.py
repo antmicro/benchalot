@@ -31,6 +31,7 @@ from benchmarker.structs import (
 )
 from sys import argv
 from re import findall
+from atexit import register, unregister
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -277,11 +278,6 @@ def _output_results(
         output_config: Configuration file's output section.
         include_failed: Whether to filter out failed benchmarks.
     """
-    # Convert all columns except result column to categorical to prevent rearranging by plotnine
-    for column in results_df.columns:
-        if column != RESULT_COLUMN:
-            series = results_df[column]
-            results_df[column] = pd.Categorical(series, categories=series.unique())
 
     logger.info("Outputting results...")
     logger.debug(results_df)
@@ -290,7 +286,7 @@ def _output_results(
     if os.getuid() == 0:
         prev_umask = os.umask(0)
 
-    # output csv files first (in case that one of the more advanced outputs fails)
+    # Output csv files first, in case that one of the more advanced outputs fails.
     non_csv_outputs = []
     csv_output_filename = ""
     for output_name, output in output_config.items():
@@ -302,7 +298,13 @@ def _output_results(
         else:
             non_csv_outputs.append(output_name)
 
-    # Filter out failed output
+    def notify_about_csv(filename):
+        logger.critical("Benchmarker crashed while creating output.")
+        logger.critical(f"Benchmark results were saved in '{filename}'.")
+
+    register(notify_about_csv, csv_output_filename)
+
+    # Filter out failed output.
     without_failed_df: pd.DataFrame = results_df
     has_filtered_output: bool = False
     if not include_failed:
@@ -318,7 +320,15 @@ def _output_results(
                 results_df.loc[results_df[HAS_FAILED_COLUMN] == False]  # noqa: E712
             )
 
-    # output more advanced formats
+    # Convert all columns except result column to categorical to prevent rearranging by plotnine and help with grouping.
+    for column in without_failed_df.columns:
+        if column != RESULT_COLUMN:
+            series = without_failed_df[column]
+            without_failed_df[column] = pd.Categorical(
+                series, categories=series.unique()
+            )
+
+    # Output non-csv file formats.
     for output_name in non_csv_outputs:
         output = output_config[output_name]
         logger.debug(f"Creating output for {output}")
@@ -345,8 +355,8 @@ def _output_results(
 
     if os.getuid() == 0:
         os.umask(prev_umask)
-
-    # Warn user if Benchmarker created filtered output, otherwise print summary tables
+    unregister(notify_about_csv)
+    # Warn user if Benchmarker created  output without failed benchmarks, otherwise print summary tables
     if has_filtered_output and len(non_csv_outputs) > 0:
         logger.warning(
             f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {csv_output_filename} --include-failed"
