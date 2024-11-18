@@ -251,7 +251,7 @@ def _output_results(
     output_df: pd.DataFrame
     csv_output_filename = ""
     failed_benchmarks = results_df[results_df[HAS_FAILED_COLUMN] == True]  # noqa: E712
-    n_failed = failed_benchmarks.shape[0]
+    n_failed = failed_benchmarks[BENCHMARK_ID_COLUMN].nunique()
     outputs_without_failed = []
     if n_failed > 0 and not include_failed:
         logger.error(f"{n_failed} benchmarks failed!")
