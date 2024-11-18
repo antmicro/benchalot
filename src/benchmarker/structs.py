@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 TIME_STAMP_COLUMN = "benchmark_date"
-BENCHMARK_ID_COLUMN = "benchmark_id"
+BENCHMARK_ID_COLUMN = "benchmark"
 HAS_FAILED_COLUMN = "has_failed"
 METRIC_COLUMN = "metric"
 STAGE_COLUMN = "stage"
