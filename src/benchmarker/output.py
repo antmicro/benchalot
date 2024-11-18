@@ -154,10 +154,6 @@ def get_stat_table(
         return table_df
 
 
-def extract_variable_names(column_names: list[str]):
-    return [col for col in column_names if col not in CONSTANT_COLUMNS]
-
-
 def get_bar_chart(
     input_df: pd.DataFrame,
     x_axis: str | None,
@@ -326,7 +322,7 @@ def _output_results(
                 print_table = get_stat_table(
                     table_df,
                     metric,
-                    extract_variable_names(list(table_df.columns)) + [STAGE_COLUMN],
+                    [col for col in table_df.columns if col not in CONSTANT_COLUMNS],
                 )
                 print(f"{metric}:")
                 print(print_table.to_markdown(index=False))
