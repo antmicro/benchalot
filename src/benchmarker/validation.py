@@ -10,6 +10,7 @@ from pydantic import (
 from typing import Literal
 from logging import getLogger
 from os.path import isdir
+from benchmarker.structs import DISPLAYABLE_COLUMNS
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -133,8 +134,8 @@ class OutputField(BaseModel):
                 metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
             )
 
-    def check_vars_exist(self, matrix):
-        """Verify if variables used in the output are present in the `matrix` section.
+    def check_options_exist(self, matrix):
+        """Verify if options used in the output are present in the `matrix` section or are part of `DISPLAYABLE_COLUMNS`.
 
         Args:
             matrix: `matrix` section from the configuration file.
@@ -207,15 +208,15 @@ class BarChartOutput(OutputField):
     stat: Literal["min", "mean", "median", "max"] = "median"
     model_config = ConfigDict(extra="forbid")
 
-    def check_vars_exist(self, matrix):
+    def check_options_exist(self, matrix):
         """Check if facet, x-axis and color are present in the matrix section
 
         Args:
             matrix: `matrix` section from the configuration file.
         """
-        check_var_exists(self.facet, matrix)
-        check_var_exists(self.x_axis, matrix)
-        check_var_exists(self.color, matrix)
+        check_column_will_exist(self.facet, matrix)
+        check_column_will_exist(self.x_axis, matrix)
+        check_column_will_exist(self.color, matrix)
 
 
 class TableMdOutput(OutputField):
@@ -245,15 +246,25 @@ class TableMdOutput(OutputField):
         if self.columns is None:
             self.columns = list(matrix.keys())
 
-    def check_vars_exist(self, matrix):
+    def check_options_exist(self, matrix):
         """Check if columns contain valid variables' names."""
         for column in self.columns:
-            check_var_exists(column, matrix)
+            check_column_will_exist(column, matrix)
 
 
-def check_var_exists(var_key, matrix):
-    if var_key is not None and var_key not in matrix:
-        raise ValueError(f"variable '{var_key}' not found")
+def check_column_will_exist(option, matrix):
+    """Check if option specified will be present in results.
+
+    Args:
+        option: Is valid if it is variable name or one of the `DISPLAYABLE_COLUMNS`.
+        matrix: `matrix` section from the configuration file.
+    """
+    if (
+        option is not None
+        and option not in matrix
+        and option not in DISPLAYABLE_COLUMNS
+    ):
+        raise ValueError(f"'{option}' not found")
 
 
 class ConfigFile(BaseModel):
@@ -303,7 +314,7 @@ class ConfigFile(BaseModel):
         """Check whether variables used in outputs are present in the `matrix` section."""
         for output_key in self.output:
             output = self.output[output_key]
-            output.check_vars_exist(self.matrix)
+            output.check_options_exist(self.matrix)
         return self
 
     @model_validator(mode="after")
