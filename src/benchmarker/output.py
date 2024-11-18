@@ -14,7 +14,6 @@ from logging import getLogger
 from datetime import timezone, datetime
 import numpy as np
 import os
-from pandas.api.types import is_string_dtype
 from uuid import uuid4
 from benchmarker.validation import BarChartOutput, CsvOutput, TableMdOutput
 from benchmarker.utils import (
@@ -275,9 +274,9 @@ def _output_results(
         output_config: Configuration file's output section.
         include_failed: Whether to filter out failed benchmarks.
     """
-    # Convert all variable columns to categorical to prevent rearranging by plotnine
+    # Convert all columns except result column to categorical to prevent rearranging by plotnine
     for column in results_df.columns:
-        if is_string_dtype(results_df[column]):
+        if column != RESULT_COLUMN:
             series = results_df[column]
             results_df[column] = pd.Categorical(series, categories=series.unique())
 
