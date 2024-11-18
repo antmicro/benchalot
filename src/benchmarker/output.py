@@ -82,7 +82,7 @@ def output_results_from_dict(
         logger.critical(e)
         exit(1)
     results_df.insert(
-        0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y/%m/%d %H:%M")
+        0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y.%m.%d %H.%M")
     )
     old_outputs = read_old_outputs(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
@@ -326,7 +326,6 @@ def _output_results(
         variable_names = findall(VAR_REGEX, output.filename)
         variables = {}
         for variable_name in variable_names:
-            print(variable_name)
             variables[variable_name] = filtered_df[variable_name].unique()
         if len(variables) > 0:
             combinations = create_variable_combinations(**variables)
