@@ -119,15 +119,7 @@ def get_stat_table(
 
     if show_columns is None:
         show_columns = []
-
     group_table = len(show_columns) > 0
-
-    if (
-        results_df[TIME_STAMP_COLUMN].nunique() == 1
-        and TIME_STAMP_COLUMN not in show_columns
-    ):
-        results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
-
     if not group_table:
         if is_numeric:
             result_stat = dict()
