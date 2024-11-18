@@ -218,6 +218,9 @@ def create_non_csv_output(
     output: BarChartOutput | TableMdOutput,
     overwrite_filename: str | None = None,
 ):
+    if filtered_df.shape[0] == 0:
+        logger.error(f"No results to create output '{output}'.")
+        return
     if not overwrite_filename:
         output_filename = output.filename
     else:
