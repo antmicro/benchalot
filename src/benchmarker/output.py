@@ -214,11 +214,18 @@ def get_bar_chart(
 
 
 def create_non_csv_output(
-    filtered_df: pd.DataFrame,
+    single_metric_df: pd.DataFrame,
     output: BarChartOutput | TableMdOutput,
     overwrite_filename: str | None = None,
 ):
-    if filtered_df.shape[0] == 0:
+    """Function creates non csv file based on passed configuration.
+
+    Args:
+        single_metric_df: Dataframe containing benchmark results for a single metric.
+        output: Output configuration.
+        overwrite_filename: Output file's name. If left `None`, uses `output.filename` field.
+    """
+    if single_metric_df.shape[0] == 0:
         logger.error(f"No results to create output '{output}'.")
         return
     if not overwrite_filename:
@@ -230,9 +237,9 @@ def create_non_csv_output(
             bar_chart_output: BarChartOutput = output  # type: ignore
             logger.debug("Outputting bar chart.")
             plot = get_bar_chart(
-                input_df=filtered_df,
+                input_df=single_metric_df,
                 x_axis=bar_chart_output.x_axis,
-                y_axis=bar_chart_output.metric,
+                y_axis=bar_chart_output.metric,  # type: ignore
                 color=bar_chart_output.color,
                 facet=bar_chart_output.facet,
                 stat=bar_chart_output.stat,
@@ -252,7 +259,7 @@ def create_non_csv_output(
             logger.debug("Outputting markdown table.")
             table_md_output: TableMdOutput = output  # type: ignore
             table = get_stat_table(
-                filtered_df,
+                single_metric_df,
                 show_columns=table_md_output.columns,
                 metric=table_md_output.metric,  # type: ignore
             )

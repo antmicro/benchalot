@@ -251,12 +251,8 @@ def perform_benchmarks(
                             results.setdefault(variable, []).append(
                                 benchmark.matrix[variable]
                             )
-                        results.setdefault(HAS_FAILED_COLUMN, []).append(
-                            has_failed
-                        )
-                        results.setdefault(METRIC_COLUMN, []).append(
-                            metric_name
-                        )
+                        results.setdefault(HAS_FAILED_COLUMN, []).append(has_failed)
+                        results.setdefault(METRIC_COLUMN, []).append(metric_name)
                         results.setdefault(STAGE_COLUMN, []).append(stage)
                         results.setdefault(RESULT_COLUMN, []).append(result)
 
