@@ -27,7 +27,6 @@ from benchmarker.structs import (
     STAGE_COLUMN,
     HAS_FAILED_COLUMN,
     BENCHMARK_ID_COLUMN,
-    CONSTANT_COLUMNS,
     METRIC_COLUMN,
 )
 from sys import argv
@@ -122,10 +121,11 @@ def get_stat_table(
 
     group_table = len(show_columns) > 0
 
-    if results_df[TIME_STAMP_COLUMN].nunique() == 1:
+    if (
+        results_df[TIME_STAMP_COLUMN].nunique() == 1
+        and TIME_STAMP_COLUMN not in show_columns
+    ):
         results_df = results_df.drop(TIME_STAMP_COLUMN, axis=1)
-    else:
-        show_columns = [TIME_STAMP_COLUMN] + show_columns
 
     if not group_table:
         if is_numeric:
@@ -219,15 +219,15 @@ def get_bar_chart(
     return plot
 
 
-def create_fancy_output(
+def create_non_csv_output(
     filtered_df: pd.DataFrame,
     output: BarChartOutput | TableMdOutput,
     overwrite_filename: str | None = None,
 ):
     if not overwrite_filename:
-        output_file_name = output.filename
+        output_filename = output.filename
     else:
-        output_file_name = overwrite_filename
+        output_filename = overwrite_filename
     match output.format:
         case "bar-chart":
             bar_chart_output: BarChartOutput = output  # type: ignore
@@ -242,13 +242,15 @@ def create_fancy_output(
             )
             if plot:
                 plot.save(
-                    output_file_name,
+                    output_filename,
                     width=bar_chart_output.width,
                     height=bar_chart_output.height,
                     dpi=bar_chart_output.dpi,
                     limitsize=False,
                     verbose=False,
                 )
+            else:
+                return
         case "table-md":
             logger.debug("Outputting markdown table.")
             table_md_output: TableMdOutput = output  # type: ignore
@@ -257,9 +259,10 @@ def create_fancy_output(
                 show_columns=table_md_output.columns,
                 metric=table_md_output.metric,  # type: ignore
             )
-            table.to_markdown(output_file_name, index=False)
+            table.to_markdown(output_filename, index=False)
         case _:
             raise ValueError(f"Invalid output format: {output.format}.")
+    print(f"Created '{output_filename}'")
 
 
 def _output_results(
@@ -283,75 +286,92 @@ def _output_results(
     logger.info("Outputting results...")
     logger.debug(results_df)
 
-    # The summary table
-    print_table: pd.DataFrame | None = None
-
-    output_df: pd.DataFrame
-    csv_output_filename = ""
-    failed_benchmarks = results_df[results_df[HAS_FAILED_COLUMN] == True]  # noqa: E712
-    n_failed = failed_benchmarks[BENCHMARK_ID_COLUMN].nunique()
-    outputs_without_failed = []
-    if n_failed > 0 and not include_failed:
-        logger.error(f"{n_failed} benchmarks failed!")
-        logger.warning("Failed benchmarks:\n" + failed_benchmarks.to_markdown())
-        output_df = pd.DataFrame(
-            results_df.loc[results_df[HAS_FAILED_COLUMN] == False]  # noqa: E712
-        )
-    else:
-        output_df = results_df
-
+    # If is root, set file permissions for other users
     if os.getuid() == 0:
         prev_umask = os.umask(0)
 
+    # output csv files first (in case that one of the more advanced outputs fails)
+    non_csv_outputs = []
+    csv_output_filename = ""
     for output_name, output in output_config.items():
-        logger.debug(f"Creating output for {output}")
-        logger.debug(results_df.head())
         if output.format == "csv":
             logger.debug("Outputting .csv file.")
             results_df.to_csv(output.filename, encoding="utf-8", index=False)
+            print(f"Created '{output.filename}'")
             csv_output_filename = output.filename
-            continue
+        else:
+            non_csv_outputs.append(output_name)
 
+    # Filter out failed output
+    without_failed_df: pd.DataFrame = results_df
+    has_filtered_output: bool = False
+    if not include_failed:
+        failed_benchmarks = results_df[
+            results_df[HAS_FAILED_COLUMN] == True  # noqa: E712
+        ]
+        n_failed = failed_benchmarks[BENCHMARK_ID_COLUMN].nunique()
         if n_failed > 0:
-            outputs_without_failed.append(output_name)
-        filtered_df = output_df.loc[output_df[METRIC_COLUMN] == output.metric]
-        filtered_df = filtered_df = filtered_df.dropna(axis=1, how="all")
+            has_filtered_output = True
+            logger.error(f"{n_failed} benchmarks failed!")
+            logger.warning("Failed benchmarks:\n" + failed_benchmarks.to_markdown())
+            without_failed_df = pd.DataFrame(
+                results_df.loc[results_df[HAS_FAILED_COLUMN] == False]  # noqa: E712
+            )
+
+    # output more advanced formats
+    for output_name in non_csv_outputs:
+        output = output_config[output_name]
+        logger.debug(f"Creating output for {output}")
+        if has_filtered_output:
+            logger.warning(f"Generating {output_name} without failed benchmarks...")
+        single_metric_df = without_failed_df.loc[
+            without_failed_df[METRIC_COLUMN] == output.metric
+        ]
+        single_metric_df = single_metric_df.dropna(axis=1, how="all")
         variable_names = findall(VAR_REGEX, output.filename)
         variables = {}
         for variable_name in variable_names:
-            variables[variable_name] = filtered_df[variable_name].unique()
+            variables[variable_name] = single_metric_df[variable_name].unique()
         if len(variables) > 0:
             combinations = create_variable_combinations(**variables)
             for comb in combinations:
-                combination_df = filtered_df.loc[
-                    (filtered_df[list(comb.keys())] == pd.Series(comb)).all(axis=1)
+                combination_df = single_metric_df.loc[
+                    (single_metric_df[list(comb.keys())] == pd.Series(comb)).all(axis=1)
                 ]
                 overwrite_filename = interpolate_variables(output.filename, comb)
-                create_fancy_output(combination_df, output, overwrite_filename)
+                create_non_csv_output(combination_df, output, overwrite_filename)  # type: ignore
         else:
-            create_fancy_output(filtered_df, output)
+            create_non_csv_output(single_metric_df, output)  # type: ignore
 
     if os.getuid() == 0:
         os.umask(prev_umask)
-    if len(outputs_without_failed) >= 1 and not include_failed:
-        logger.warning(
-            f"Outputs generated without failed benchmarks: {', '.join(outputs_without_failed)}"
-        )
+
+    # Warn user if Benchmarker created filtered output, otherwise print summary tables
+    if has_filtered_output and len(non_csv_outputs) > 0:
         logger.warning(
             f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {csv_output_filename} --include-failed"
         )
     else:
-        if print_table is None:
-            for metric in output_df[METRIC_COLUMN].unique():
-                table_df = output_df.loc[output_df[METRIC_COLUMN] == metric]
-                table_df = table_df.dropna(axis=1, how="all")
-                print_table = get_stat_table(
-                    table_df,
-                    metric,
-                    [col for col in table_df.columns if col not in CONSTANT_COLUMNS],
-                )
-                print(f"{metric}:")
-                print(print_table.to_markdown(index=False))
-        else:
+        for metric in results_df[METRIC_COLUMN].unique():
+            table_df = results_df.loc[results_df[METRIC_COLUMN] == metric]
+            table_df = table_df.dropna(axis=1, how="all")
+            print_table = get_stat_table(
+                table_df,
+                metric,
+                [
+                    col
+                    for col in table_df.columns
+                    if col
+                    not in [
+                        TIME_STAMP_COLUMN,
+                        HAS_FAILED_COLUMN,
+                        BENCHMARK_ID_COLUMN,
+                        METRIC_COLUMN,
+                        RESULT_COLUMN,
+                    ]
+                ],
+            )
+            print(f"{metric}:")
             print(print_table.to_markdown(index=False))
+
     logger.info("Finished outputting results.")
