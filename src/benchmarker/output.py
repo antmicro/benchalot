@@ -357,21 +357,20 @@ def _output_results(
         for metric in results_df[METRIC_COLUMN].unique():
             table_df = results_df.loc[results_df[METRIC_COLUMN] == metric]
             table_df = table_df.dropna(axis=1, how="all")
+            excluded_columns = [
+                HAS_FAILED_COLUMN,
+                BENCHMARK_ID_COLUMN,
+                METRIC_COLUMN,
+                RESULT_COLUMN,
+            ]
+            if table_df[TIME_STAMP_COLUMN].nunique() == 1:
+                excluded_columns += [TIME_STAMP_COLUMN]
+            if table_df[STAGE_COLUMN].nunique() == 1:
+                excluded_columns += [STAGE_COLUMN]
             print_table = get_stat_table(
                 table_df,
                 metric,
-                [
-                    col
-                    for col in table_df.columns
-                    if col
-                    not in [
-                        TIME_STAMP_COLUMN,
-                        HAS_FAILED_COLUMN,
-                        BENCHMARK_ID_COLUMN,
-                        METRIC_COLUMN,
-                        RESULT_COLUMN,
-                    ]
-                ],
+                [col for col in table_df.columns if col not in excluded_columns],
             )
             print(print_table.to_markdown(index=False))
 
