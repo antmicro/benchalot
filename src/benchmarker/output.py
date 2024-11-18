@@ -328,11 +328,13 @@ def _output_results(
             without_failed_df[METRIC_COLUMN] == output.metric
         ]
         single_metric_df = single_metric_df.dropna(axis=1, how="all")
-        variable_names = findall(VAR_REGEX, output.filename)
-        variables = {}
-        for variable_name in variable_names:
-            variables[variable_name] = single_metric_df[variable_name].unique()
-        if len(variables) > 0:
+        variables_in_filename = findall(VAR_REGEX, output.filename)
+        if not variables_in_filename:
+            create_non_csv_output(single_metric_df, output)  # type: ignore
+        else:
+            variables = {}
+            for variable_name in variables_in_filename:
+                variables[variable_name] = single_metric_df[variable_name].unique()
             combinations = create_variable_combinations(**variables)
             for comb in combinations:
                 combination_df = single_metric_df.loc[
@@ -340,8 +342,6 @@ def _output_results(
                 ]
                 overwrite_filename = interpolate_variables(output.filename, comb)
                 create_non_csv_output(combination_df, output, overwrite_filename)  # type: ignore
-        else:
-            create_non_csv_output(single_metric_df, output)  # type: ignore
 
     if os.getuid() == 0:
         os.umask(prev_umask)
@@ -371,7 +371,6 @@ def _output_results(
                     ]
                 ],
             )
-            print(f"{metric}:")
             print(print_table.to_markdown(index=False))
 
     logger.info("Finished outputting results.")
