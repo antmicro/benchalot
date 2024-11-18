@@ -11,6 +11,8 @@ from typing import Literal
 from logging import getLogger
 from os.path import isdir
 from benchmarker.structs import DISPLAYABLE_COLUMNS
+from re import findall
+from benchmarker.utils import VAR_REGEX
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -143,7 +145,9 @@ class OutputField(BaseModel):
         Raises:
             ValueError
         """
-        pass
+        options = findall(VAR_REGEX, self.filename)
+        for option in options:
+            check_column_will_exist(option, matrix)
 
     def check_metric_exists(self, metrics):
         """Check if metric is present in the `run.metrics` section.
@@ -214,6 +218,7 @@ class BarChartOutput(OutputField):
         Args:
             matrix: `matrix` section from the configuration file.
         """
+        super().check_options_exist(matrix)
         check_column_will_exist(self.facet, matrix)
         check_column_will_exist(self.x_axis, matrix)
         check_column_will_exist(self.color, matrix)
@@ -248,6 +253,7 @@ class TableMdOutput(OutputField):
 
     def check_options_exist(self, matrix):
         """Check if columns contain valid variables' names."""
+        super().check_options_exist(matrix)
         for column in self.columns:
             check_column_will_exist(column, matrix)
 
