@@ -298,14 +298,14 @@ def _output_results(
 
     # Output csv files first, in case that one of the more advanced outputs fails.
     non_csv_outputs = []
-    csv_output_filename = ""
+    csv_output_filenames = []
     for output_name, output in output_config.items():
         if output.format == "csv":
             logger.debug("Outputting .csv file.")
             variables_in_filename = findall(VAR_REGEX, output.filename)
             if not variables_in_filename:
                 results_df.to_csv(output.filename, encoding="utf-8", index=False)
-                csv_output_filename = output.filename
+                csv_output_filenames.append(output.filename)
                 print(f"Created '{output.filename}'")
             else:
                 for comb, combination_df in get_combination_filtered_dfs(
@@ -315,15 +315,20 @@ def _output_results(
                     combination_df.to_csv(
                         overwrite_filename, encoding="utf-8", index=False
                     )
+                    csv_output_filenames.append(overwrite_filename)
                     print(f"Created '{overwrite_filename}'")
         else:
             non_csv_outputs.append(output_name)
 
-    def notify_about_csv(filename):
+    def notify_about_csv(filenames: list[str]):
         logger.critical("Benchmarker crashed while creating output.")
-        logger.critical(f"Benchmark results were saved in '{filename}'.")
+        files_str = ""
+        for file in filenames:
+            files_str += "'" + file + "' "
+        files_str = files_str.strip()
+        logger.critical(f"Benchmark results were saved in {files_str}")
 
-    register(notify_about_csv, csv_output_filename)
+    register(notify_about_csv, csv_output_filenames)
 
     # Filter out failed output.
     without_failed_df: pd.DataFrame = results_df
@@ -366,8 +371,12 @@ def _output_results(
     unregister(notify_about_csv)
     # Warn user if Benchmarker created  output without failed benchmarks, otherwise print summary tables
     if has_filtered_output and len(non_csv_outputs) > 0:
+        files_str = ""
+        for file in csv_output_filenames:
+            files_str += file + " "
+        files_str = files_str.strip()
         logger.warning(
-            f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {csv_output_filename} --include-failed"
+            f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {files_str} --include-failed"
         )
     else:
         for metric in results_df[METRIC_COLUMN].unique():
