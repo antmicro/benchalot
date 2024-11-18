@@ -163,8 +163,14 @@ Available are: `min`, `mean`, `median` and `max`.
 
 `table-md` will result in a text file containing a markdown table. 
 Configured using these options:
-* `columns` (optional, default - include all columns): contains an array of variable names which will be used to group the results in the table.
+* `columns` (optional, default - include variable columns and stage column): contains an array of variable names which will be used to group the results in the table.
 * `result-column` (optional, default = `"time"`): name of a metric which will be included in the resulting table.
+
+Additionally instead of using variable names you can use one of the following:
+* `benchmark_date` - to compare benchmarks executed at different times.
+* `stage` - to compare multistage output.
+* `has_failed` - to compare failed benchmarks to the successful ones.
+
 
 For example, the config above will generate this `plot.png`:
 
@@ -181,6 +187,27 @@ And this `table.md`:
 | slow  | data2   | 0.152782 | 0.130948 | 0.0860583 |
 | slow  | data3   | 0.438692 | 0.376356 | 0.248082  |
 ```
+
+#### Multiplying output
+
+To create multiple outputs from one rule you can use variables in filenames.
+
+For example, if you want to create a separate bar chart for each value of variable `tag`, then your `bar-chart` configuration should look like this:
+
+<!-- name="mul" -->
+```
+plot2:
+  filename: "plot_{{tag}}.png"
+  format: "bar-chart"
+  x-axis: input
+  facet: tag
+  color: thread
+  width: 10
+  height: 9
+  dpi: 100
+```
+
+If we add this section to the configuration above, the Benchmarker will generate two files: `plot_slow.png`, which visualizes benchmarks with `tag = slow`, and `plot_fast.png`, which visualizes benchmarks with `tag = fast`.
 
 ### Custom Metrics
 

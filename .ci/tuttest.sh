@@ -20,6 +20,7 @@ RUN_SPLIT=$(tuttest README.md split)
 RUN_FAILED=$(tuttest README.md failed)
 SIZE_CONFIG=$(tuttest README.md size-config)
 EXCLUSION=$(tuttest README.md exclusions)
+MUL=$(tuttest README.md mul)
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
@@ -44,6 +45,12 @@ if [ $ret -ne 0 ]; then
     echo "Plots are not the same."
     exit 1
 fi
+
+printf "\n%s" "$MUL" | sed 's/^/  /' >> config.yml
+
+eval "$RUN_UPDATE"
+assert_file_exists plot_slow.png
+assert_file_exists plot_fast.png
 
 printf "\n%s" "$EXCLUSION" >> config.yml
 rm plot.png
