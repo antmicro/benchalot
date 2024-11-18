@@ -372,6 +372,7 @@ def _output_results(
                 metric,
                 [col for col in table_df.columns if col not in excluded_columns],
             )
+            print()
             print(print_table.to_markdown(index=False))
 
     logger.info("Finished outputting results.")
