@@ -97,7 +97,7 @@ def modify_system_state(system_options: SystemSection) -> None:
             )
         system_state["governor-performance"] = "yes"
         logger.debug(f"Set CPU governor for CPUs {cpu_str}.")
-    if system_options.disable_hyper_threading:
+    if system_options.disable_smt:
         cpus = (
             system_options.isolate_cpus
             if system_options.isolate_cpus
@@ -121,7 +121,7 @@ def modify_system_state(system_options: SystemSection) -> None:
                             f"/sys/devices/system/cpu/cpu{pair[1]}/online", str(0)
                         )
                     disabled_pairs.add(pair)
-        system_state["disable-hyper-threading"] = previous_settings
+        system_state["disable-smt"] = previous_settings
 
 
 def restore_system_state() -> None:
@@ -150,10 +150,10 @@ def restore_system_state() -> None:
         set_contents("/proc/sys/kernel/randomize_va_space", system_state["aslr"])
     logger.debug("Restored ASLR.")
 
-    logger.debug("Restoring hyper-threading...")
-    if system_state.get("disable-hyper-threading"):
-        for cpu, value in system_state["disable-hyper-threading"].items():
+    logger.debug("Restoring smt...")
+    if system_state.get("disable-smt"):
+        for cpu, value in system_state["disable-smt"].items():
             set_contents(cpu, value)  # type: ignore
-    logger.debug("Restored hyper-threading.")
+    logger.debug("Restored smt.")
     unregister(restore_system_state)
     logger.info("Finished restoring system state.")
