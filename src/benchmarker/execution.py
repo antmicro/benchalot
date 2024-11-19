@@ -4,6 +4,9 @@ from tqdm import tqdm
 from os import getcwd
 from benchmarker.structs import PreparedBenchmark, BenchmarkResult
 from benchmarker.output import HAS_FAILED_COLUMN, METRIC_COLUMN
+from time import monotonic_ns
+from io import StringIO
+from csv import DictReader
 
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -118,6 +121,101 @@ def execute_section(commands: list[str], section_name: str = "") -> None:
     logger.info(f"Execution of '{section_name}' section finished.")
 
 
+def execute_benchmark(
+    benchmarks: dict[str, list[str]], builtin_metrics, custom_metrics
+) -> list[BenchmarkResult]:
+    has_failed = False
+    measure_time = "time" in builtin_metrics
+    gather_stdout = "stdout" in builtin_metrics
+    gather_stderr = "stderr" in builtin_metrics
+
+    time_measurements = {}
+    output_measurements = {}
+
+    for stage in benchmarks:
+        elapsed_time = 0.0
+        output = ""
+        for command in benchmarks[stage]:
+            start = monotonic_ns()
+            process = execute_command(command)
+            code = process.wait()
+            elapsed_time += monotonic_ns() - start
+            output += handle_output(
+                process, capture_stdout=gather_stdout, capture_stderr=gather_stderr
+            )
+            success = check_return_code(command, code)
+            if not success:
+                has_failed = True
+        if measure_time:
+            time_measurements[stage] = elapsed_time / 1e9
+        if gather_stderr or gather_stdout:
+            try:
+                output_measurements[stage] = float(output)  # type: ignore
+            except ValueError:
+                output_measurements[stage] = output  # type: ignore
+
+    benchmark_results: list[BenchmarkResult] = []
+
+    for custom_metric in custom_metrics:
+        metric_name, command = list(custom_metric.items())[0]
+        custom_measurements = gather_custom_metric(command)
+        benchmark_results.append(
+            BenchmarkResult(metric_name, has_failed, custom_measurements)
+        )
+
+    if measure_time:
+        benchmark_results.append(BenchmarkResult("time", has_failed, time_measurements))
+    if gather_stderr or gather_stdout:
+        benchmark_results.append(
+            BenchmarkResult("output", has_failed, output_measurements)
+        )
+
+    return benchmark_results
+
+
+def gather_custom_metric(metric_command: str) -> dict[str, float | str]:
+    """Execute all the benchmark commands, then execute custom metric command and process its output.
+    If output has more than one line, treat output as csv file, with each column representing separate stage.
+    Sum stages under `metric_name`.
+
+    Args:
+        metric_command: Command to be executed as custom metric.
+        metric_name: Custom metric's name.
+        benchmarks: Stages with their commands.
+
+    Returns:
+        BenchmarkResult: Containing single or multi stage result.
+    """
+    process = execute_command(metric_command)
+    output = handle_output(process, capture_stdout=True)
+    process.wait()
+
+    if len(output.splitlines()) == 1:
+        try:
+            return {"result": float(output)}
+        except ValueError:
+            return {"result": output}
+    elif len(output.splitlines()) == 2:
+        output_stream = StringIO(output)
+        reader = DictReader(output_stream)
+        tmp_dict = {}
+        for row in reader:
+            tmp_dict = row
+        output_dict = {}
+        for stage in tmp_dict:
+            value = tmp_dict[stage]
+            try:
+                value = float(value)
+            except ValueError:
+                pass
+            output_dict[stage] = value
+        return output_dict
+    else:
+        logger.critical("Invalid custom metric output format:")
+        logger.critical(output)
+        exit(1)
+
+
 def perform_benchmarks(
     benchmarks: list[PreparedBenchmark], samples: int
 ) -> dict[str, list]:
@@ -153,24 +251,32 @@ def perform_benchmarks(
                     f"Executing {text[:20] + '...' if len(text)>20 else text}"
                 )
 
-                single_result: BenchmarkResult = benchmark.metric(benchmark.benchmark)
+                benchmark_results: list[BenchmarkResult] = execute_benchmark(
+                    benchmark.benchmark,
+                    benchmark.builtin_metrics,
+                    benchmark.custom_metrics,
+                )
                 bar.refresh(nolock=True)
 
                 execute_section(benchmark.after, "after")
                 bar.update(1)
-
-                for variable in benchmark.matrix:
-                    results.setdefault(variable, []).append(benchmark.matrix[variable])
-                results.setdefault(HAS_FAILED_COLUMN, []).append(
-                    single_result.has_failed
-                )
-                results.setdefault(METRIC_COLUMN, []).append(single_result.metric_name)
-                for stage in single_result.measurements:
-                    stage_column = results.setdefault(stage, [])
-                    # pad columns so that they have the same length
-                    stage_column += [None] * (n_rows - len(stage_column))
-                    stage_column.append(single_result.measurements[stage])
-                n_rows += 1
+                for single_result in benchmark_results:
+                    for variable in benchmark.matrix:
+                        results.setdefault(variable, []).append(
+                            benchmark.matrix[variable]
+                        )
+                    results.setdefault(HAS_FAILED_COLUMN, []).append(
+                        single_result.has_failed
+                    )
+                    results.setdefault(METRIC_COLUMN, []).append(
+                        single_result.metric_name
+                    )
+                    for stage in single_result.measurements:
+                        stage_column = results.setdefault(stage, [])
+                        # pad columns so that they have the same length
+                        stage_column += [None] * (n_rows - len(stage_column))
+                        stage_column.append(single_result.measurements[stage])
+                    n_rows += 1
 
         except KeyboardInterrupt:
             logger.warning("Stopped benchmarks.")

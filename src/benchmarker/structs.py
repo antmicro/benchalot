@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Mapping
 
@@ -34,4 +33,5 @@ class PreparedBenchmark:
     before: list[str]
     benchmark: dict[str, list[str]]
     after: list[str]
-    metric: Callable[[dict], BenchmarkResult]
+    builtin_metrics: list[str]
+    custom_metrics: list[dict[str, str]]

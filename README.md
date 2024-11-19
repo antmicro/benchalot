@@ -113,7 +113,6 @@ Benchmarker will not create benchmarks for these value combinations.
 By default commands inherit Benchmarker's environment.
 * `metrics` (optional, default = `["time"]`) a list of metrics to be gathered from benchmarked commands.
 Built-in are: `time`, `stderr` and `stdout`.
-Each metric is gathered independently.
 User can also specify their own metric using `metric_name: command` syntax.
 See: [Custom Metrics](#custom-metrics)
 
