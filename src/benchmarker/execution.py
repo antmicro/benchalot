@@ -169,8 +169,8 @@ def execute_benchmark(
 
     Args:
         benchmarks: List of benchmarks divided into stages.
-        builtin_metrics: List of metrics built in metrics which will be gathered during execution.
-        custom_metric: List of custom metrics, their names and commands, which will be gathered during execution.
+        builtin_metrics: List of metrics built-in metrics, which will be gathered during execution.
+        custom_metric: List of custom metrics (names and commands) which will be gathered during execution.
 
     Returns:
         list[BenchmarkResult]: List of benchmark results.

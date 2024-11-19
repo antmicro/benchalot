@@ -125,14 +125,14 @@ def process_metrics(
     metrics: list[str | dict[str, str]],
     variables: dict[str, str | int] | None = None,
 ) -> tuple[list, list[dict[str, str]]]:
-    """Get list of callable metrics functions.
+    """Divide metrics into custom and built-in metrics.
 
     Args:
-        metric: Metric's name.
+        metrics: List of metrics.
         variables: Variable names paired with their values. Used with custom metrics.
 
     Returns:
-        Callable[[dict],dict]: Callable object that perform specified measurement.
+        tuple[list, list[dict[str, str]]]: List of built-in metrics and list of custom metrics.
     """
     builtin_metrics = []
     custom_metrics = []
