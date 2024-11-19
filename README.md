@@ -36,6 +36,8 @@ Benchmarker is configured using a YAML file, e.g.:
 system:
   isolate-cpus: [0,1]
   disable-aslr: True
+  disable-core-boost: True
+  disable-smt: True
   governor-performance: False
 matrix:
   thread: [2, 4, 8]
@@ -140,6 +142,7 @@ The section is optional; if no options are specified, Benchmarker can be run wit
 * `isolate-cpus`: contains a list of CPUs which will be shielded from running processes other than benchmarks.
 * `disable-aslr`: if set to `True`, will disable address space layout randomization. 
 * `disable-smt`: if set to `True`, will disable simultaneous multithreading (called hyper-threading on Intel CPUs).
+* `disable-core-boost`: if set to `True`, will disable CPU boosting.
 * `governor-performance`: if set to `True`, will set frequency governors of all (or isolated) CPUs to `performance`.
 
 ### Output
