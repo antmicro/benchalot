@@ -126,8 +126,12 @@ def get_stat_table(
             result_stat = dict()
             result_stat["min " + metric] = [results_df[RESULT_COLUMN].min()]
             result_stat["median " + metric] = [results_df[RESULT_COLUMN].median()]
+            result_stat["mean " + metric] = [results_df[RESULT_COLUMN].mean()]
             result_stat["max " + metric] = [results_df[RESULT_COLUMN].max()]
             table_df = pd.DataFrame(result_stat)
+            best_mean = results_df[RESULT_COLUMN].mean()
+            table_df["relative " + metric] = table_df["mean "+ metric].apply(lambda x: x/best_mean)
+
         else:
             table_df = results_df.drop_duplicates().reset_index(drop=True)
         return table_df
@@ -136,13 +140,15 @@ def get_stat_table(
         if is_numeric:
             grouped_df = table_df.groupby(show_columns, observed=True)[
                 RESULT_COLUMN
-            ].agg(["min", "median", "max"])
+            ].agg(["min", "median","mean", "max"])
             new_column_names = []
             for stat_name in grouped_df.columns:
                 new_name = stat_name + " " + metric
                 new_column_names.append(new_name)
             grouped_df.columns = pd.Index(new_column_names)
             table_df = grouped_df.reset_index()
+            best_mean = table_df["mean " +metric].min()
+            table_df["relative " + metric] = table_df["mean "+ metric].apply(lambda x: x/best_mean)
         table_df = table_df.drop_duplicates().reset_index(drop=True)
         return table_df
 
