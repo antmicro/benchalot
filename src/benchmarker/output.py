@@ -111,6 +111,10 @@ def get_stat_table(
         result_column: A name of a metric which will be included in the table.
         show_columns: Variable names which will be included in the table.
     """
+    # TODO turn those to arguments
+    pivot_columns = [METRIC_COLUMN, STAGE_COLUMN]
+    stats = ["min", "median", "max"]
+
     results_df = input_df.copy()
     is_numeric = True
     try:
@@ -120,37 +124,50 @@ def get_stat_table(
 
     if show_columns is None:
         show_columns = []
-    group_table = len(show_columns) > 0
-    if not group_table:
-        if is_numeric:
-            result_stat = dict()
-            result_stat["min " + metric] = [results_df[RESULT_COLUMN].min()]
-            result_stat["median " + metric] = [results_df[RESULT_COLUMN].median()]
-            result_stat["mean " + metric] = [results_df[RESULT_COLUMN].mean()]
-            result_stat["max " + metric] = [results_df[RESULT_COLUMN].max()]
-            table_df = pd.DataFrame(result_stat)
-            best_mean = results_df[RESULT_COLUMN].mean()
-            table_df["relative " + metric] = table_df["mean "+ metric].apply(lambda x: x/best_mean)
+    result_columns = []
+    if pivot_columns:
+        result_df = results_df.pivot(
+            index=[
+                col
+                for col in results_df.columns
+                if col not in pivot_columns + [RESULT_COLUMN]
+            ],
+            columns=pivot_columns,
+            values=[RESULT_COLUMN],
+        )
+        new_col_names = []
+        for old_name in result_df.columns:
+            new_name = ""
+            is_result_column = False
+            for name in old_name:
+                if name != RESULT_COLUMN:
+                    new_name += " " + str(name)
+                else:
+                    is_result_column = True
+            new_col_names.append(new_name.strip())
+            if is_result_column:
+                result_columns.append(new_name.strip())
+        result_df.columns = pd.Index(new_col_names)
+        result_df = result_df.reset_index()
 
-        else:
-            table_df = results_df.drop_duplicates().reset_index(drop=True)
-        return table_df
-    else:
-        table_df = results_df.loc[:, show_columns + [RESULT_COLUMN]]
-        if is_numeric:
-            grouped_df = table_df.groupby(show_columns, observed=True)[
-                RESULT_COLUMN
-            ].agg(["min", "median","mean", "max"])
-            new_column_names = []
-            for stat_name in grouped_df.columns:
-                new_name = stat_name + " " + metric
-                new_column_names.append(new_name)
-            grouped_df.columns = pd.Index(new_column_names)
-            table_df = grouped_df.reset_index()
-            best_mean = table_df["mean " +metric].min()
-            table_df["relative " + metric] = table_df["mean "+ metric].apply(lambda x: x/best_mean)
-        table_df = table_df.drop_duplicates().reset_index(drop=True)
-        return table_df
+    result_df = result_df.loc[:, show_columns + result_columns]
+
+    grouped = result_df.groupby(show_columns, observed=True)
+
+    stat_table = grouped.size().reset_index()[show_columns]
+    for col in result_columns:
+        for stat in stats:
+            match stat:
+                case "min":
+                    statistic_column = grouped[col].min().reset_index()[col]
+                case "max":
+                    statistic_column = grouped[col].max().reset_index()[col]
+                case "median":
+                    statistic_column = grouped[col].median().reset_index()[col]
+            stat_table[stat + " " + col] = statistic_column
+    print(stat_table)
+    exit(1)
+    # return table_df
 
 
 def output_md(single_metric_df: pd.DataFrame, output: TableMdOutput, output_filename):
