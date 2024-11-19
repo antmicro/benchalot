@@ -7,7 +7,7 @@ from benchmarker.output import HAS_FAILED_COLUMN, METRIC_COLUMN
 from time import monotonic_ns
 from io import StringIO
 from csv import DictReader
-
+from typing import Literal
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
@@ -121,9 +121,60 @@ def execute_section(commands: list[str], section_name: str = "") -> None:
     logger.info(f"Execution of '{section_name}' section finished.")
 
 
+def gather_custom_metric(metric_command: str) -> dict[str, float | str]:
+    """Gather custom metric measurements.
+    If output has more than one line, treat output as csv file, with each column representing separate stage.
+
+    Args:
+        metric_command: Command to be executed as custom metric.
+    Returns:
+        dict[str, float | str]: Containing single or multi stage result.
+    """
+    process = execute_command(metric_command)
+    output = handle_output(process, capture_stdout=True)
+    process.wait()
+
+    if len(output.splitlines()) == 1:
+        try:
+            return {"result": float(output)}
+        except ValueError:
+            return {"result": output}
+    elif len(output.splitlines()) == 2:
+        output_stream = StringIO(output)
+        reader = DictReader(output_stream)
+        tmp_dict = {}
+        for row in reader:
+            tmp_dict = row
+        output_dict = {}
+        for stage in tmp_dict:
+            value = tmp_dict[stage]
+            try:
+                value = float(value)
+            except ValueError:
+                pass
+            output_dict[stage] = value
+        return output_dict
+    else:
+        logger.critical("Invalid custom metric output format:")
+        logger.critical(output)
+        exit(1)
+
+
 def execute_benchmark(
-    benchmarks: dict[str, list[str]], builtin_metrics, custom_metrics
+    benchmarks: dict[str, list[str]],
+    builtin_metrics: list[Literal["time", "stdout", "stderr"]],
+    custom_metrics: list[dict],
 ) -> list[BenchmarkResult]:
+    """Execute benchmarks and take selected measurements.
+
+    Args:
+        benchmarks: List of benchmarks divided into stages.
+        builtin_metrics: List of metrics built in metrics which will be gathered during execution.
+        custom_metric: List of custom metrics, their names and commands, which will be gathered during execution.
+
+    Returns:
+        list[BenchmarkResult]: List of benchmark results.
+    """
     has_failed = False
     measure_time = "time" in builtin_metrics
     gather_stdout = "stdout" in builtin_metrics
@@ -171,49 +222,6 @@ def execute_benchmark(
         )
 
     return benchmark_results
-
-
-def gather_custom_metric(metric_command: str) -> dict[str, float | str]:
-    """Execute all the benchmark commands, then execute custom metric command and process its output.
-    If output has more than one line, treat output as csv file, with each column representing separate stage.
-    Sum stages under `metric_name`.
-
-    Args:
-        metric_command: Command to be executed as custom metric.
-        metric_name: Custom metric's name.
-        benchmarks: Stages with their commands.
-
-    Returns:
-        BenchmarkResult: Containing single or multi stage result.
-    """
-    process = execute_command(metric_command)
-    output = handle_output(process, capture_stdout=True)
-    process.wait()
-
-    if len(output.splitlines()) == 1:
-        try:
-            return {"result": float(output)}
-        except ValueError:
-            return {"result": output}
-    elif len(output.splitlines()) == 2:
-        output_stream = StringIO(output)
-        reader = DictReader(output_stream)
-        tmp_dict = {}
-        for row in reader:
-            tmp_dict = row
-        output_dict = {}
-        for stage in tmp_dict:
-            value = tmp_dict[stage]
-            try:
-                value = float(value)
-            except ValueError:
-                pass
-            output_dict[stage] = value
-        return output_dict
-    else:
-        logger.critical("Invalid custom metric output format:")
-        logger.critical(output)
-        exit(1)
 
 
 def perform_benchmarks(

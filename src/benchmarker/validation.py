@@ -154,9 +154,14 @@ class OutputField(BaseModel):
         Raises:
             ValueError
         """
-        metric_names = [
-            name if type(name) is str else list(name.keys())[0] for name in metrics
-        ]
+        metric_names = set()
+        for metric in metrics:
+            if metric == "stderr" or metric == "stdout":
+                metric_names.add("output")
+            elif type(metric) is dict:
+                metric_names.add(list(metric.keys())[0])
+            else:
+                metric_names.add(metric)
         if self.metric not in metric_names:
             raise ValueError(f"metric '{self.metric}' not found")
 
