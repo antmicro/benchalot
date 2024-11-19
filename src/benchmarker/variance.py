@@ -40,11 +40,12 @@ def set_contents(filename: str, value: str) -> None:
     """
     try:
         file = open(filename, "w")
-        file.write(value)
-        file.close()
     except FileNotFoundError as e:
         logger.critical(f"Failed to set {value} to {filename} {e.strerror}")
         exit(1)
+    else:
+        with file:
+            file.write(value)
     value_str = value.strip()
     logger.debug(f"Wrote  '{value_str}' to '{filename}'.")
 
@@ -122,6 +123,20 @@ def modify_system_state(system_options: SystemSection) -> None:
                         )
                     disabled_pairs.add(pair)
         system_state["disable-smt"] = previous_settings
+    if system_options.disable_core_boost:
+        # https://wiki.archlinux.org/title/CPU_frequency_scaling#Configuring_frequency_boosting
+        if isfile("/sys/devices/system/cpu/cpufreq/boost"):
+            system_state["disable_core_boost"] = (
+                "/sys/devices/system/cpu/cpufreq/boost",
+                get_and_set("/sys/devices/system/cpu/cpufreq/boost", str(0)),
+            )
+        elif isfile("/sys/devices/system/cpu/intel_pstate/no_turbo"):
+            system_state["disable_core_boost"] = (
+                "/sys/devices/system/cpu/intel_pstate/no_turbo",
+                get_and_set("/sys/devices/system/cpu/intel_pstate/no_turbo", str(1)),
+            )
+        else:
+            logger.error("Failed to disable core boosting.")
 
 
 def restore_system_state() -> None:
@@ -149,7 +164,10 @@ def restore_system_state() -> None:
     if system_state.get("disable-aslr"):
         set_contents("/proc/sys/kernel/randomize_va_space", system_state["aslr"])
     logger.debug("Restored ASLR.")
-
+    logger.debug("Restoring boost...")
+    if system_state.get("disable_core_boost"):
+        file, setting = system_state["disable_core_boost"]
+        set_contents(file, setting)
     logger.debug("Restoring smt...")
     if system_state.get("disable-smt"):
         for cpu, value in system_state["disable-smt"].items():

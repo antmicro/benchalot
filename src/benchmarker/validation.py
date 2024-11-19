@@ -33,12 +33,14 @@ class SystemSection(BaseModel):
         isolate_cpus: CPU cores which will be shielded by `cpuset`.
         disable_aslr: Option to disable address space layout randomization.
         disable_smt: Option to disable simultaneous multi-threading (hyper-threading on Intel CPUs).
+        disable_core_boost: Option to disable core boosting (Turbo Boost on Intel/Turbo-Core on AMD).
         governor_performance: Option to change CPU governor to performance.
     """
 
     isolate_cpus: list[int] | None = Field(default=None, alias="isolate-cpus")
     disable_aslr: bool = Field(default=False, alias="disable-aslr")
     disable_smt: bool = Field(default=False, alias="disable-smt")
+    disable_core_boost: bool = Field(default=False, alias="disable-core-boost")
     governor_performance: bool = Field(default=False, alias="governor-performance")
     model_config = ConfigDict(extra="forbid")
 
@@ -52,6 +54,7 @@ class SystemSection(BaseModel):
             or self.governor_performance
             or not isolate_cpus_empty
             or self.disable_smt
+            or self.disable_core_boost
         )
 
 
