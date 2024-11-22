@@ -118,7 +118,7 @@ def try_convert_to_float(value: str) -> float | str:
         return value
 
 
-def gather_custom_metric(metric_command: str) -> dict[str, float | str]:
+def gather_custom_metric(metric_command: str) -> dict[str, float | str | None]:
     """Gather custom metric measurements.
     If output has more than one line, treat output as csv file, with each column representing separate stage.
 
@@ -138,15 +138,15 @@ def gather_custom_metric(metric_command: str) -> dict[str, float | str]:
         tmp_dict = {}
         for row in reader:
             tmp_dict = row
-        output_dict = {}
+        output_dict: dict[str, float | str | None] = {}
         for stage in tmp_dict:
             value = tmp_dict[stage]
             output_dict[stage] = try_convert_to_float(value)
         return output_dict
     else:
-        logger.critical("Invalid custom metric output format:")
-        logger.critical(output)
-        exit(1)
+        logger.warning("Invalid custom metric output format:")
+        logger.warning(output)
+        return {"result": None}
 
 
 def perform_benchmarks(
@@ -189,9 +189,9 @@ def perform_benchmarks(
                 gather_stdout = "stdout" in benchmark.builtin_metrics
                 gather_stderr = "stderr" in benchmark.builtin_metrics
 
-                time_measurements = {}
-                stdout_measurements = {}
-                stderr_measurements = {}
+                time_measurements: dict[str, float] = {}
+                stdout_measurements: dict[str, float | str | None] = {}
+                stderr_measurements: dict[str, float | str | None] = {}
 
                 for stage in benchmark.benchmark:
                     stage_elapsed_time = 0.0
@@ -222,7 +222,7 @@ def perform_benchmarks(
 
                 execute_section(benchmark.after, "after")
 
-                benchmark_results: dict[str, dict[str, float | str]] = {}
+                benchmark_results: dict[str, dict[str, float | str | None]] = {}
 
                 for custom_metric in benchmark.custom_metrics:
                     metric_name, command = list(custom_metric.items())[0]
