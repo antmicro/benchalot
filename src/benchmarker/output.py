@@ -105,7 +105,6 @@ def output_results_from_file(
 def get_stat_table(
     input_df: pd.DataFrame,
     metric: str,
-    measurement_columns: list[str],
     show_columns: list[str] | None = None,
 ) -> pd.DataFrame:
     """Create summary table with specified columns.
@@ -113,27 +112,14 @@ def get_stat_table(
     Args:
         results_df: Dataframe containing the results.
         result_column: A name of a metric which will be included in the table.
-        measurement_columns: List of column names containing measurements.
         show_columns: Variable names which will be included in the table.
     """
-    return input_df
     results_df = input_df.copy()
     is_numeric = True
     try:
-        results_df[measurement_columns] = results_df[measurement_columns].apply(
-            pd.to_numeric
-        )
+        results_df[RESULT_COLUMN] = results_df[RESULT_COLUMN].apply(pd.to_numeric)
     except (ValueError, TypeError):
         is_numeric = False
-
-    if len(measurement_columns) > 1:
-        results_df["total"] = results_df[measurement_columns].sum(axis=1)
-        measurement_columns.append("total")
-    elif len(measurement_columns) == 1:
-        results_df = results_df.rename(columns={measurement_columns[0]: metric})
-        measurement_columns = [metric]
-    else:
-        raise ValueError("No measurement columns specified.")
 
     if show_columns is None:
         show_columns = []
@@ -148,32 +134,22 @@ def get_stat_table(
     if not group_table:
         if is_numeric:
             result_stat = dict()
-            for col in measurement_columns:
-                if col != metric:
-                    col_name = col + " " + metric
-                else:
-                    col_name = col
-                result_stat["min " + col_name] = [results_df[col].min()]
-                result_stat["median " + col_name] = [results_df[col].median()]
-                result_stat["max " + col_name] = [results_df[col].max()]
+            result_stat["min " + metric] = [results_df[RESULT_COLUMN].min()]
+            result_stat["median " + metric] = [results_df[RESULT_COLUMN].median()]
+            result_stat["max " + metric] = [results_df[RESULT_COLUMN].max()]
             table_df = pd.DataFrame(result_stat)
         else:
             table_df = results_df.drop_duplicates().reset_index(drop=True)
         return table_df
     else:
-        table_df = results_df.loc[:, show_columns + measurement_columns]
+        table_df = results_df.loc[:, show_columns + [RESULT_COLUMN]]
         if is_numeric:
             grouped_df = table_df.groupby(show_columns, observed=True)[
-                measurement_columns
+                RESULT_COLUMN
             ].agg(["min", "median", "max"])
             new_column_names = []
-            for old_col in grouped_df.columns:
-                col_name = old_col[0]
-                stat_name = old_col[1]
-                if col_name != metric:
-                    new_name = stat_name + " " + col_name + " " + metric
-                else:
-                    new_name = stat_name + " " + col_name
+            for stat_name in grouped_df.columns:
+                new_name = stat_name + " " + metric
                 new_column_names.append(new_name)
             grouped_df.columns = pd.Index(new_column_names)
             table_df = grouped_df.reset_index()
@@ -352,7 +328,9 @@ def _output_results(
             for metric in output_df[METRIC_COLUMN].unique():
                 table_df = output_df.loc[output_df[METRIC_COLUMN] == metric]
                 table_df = table_df.dropna(axis=1, how="all")
-                print_table = get_stat_table(table_df, metric, None, variable_names)
+                print_table = get_stat_table(
+                    table_df, metric, variable_names + [STAGE_COLUMN]
+                )
                 print(f"{metric}:")
                 print(print_table.to_markdown(index=False))
         else:
