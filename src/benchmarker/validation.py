@@ -156,9 +156,7 @@ class OutputField(BaseModel):
         """
         metric_names = set()
         for metric in metrics:
-            if metric == "stderr" or metric == "stdout":
-                metric_names.add("output")
-            elif type(metric) is dict:
+            if type(metric) is dict:
                 metric_names.add(list(metric.keys())[0])
             else:
                 metric_names.add(metric)

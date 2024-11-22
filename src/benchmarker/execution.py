@@ -49,20 +49,12 @@ def execute_command(command: str) -> Popen:
     return Popen(command, shell=True, stdout=PIPE, stderr=PIPE, cwd=working_directory)
 
 
-def handle_output(
-    process: Popen, capture_stdout: bool = False, capture_stderr: bool = False
-) -> str:
-    """Log and/or save output piped by the process.
+def log_output(process: Popen) -> None:
+    """Log output piped by the process.
 
     Args:
         process: Process object.
-        capture_stdout: If true, return `stdout` of the process.
-        capture_stderr: If true, return `stderr` of the process.
-
-    Returns:
-        str: Containing `stdout` and/or `stderr` of the process.
     """
-    total = ""
     level = INFO
     with process.stdout as output:  # type: ignore
         for line in output:
@@ -70,37 +62,28 @@ def handle_output(
                 if process.poll() is not None and process.poll() != 0:
                     level = ERROR
                 command_logger.log(msg=line.decode("utf-8").strip(), level=level)
-                if capture_stdout:
-                    total += line.decode("utf-8")
     with process.stderr as output:  # type: ignore
         for line in output:
             if len(line) > 0:
                 if process.poll() is not None and process.poll() != 0:
                     level = ERROR
                 command_logger.log(msg=line.decode("utf-8").strip(), level=level)
-                if capture_stderr:
-                    total += line.decode("utf-8")
-    return total.strip()
 
 
-def execute_and_handle_output(
-    command: str, capture_stdout=False, capture_stderr=False
-) -> tuple[str, bool]:
+def execute_and_handle_output(command: str) -> bool:
     """Execute command, log its output and check its return code.
 
     Args:
         command: Command to be executed.
-        capture_stdout: If true, return `stdout` of the process.
-        capture_stderr: If true, return `stderr` of the process.
 
     Returns:
-        (str, bool): String containing `stdout` and/or `stderr` of the process and bool set to True if program returned 0.
+        bool: True if program returned 0, otherwise False.
     """
     process = execute_command(command)
-    total = handle_output(process, capture_stdout, capture_stderr)
+    log_output(process)
     result = process.wait()
     success = check_return_code(command, result)
-    return total, success
+    return success
 
 
 def execute_section(commands: list[str], section_name: str = "") -> None:
@@ -121,6 +104,13 @@ def execute_section(commands: list[str], section_name: str = "") -> None:
     logger.info(f"Execution of '{section_name}' section finished.")
 
 
+def try_convert_to_float(value: str) -> float | str:
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
+
 def gather_custom_metric(metric_command: str) -> dict[str, float | str]:
     """Gather custom metric measurements.
     If output has more than one line, treat output as csv file, with each column representing separate stage.
@@ -131,14 +121,10 @@ def gather_custom_metric(metric_command: str) -> dict[str, float | str]:
         dict[str, float | str]: Containing single or multi stage result.
     """
     process = execute_command(metric_command)
-    output = handle_output(process, capture_stdout=True)
-    process.wait()
-
+    output, _ = process.communicate()
+    output = output.decode("utf-8")
     if len(output.splitlines()) == 1:
-        try:
-            return {"result": float(output)}
-        except ValueError:
-            return {"result": output}
+        return {"result": try_convert_to_float(output)}
     elif len(output.splitlines()) == 2:
         output_stream = StringIO(output)
         reader = DictReader(output_stream)
@@ -148,11 +134,7 @@ def gather_custom_metric(metric_command: str) -> dict[str, float | str]:
         output_dict = {}
         for stage in tmp_dict:
             value = tmp_dict[stage]
-            try:
-                value = float(value)
-            except ValueError:
-                pass
-            output_dict[stage] = value
+            output_dict[stage] = try_convert_to_float(value)
         return output_dict
     else:
         logger.critical("Invalid custom metric output format:")
@@ -181,29 +163,33 @@ def execute_benchmark(
     gather_stderr = "stderr" in builtin_metrics
 
     time_measurements = {}
-    output_measurements = {}
+    stdout_measurements = {}
+    stderr_measurements = {}
 
     for stage in benchmarks:
-        elapsed_time = 0.0
-        output = ""
+        stage_elapsed_time = 0.0
+        stage_stdout = ""
+        stage_stderr = ""
         for command in benchmarks[stage]:
             start = monotonic_ns()
             process = execute_command(command)
-            code = process.wait()
-            elapsed_time += monotonic_ns() - start
-            output += handle_output(
-                process, capture_stdout=gather_stdout, capture_stderr=gather_stderr
-            )
-            success = check_return_code(command, code)
+            if gather_stderr or gather_stdout:
+                process_stdout, process_stderr = process.communicate()
+            else:
+                log_output(process)
+                process.wait()
+            success = check_return_code(command, process.returncode)
             if not success:
                 has_failed = True
+            stage_elapsed_time += monotonic_ns() - start
+            stage_stdout += process_stdout.decode("utf-8")
+            stage_stderr += process_stderr.decode("utf-8")
         if measure_time:
-            time_measurements[stage] = elapsed_time / 1e9
-        if gather_stderr or gather_stdout:
-            try:
-                output_measurements[stage] = float(output)  # type: ignore
-            except ValueError:
-                output_measurements[stage] = output  # type: ignore
+            time_measurements[stage] = stage_elapsed_time / 1e9
+        if gather_stdout:
+            stdout_measurements[stage] = try_convert_to_float(stage_stdout)
+        if gather_stderr:
+            stderr_measurements[stage] = try_convert_to_float(stage_stderr)
 
     benchmark_results: list[BenchmarkResult] = []
 
@@ -216,9 +202,13 @@ def execute_benchmark(
 
     if measure_time:
         benchmark_results.append(BenchmarkResult("time", has_failed, time_measurements))
-    if gather_stderr or gather_stdout:
+    if gather_stdout:
         benchmark_results.append(
-            BenchmarkResult("output", has_failed, output_measurements)
+            BenchmarkResult("stdout", has_failed, stdout_measurements)
+        )
+    if gather_stderr:
+        benchmark_results.append(
+            BenchmarkResult("stderr", has_failed, stderr_measurements)
         )
 
     return benchmark_results
