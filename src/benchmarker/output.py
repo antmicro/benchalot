@@ -171,7 +171,29 @@ def get_stat_table(
                     case "median":
                         statistic_column = grouped[col].median()
                     case "mean":
+                        if "std" in stats:
+                            continue
                         statistic_column = grouped[col].mean()
+                    case "relative":
+                        statistic_column = grouped[col].mean() / np.min(
+                            grouped[col].mean()
+                        )
+                    case "std":
+                        if "mean" in stats:
+                            mean = pd.Series(grouped[col].mean())
+                            std = pd.Series(grouped[col].std())
+                            mean_std = []
+                            for m, s in zip(mean, std):
+                                row = f"{m:.3f} ± {s:.3f}"
+                                mean_std.append(row)
+
+                            if show_columns:
+                                statistic_column = pd.Series(mean_std, name=col)
+                            else:
+                                statistic_column = mean_std[0]  # type: ignore
+                            stat = "mean"
+                        else:
+                            statistic_column = grouped[col].std()
                 if show_columns:
                     statistic_column = statistic_column.reset_index()[col]
                 else:
