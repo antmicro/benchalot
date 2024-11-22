@@ -251,6 +251,9 @@ class TableMdOutput(OutputField):
     Attributes:
         format: Must be "table-md".
         columns: List of variables which will be included in the output table.
+        stats: What mathematical functions should be used to determine values in result columns.
+        pivot: String containing variable names determining names and contents of result columns.
+        metrics: List of metrics to be included in the table.
     """
 
     format: Literal["table-md"]

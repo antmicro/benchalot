@@ -111,9 +111,12 @@ def get_stat_table(
     """Create summary table with specified columns.
 
     Args:
-        results_df: Dataframe containing the results.
-        result_column: A name of a metric which will be included in the table.
+        input_df: Dataframe containing the results.
+        stats: What mathematical functions should be used to determine values in result columns.
         show_columns: Variable names which will be included in the table.
+        pivot: String containing variable names determining names and contents of result columns.
+        metrics: List of metrics to be included in the table.
+
     """
     results_df = input_df.copy()
     if metrics:
