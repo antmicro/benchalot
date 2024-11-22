@@ -22,9 +22,18 @@ from sys import argv
 logger = getLogger(f"benchmarker.{__name__}")
 
 TIME_STAMP_COLUMN = "benchmark_date"
+BENCHMARK_ID_COLUMN = "benchmark_id"
 HAS_FAILED_COLUMN = "has_failed"
 METRIC_COLUMN = "metric"
-CONSTANT_COLUMNS = [TIME_STAMP_COLUMN, HAS_FAILED_COLUMN, METRIC_COLUMN]
+STAGE_COLUMN = "stage"
+RESULT_COLUMN = "result"
+CONSTANT_COLUMNS = [
+    TIME_STAMP_COLUMN,
+    HAS_FAILED_COLUMN,
+    METRIC_COLUMN,
+    STAGE_COLUMN,
+    RESULT_COLUMN,
+]
 
 
 def read_old_outputs(include: list[str]) -> pd.DataFrame:
@@ -107,6 +116,7 @@ def get_stat_table(
         measurement_columns: List of column names containing measurements.
         show_columns: Variable names which will be included in the table.
     """
+    return input_df
     results_df = input_df.copy()
     is_numeric = True
     try:
@@ -174,7 +184,6 @@ def get_stat_table(
 def get_bar_chart(
     input_df: pd.DataFrame,
     variable_names: list[str],
-    measurement_columns: list[str],
     x_axis: str | None,
     y_axis: str,
     color: str | None,
@@ -197,34 +206,18 @@ def get_bar_chart(
     """
     output_df = input_df.copy()
     try:
-        output_df[measurement_columns] = output_df[measurement_columns].apply(
-            pd.to_numeric
-        )
+        output_df[RESULT_COLUMN] = output_df[RESULT_COLUMN].apply(pd.to_numeric)
     except (ValueError, TypeError):
         logger.error(
             f"y-axis ({y_axis}) of bar-chart has non-numeric type; bar-chart will not be generated"
         )
         return None
 
-    stack = len(measurement_columns) > 1
+    stack = output_df[STAGE_COLUMN].nunique() > 1
     if stack and color:
         logger.warning("'bar-chart': color setting is present, bars won't be stacked.")
 
-    dummy_y_axis = str(uuid4())
-    if stack and not color:
-        output_df = output_df.melt(
-            id_vars=list(variable_names),
-            value_vars=measurement_columns,
-            var_name="stage",
-            value_name=dummy_y_axis,
-        )
-        # prevent rearranging by plotnine
-        series = output_df["stage"]
-        output_df["stage"] = pd.Categorical(series, categories=series.unique())
-    else:
-        output_df[dummy_y_axis] = output_df[measurement_columns].sum(axis=1)
-
-    plot = ggplot(output_df, aes(y=dummy_y_axis))
+    plot = ggplot(output_df, aes(y=RESULT_COLUMN))
     if x_axis:
         plot += aes(x=x_axis)
     else:
@@ -240,7 +233,7 @@ def get_bar_chart(
     if stack and not color:
         plot += aes(fill="stage")
         plot += geom_bar(position="stack", stat="summary", fun_y=funcs[stat])
-        plot += scale_fill_discrete(labels=measurement_columns)
+        plot += scale_fill_discrete(labels=list(output_df[STAGE_COLUMN].unique()))
     else:
         plot += geom_bar(position="dodge", stat="summary", fun_y=funcs[stat])
 
@@ -255,22 +248,6 @@ def get_bar_chart(
             axis_ticks_x=element_blank(),
         )
     return plot
-
-
-def extract_measurement_columns(
-    column_names: list[str], variable_names: list[str]
-) -> list[str]:
-    """Get measurement column names.
-
-    Args:
-        column_names: List of all column names.
-        variable_names: List of variable names.
-
-    Returns:
-        list[str]: Measurement column names.
-    """
-    not_measurement_columns = set(variable_names + CONSTANT_COLUMNS)
-    return [col for col in column_names if col not in not_measurement_columns]
 
 
 def _output_results(
@@ -329,15 +306,11 @@ def _output_results(
             outputs_without_failed.append(output_name)
         filtered_df = output_df.loc[output_df[METRIC_COLUMN] == output.metric]
         filtered_df = filtered_df = filtered_df.dropna(axis=1, how="all")
-        measurement_columns = extract_measurement_columns(
-            list(filtered_df.columns), variable_names
-        )
         if output.format == "bar-chart":
             logger.debug("Outputting bar chart.")
             plot = get_bar_chart(
                 input_df=filtered_df,
                 variable_names=variable_names,
-                measurement_columns=measurement_columns,
                 x_axis=output.x_axis,
                 y_axis=output.metric,  # type: ignore
                 color=output.color,
@@ -359,7 +332,6 @@ def _output_results(
             logger.debug("Outputting markdown table.")
             table = get_stat_table(
                 filtered_df,
-                measurement_columns=measurement_columns,
                 show_columns=output.columns,
                 metric=output.metric,  # type: ignore
             )
@@ -380,12 +352,7 @@ def _output_results(
             for metric in output_df[METRIC_COLUMN].unique():
                 table_df = output_df.loc[output_df[METRIC_COLUMN] == metric]
                 table_df = table_df.dropna(axis=1, how="all")
-                measurement_cols = extract_measurement_columns(
-                    list(table_df.columns), variable_names
-                )
-                print_table = get_stat_table(
-                    table_df, metric, measurement_cols, variable_names
-                )
+                print_table = get_stat_table(table_df, metric, None, variable_names)
                 print(f"{metric}:")
                 print(print_table.to_markdown(index=False))
         else:

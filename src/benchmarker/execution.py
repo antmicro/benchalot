@@ -7,6 +7,15 @@ from benchmarker.output import HAS_FAILED_COLUMN, METRIC_COLUMN
 from time import monotonic_ns
 from io import StringIO
 from csv import DictReader
+from benchmarker.structs import PreparedBenchmark, BenchmarkResult
+from benchmarker.output import (
+    HAS_FAILED_COLUMN,
+    METRIC_COLUMN,
+    STAGE_COLUMN,
+    RESULT_COLUMN,
+    BENCHMARK_ID_COLUMN,
+)
+
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
@@ -162,7 +171,6 @@ def perform_benchmarks(
         dict[str, list]: Dictionary containing results.
     """
     results: dict[str, list] = dict()
-    n_rows = 0
     logger.info("Performing benchmarks...")
     bar = tqdm(
         desc="Performing benchmarks.",
@@ -171,6 +179,7 @@ def perform_benchmarks(
         leave=False,
         mininterval=1,
     )
+    id = 0
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
@@ -238,27 +247,26 @@ def perform_benchmarks(
 
                 bar.update(1)
                 for metric_name, measurements in benchmark_results.items():
-                    for variable in benchmark.matrix:
-                        results.setdefault(variable, []).append(
-                            benchmark.matrix[variable]
+                    for stage, result in measurements.items():
+                        results.setdefault(BENCHMARK_ID_COLUMN, []).append(id)
+                        for variable in benchmark.matrix:
+                            results.setdefault(variable, []).append(
+                                benchmark.matrix[variable]
+                            )
+                        results.setdefault(HAS_FAILED_COLUMN, []).append(
+                            has_failed
                         )
-                    results.setdefault(HAS_FAILED_COLUMN, []).append(has_failed)
-                    results.setdefault(METRIC_COLUMN, []).append(metric_name)
-                    for stage in measurements:
-                        stage_column = results.setdefault(stage, [])
-                        # pad columns so that they have the same length
-                        stage_column += [None] * (n_rows - len(stage_column))
-                        stage_column.append(measurements[stage])
-                    n_rows += 1
-                bar.refresh(nolock=True)
+                        results.setdefault(METRIC_COLUMN, []).append(
+                            metric_name
+                        )
+                        results.setdefault(STAGE_COLUMN, []).append(stage)
+                        results.setdefault(RESULT_COLUMN, []).append(result)
+                id += 1
 
         except KeyboardInterrupt:
             logger.warning("Stopped benchmarks.")
             logger.warning("Creating output...")
             break
-    # pad columns so that they have the same length
-    for _, col in results.items():
-        col += [None] * (n_rows - len(col))
     bar.close()
     logger.info("Finished performing benchmarks.")
     logger.debug(f"Benchmark results: {results}")
