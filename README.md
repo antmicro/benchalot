@@ -199,10 +199,10 @@ matrix:
 run:
   benchmark:
     - "{{compression}} -c plot.png > {{compression}}.out"
-  after:
-    - "rm {{compression}}.out"
   metrics: 
     - "size": "stat -c %s {{compression}}.out"
+  after-all:
+    - rm {{compression}}.out
 output:
   csv:
     filename: "file_size.csv"
