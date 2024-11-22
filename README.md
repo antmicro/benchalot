@@ -240,7 +240,7 @@ output:
   table:
     filename: "file_table.md"
     format: "table-md"
-    result-column: size
+    metrics: [size]
 ```
 Benchmarker will then execute `stat -c %s {{compression}}.out` after commands in benchmark section and store stdout as the result. 
 The size measurements are accessible under `size` name and can be specified for `table-md` as `result-colum`.
