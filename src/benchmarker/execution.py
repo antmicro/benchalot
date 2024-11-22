@@ -105,6 +105,14 @@ def execute_section(commands: list[str], section_name: str = "") -> None:
 
 
 def try_convert_to_float(value: str) -> float | str:
+    """Try to convert string to float.
+
+    Args:
+        value: String to be converted.
+
+    Retruns:
+        float | str: Depending on whether the conversion succeeded.
+    """
     try:
         return float(value)
     except ValueError:
