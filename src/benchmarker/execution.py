@@ -13,7 +13,7 @@ from benchmarker.structs import (
     RESULT_COLUMN,
     BENCHMARK_ID_COLUMN,
 )
-
+from uuid import uuid4
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
@@ -177,7 +177,6 @@ def perform_benchmarks(
         leave=False,
         mininterval=1,
     )
-    id = 0
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
@@ -244,6 +243,7 @@ def perform_benchmarks(
                     benchmark_results["stderr"] = stderr_measurements
 
                 bar.update(1)
+                id = uuid4()
                 for metric_name, measurements in benchmark_results.items():
                     for stage, result in measurements.items():
                         results.setdefault(BENCHMARK_ID_COLUMN, []).append(id)
@@ -259,7 +259,6 @@ def perform_benchmarks(
                         )
                         results.setdefault(STAGE_COLUMN, []).append(stage)
                         results.setdefault(RESULT_COLUMN, []).append(result)
-                id += 1
 
         except KeyboardInterrupt:
             logger.warning("Stopped benchmarks.")
