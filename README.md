@@ -70,7 +70,9 @@ output:
   table:
     format: "table-md"
     filename: "table.md"
-    columns: ["tag", "input"]
+    columns: ["tag"]
+    pivot: "{{metric}} to process {{input}}"
+    stats: ["mean", "std"]
 ```
 
 ### Matrix
@@ -167,7 +169,11 @@ Available are: `min`, `mean`, `median` and `max`.
 `table-md` will result in a text file containing a markdown table. 
 Configured using these options:
 * `columns` (optional, default - include variable columns): contains an array of variable names which will be used to group the results in the table.
-* `result-column` (optional, default = `"time"`): name of a metric which will be included in the resulting table.
+* `metrics` (optional, default = all the metrics): list of names of metrics, which will be included in the table.
+* `pivot` (optional, default = `"{{stage}} {{metric}}"`): contains result column name pattern, containing names of the variables which will be used to create columns.
+For each combination of the variable values, the Benchmarker will create a column.
+* `stats` (optional, default = ["min", "median", "max"]): contains an array of statistics which will be calculated for each result column.
+Available are: `min`, `max`, `mean`, `std` and `relative`.
 
 Additionally, instead of using variable names you can use one of the following:
 * `benchmark_date` - time stamp (date and hour) of when the benchmarks completed.
@@ -181,14 +187,10 @@ For example, the config above will generate this `plot.png`:
 
 And this `table.md`:
 ```markdown
-| tag   | input   |     mean |   median |       std |
-|:------|:--------|---------:|---------:|----------:|
-| fast  | data1   | 0.292805 | 0.251214 | 0.165203  |
-| fast  | data2   | 0.147003 | 0.125923 | 0.0827682 |
-| fast  | data3   | 0.409555 | 0.350952 | 0.231543  |
-| slow  | data1   | 0.409459 | 0.350861 | 0.231534  |
-| slow  | data2   | 0.152782 | 0.130948 | 0.0860583 |
-| slow  | data3   | 0.438692 | 0.376356 | 0.248082  |
+| tag   | mean time to process data1   | mean time to process data2   | mean time to process data3   |
+|:------|:-----------------------------|:-----------------------------|:-----------------------------|
+| slow  | 0.474 ± 0.235                | 0.222 ± 0.087                | 0.508 ± 0.247                |
+| fast  | 0.362 ± 0.166                | 0.212 ± 0.081                | 0.475 ± 0.229                |
 ```
 
 #### Multiplying output
