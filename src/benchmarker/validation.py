@@ -7,7 +7,7 @@ from pydantic import (
     model_validator,
     computed_field,
 )
-from typing import Literal
+from typing import Any, Literal
 from logging import getLogger
 from os.path import isdir
 from benchmarker.structs import DISPLAYABLE_COLUMNS
@@ -110,6 +110,14 @@ class RunSection(BaseModel):
             if type(metric) is str and metric not in ["time", "stdout", "stderr"]:
                 raise ValueError(f"invalid metric '{metric}'")
         return metrics
+
+    @field_validator("env", mode="before")
+    @classmethod
+    def env_values_to_str(cls, env_vars: dict[str, Any]) -> dict[str, Any]:
+        for key in env_vars:
+            if isinstance(env_vars[key], (int, float)):
+                env_vars[key] = str(env_vars[key])
+        return env_vars
 
 
 class OutputField(BaseModel):
