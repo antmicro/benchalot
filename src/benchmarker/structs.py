@@ -1,6 +1,21 @@
 from dataclasses import dataclass
 from typing import Literal
 
+TIME_STAMP_COLUMN = "benchmark_date"
+BENCHMARK_ID_COLUMN = "benchmark_id"
+HAS_FAILED_COLUMN = "has_failed"
+METRIC_COLUMN = "metric"
+STAGE_COLUMN = "stage"
+RESULT_COLUMN = "result"
+CONSTANT_COLUMNS = [
+    BENCHMARK_ID_COLUMN,
+    TIME_STAMP_COLUMN,
+    HAS_FAILED_COLUMN,
+    METRIC_COLUMN,
+    STAGE_COLUMN,
+    RESULT_COLUMN,
+]
+
 
 @dataclass
 class PreparedBenchmark:

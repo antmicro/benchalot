@@ -22,25 +22,19 @@ from benchmarker.utils import (
     VAR_REGEX,
     interpolate_variables,
 )
+from benchmarker.structs import (
+    RESULT_COLUMN,
+    TIME_STAMP_COLUMN,
+    STAGE_COLUMN,
+    HAS_FAILED_COLUMN,
+    BENCHMARK_ID_COLUMN,
+    CONSTANT_COLUMNS,
+    METRIC_COLUMN,
+)
 from sys import argv
 from re import findall
 
 logger = getLogger(f"benchmarker.{__name__}")
-
-TIME_STAMP_COLUMN = "benchmark_date"
-BENCHMARK_ID_COLUMN = "benchmark_id"
-HAS_FAILED_COLUMN = "has_failed"
-METRIC_COLUMN = "metric"
-STAGE_COLUMN = "stage"
-RESULT_COLUMN = "result"
-CONSTANT_COLUMNS = [
-    BENCHMARK_ID_COLUMN,
-    TIME_STAMP_COLUMN,
-    HAS_FAILED_COLUMN,
-    METRIC_COLUMN,
-    STAGE_COLUMN,
-    RESULT_COLUMN,
-]
 
 
 def read_old_outputs(include: list[str]) -> pd.DataFrame:

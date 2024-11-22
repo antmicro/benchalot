@@ -2,13 +2,11 @@ from subprocess import Popen, PIPE
 from logging import getLogger, INFO, ERROR
 from tqdm import tqdm
 from os import getcwd
-from benchmarker.structs import PreparedBenchmark
-from benchmarker.output import HAS_FAILED_COLUMN, METRIC_COLUMN
 from time import monotonic_ns
 from io import StringIO
 from csv import DictReader
-from benchmarker.structs import PreparedBenchmark, BenchmarkResult
-from benchmarker.output import (
+from benchmarker.structs import (
+    PreparedBenchmark,
     HAS_FAILED_COLUMN,
     METRIC_COLUMN,
     STAGE_COLUMN,
