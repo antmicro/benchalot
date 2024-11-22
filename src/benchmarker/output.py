@@ -139,7 +139,10 @@ def get_stat_table(
         if is_numeric:
             result_stat = dict()
             for col in measurement_columns:
-                col_name = col + " " + metric
+                if col != metric:
+                    col_name = col + " " + metric
+                else:
+                    col_name = col
                 result_stat["min " + col_name] = [results_df[col].min()]
                 result_stat["median " + col_name] = [results_df[col].median()]
                 result_stat["max " + col_name] = [results_df[col].max()]
@@ -157,7 +160,10 @@ def get_stat_table(
             for old_col in grouped_df.columns:
                 col_name = old_col[0]
                 stat_name = old_col[1]
-                new_name = stat_name + " " + col_name + " " + metric
+                if col_name != metric:
+                    new_name = stat_name + " " + col_name + " " + metric
+                else:
+                    new_name = stat_name + " " + col_name
                 new_column_names.append(new_name)
             grouped_df.columns = pd.Index(new_column_names)
             table_df = grouped_df.reset_index()
