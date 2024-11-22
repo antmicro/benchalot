@@ -166,10 +166,10 @@ Configured using these options:
 * `columns` (optional, default - include variable columns): contains an array of variable names which will be used to group the results in the table.
 * `result-column` (optional, default = `"time"`): name of a metric which will be included in the resulting table.
 
-Additionally instead of using variable names you can use one of the following:
-* `benchmark_date` - to compare benchmarks executed at different times.
-* `stage` - to compare multistage output.
-* `has_failed` - to compare failed benchmarks to the successful ones.
+Additionally, instead of using variable names you can use one of the following:
+* `benchmark_date` - column containing time stamp (date and hour) of when the benchmarks completed.
+* `stage` - column containing stages' names.
+* `has_failed` - column containing `True` or `False` depending on whether the benchmark failed.
 
 
 For example, the config above will generate this `plot.png`:
@@ -190,7 +190,7 @@ And this `table.md`:
 
 #### Multiplying output
 
-To create multiple outputs from one rule you use variables in filenames.
+To create multiple outputs from one rule, you can use variables in filenames.
 
 For example, to create a separate bar chart for each value of variable `tag`, your configuration should look like this:
 
@@ -207,7 +207,7 @@ plot2:
   dpi: 100
 ```
 
-If we add this section to the configuration above, the Benchmarker will generate two files: `plot_slow.png`, which visualizes benchmarks with `tag = slow`, and `plot_fast.png`, which visualizes benchmarks with `tag = fast`.
+If we add this section to the configuration above, Benchmarker will generate two files: `plot_slow.png` which visualizes benchmarks with `tag == slow`, and `plot_fast.png` which visualizes benchmarks with `tag == fast`.
 
 ### Custom Metrics
 
