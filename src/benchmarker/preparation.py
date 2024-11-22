@@ -1,46 +1,14 @@
-from itertools import product
 from logging import getLogger
-from re import sub, findall
+from re import findall
 from benchmarker.structs import PreparedBenchmark
 from benchmarker.validation import RunSection
+from benchmarker.utils import (
+    VAR_REGEX,
+    create_variable_combinations,
+    interpolate_variables,
+)
 
 logger = getLogger(f"benchmarker.{__name__}")
-
-VAR_REGEX = r"{{([a-zA-Z0-9_\-.]+)}}"
-
-
-def create_variable_combinations(**kwargs):
-    """Create all possible variable values combinations
-
-    Args:
-        kwargs: Dictionary containing list of variable values.
-    """
-    keys = kwargs.keys()
-    for instance in product(*kwargs.values()):
-        yield dict(zip(keys, instance))
-
-
-def interpolate_command(command: str, variables: dict[str, str | int]) -> str:
-    """Replace variable references with values.
-
-    Args:
-        command: Command to be modified.
-        variables: Variable names paired with values.
-
-    Returns:
-        str: Command with all variable references replaced.
-    """
-
-    def replace_substring(match):
-        variable_name = match.group(1)
-        try:
-            return str(variables[variable_name])
-        except KeyError:
-            logger.critical(f"'{command}': Variable '{variable_name}' not found")
-            exit(1)
-
-    new_command = sub(VAR_REGEX, replace_substring, command)
-    return new_command
 
 
 def interpolate_commands(commands: list, variables: dict[str, str | int]) -> list[str]:
@@ -54,7 +22,7 @@ def interpolate_commands(commands: list, variables: dict[str, str | int]) -> lis
     """
     prepared_commands = []
     for command in commands:
-        prepared_commands.append(interpolate_command(command, variables))
+        prepared_commands.append(interpolate_variables(command, variables))
     return prepared_commands
 
 
@@ -141,7 +109,7 @@ def process_metrics(
             metric_command = list(metric.items())[0][1]  # type: ignore
             metric_name = list(metric.items())[0][0]  # type: ignore
             if variables:
-                metric_command = interpolate_command(metric_command, variables)
+                metric_command = interpolate_variables(metric_command, variables)
             custom_metrics.append({metric_name: metric_command})
         else:
             builtin_metrics.append(metric)

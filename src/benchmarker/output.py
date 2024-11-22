@@ -17,8 +17,13 @@ import os
 from pandas.api.types import is_string_dtype
 from uuid import uuid4
 from benchmarker.validation import BarChartOutput, CsvOutput, TableMdOutput
-from benchmarker.utils import create_variable_combinations
+from benchmarker.utils import (
+    create_variable_combinations,
+    VAR_REGEX,
+    interpolate_variables,
+)
 from sys import argv
+from re import findall
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -232,30 +237,32 @@ def create_fancy_output(
         output_file_name = overwrite_filename
     match output.format:
         case "bar-chart":
+            bar_chart_output: BarChartOutput = output  # type: ignore
             logger.debug("Outputting bar chart.")
             plot = get_bar_chart(
                 input_df=filtered_df,
-                x_axis=output.x_axis,
-                y_axis=output.metric,  # type: ignore
-                color=output.color,
-                facet=output.facet,
-                stat=output.stat,
+                x_axis=bar_chart_output.x_axis,
+                y_axis=bar_chart_output.metric,
+                color=bar_chart_output.color,
+                facet=bar_chart_output.facet,
+                stat=bar_chart_output.stat,
             )
             if plot:
                 plot.save(
                     output_file_name,
-                    width=output.width,
-                    height=output.height,
-                    dpi=output.dpi,
+                    width=bar_chart_output.width,
+                    height=bar_chart_output.height,
+                    dpi=bar_chart_output.dpi,
                     limitsize=False,
                     verbose=False,
                 )
         case "table-md":
             logger.debug("Outputting markdown table.")
+            table_md_output: TableMdOutput = output  # type: ignore
             table = get_stat_table(
                 filtered_df,
-                show_columns=output.columns,
-                metric=output.metric,  # type: ignore
+                show_columns=table_md_output.columns,
+                metric=table_md_output.metric,  # type: ignore
             )
             table.to_markdown(output_file_name, index=False)
         case _:
@@ -316,8 +323,10 @@ def _output_results(
             outputs_without_failed.append(output_name)
         filtered_df = output_df.loc[output_df[METRIC_COLUMN] == output.metric]
         filtered_df = filtered_df = filtered_df.dropna(axis=1, how="all")
+        variable_names = findall(VAR_REGEX, output.filename)
         variables = {}
-        for variable_name in output.foreach:
+        for variable_name in variable_names:
+            print(variable_name)
             variables[variable_name] = filtered_df[variable_name].unique()
         if len(variables) > 0:
             combinations = create_variable_combinations(**variables)
@@ -325,7 +334,7 @@ def _output_results(
                 combination_df = filtered_df.loc[
                     (filtered_df[list(comb.keys())] == pd.Series(comb)).all(axis=1)
                 ]
-                overwrite_filename = str(comb) + output.filename
+                overwrite_filename = interpolate_variables(output.filename, comb)
                 create_fancy_output(combination_df, output, overwrite_filename)
         else:
             create_fancy_output(filtered_df, output)
