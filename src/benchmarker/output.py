@@ -33,7 +33,8 @@ from benchmarker.structs import (
 from sys import argv
 from re import findall
 from atexit import register, unregister
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
+from typing import Literal
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -102,8 +103,7 @@ def output_results_from_file(
 
 def get_stat_table(
     input_df: pd.DataFrame,
-    metric: str,
-    stats: list[str],
+    stats: Sequence[Literal["max", "min", "median", "mean", "relative", "std"]],
     show_columns: list[str] | None = None,
     pivot: str | None = None,
 ) -> pd.DataFrame:
@@ -212,7 +212,6 @@ def output_md(single_metric_df: pd.DataFrame, output: TableMdOutput, output_file
         show_columns=output.columns,
         pivot=output.pivot,
         stats=output.stats,
-        metric=output.metric,  # type: ignore
     )
     print(table.to_markdown(index=False))
     table.to_markdown(output_filename, index=False)
@@ -245,6 +244,8 @@ def output_bar_chart(
         dpi: Output image dpi.
     """
     output_df = input_df.copy()
+    output_df = output_df.loc[output_df[METRIC_COLUMN] == y_axis]
+    output_df = output_df.dropna(axis=1, how="all")
     try:
         output_df[RESULT_COLUMN] = output_df[RESULT_COLUMN].apply(pd.to_numeric)
     except (ValueError, TypeError):
@@ -326,7 +327,7 @@ def _output_results(
 
     Args:
         results_df: Dataframe containing benchmark results.
-        output_config: Configuration file's output section.
+        output_config: Configurat1pion file's output section.
         include_failed: Whether to filter out failed benchmarks.
     """
     if len(results_df) == 0:
@@ -402,17 +403,13 @@ def _output_results(
         logger.debug(f"Creating output for {output}")
         if has_filtered_output:
             logger.warning(f"Generating {output_name} without failed benchmarks...")
-        single_metric_df = without_failed_df.loc[
-            without_failed_df[METRIC_COLUMN] == output.metric
-        ]
-        single_metric_df = single_metric_df.dropna(axis=1, how="all")
         variables_in_filename = findall(VAR_REGEX, output.filename)
         multiplied_results: Iterable[tuple[dict, pd.DataFrame]]
         if not variables_in_filename:
-            multiplied_results = [({}, single_metric_df)]
+            multiplied_results = [({}, without_failed_df)]
         else:
             multiplied_results = get_combination_filtered_dfs(
-                single_metric_df, variables_in_filename
+                without_failed_df, variables_in_filename
             )
         match output.format:
             case "table-md":
@@ -467,10 +464,9 @@ def _output_results(
                 excluded_columns += [STAGE_COLUMN]
             print_table = get_stat_table(
                 table_df,
-                metric,
                 ["min", "mean", "max"],
                 [col for col in table_df.columns if col not in excluded_columns],
-                "{{stage}} {{metric}}",
+                "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
             )
             print()
             print(print_table.to_markdown(index=False))

@@ -18,6 +18,7 @@ from benchmarker.structs import (
 )
 from re import findall
 from benchmarker.interpolation import VAR_REGEX
+from collections.abc import Sequence
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -171,18 +172,8 @@ class OutputField(BaseModel):
         Args:
             metric_name: Name of the metric.
             metrics: `run.metrics` section.
-
-        Raises:
-            ValueError
         """
-        metric_names = set()
-        for metric in metrics:
-            if type(metric) is dict:
-                metric_names.add(list(metric.keys())[0])
-            else:
-                metric_names.add(metric)
-        if self.metric not in metric_names:
-            raise ValueError(f"metric '{self.metric}' not found")
+        pass
 
 
 class CsvOutput(OutputField):
@@ -225,7 +216,7 @@ class BarChartOutput(OutputField):
     width: int = Field(default=10, ge=1)
     height: int = Field(default=9, ge=1)
     dpi: int = Field(default=100, ge=50)
-    stat: Literal["min", "mean", "median", "max"] = "median"
+    stat: Literal["max", "min", "mean", "median", "max"] = "median"
     model_config = ConfigDict(extra="forbid")
 
     def check_options_exist(self, matrix):
@@ -239,6 +230,16 @@ class BarChartOutput(OutputField):
         check_column_will_exist(self.x_axis, matrix)
         check_column_will_exist(self.color, matrix)
 
+    def check_metric_exists(self, metrics):
+        metric_names = set()
+        for metric in metrics:
+            if type(metric) is dict:
+                metric_names.add(list(metric.keys())[0])
+            else:
+                metric_names.add(metric)
+        if self.metric not in metric_names:
+            raise ValueError(f"metric '{self.metric}' not found")
+
 
 class TableMdOutput(OutputField):
     """Schema of a markdown table output field.
@@ -246,26 +247,26 @@ class TableMdOutput(OutputField):
     Attributes:
         format: Must be "table-md".
         columns: List of variables which will be included in the output table.
-        metric: Metric which will be included in the table.
     """
 
     format: Literal["table-md"]
     columns: list[str] | None = None
-    metric: str | None = Field(default=None, alias="result-column")
-    stats: list[str] = ["min", "median", "mean"]
+    stats: Sequence[Literal["min", "median", "mean", "relative", "std"]] = [
+        "min",
+        "median",
+        "mean",
+    ]
     pivot: str | None = "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}"
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):
         """Apply default values.
         If `None`, set `columns` to contain all variables from `matrix` section.
-        If `None`, set `result_column` to the only metric in `run.metrics` section.
 
         Raises:
             ValueError: If there are more than one metrics in `run.metrics` section and `result_column` is `None`.
 
         """
-        super().apply_default_values(matrix, metrics)
         if self.columns is None:
             self.columns = list(matrix.keys())
 
