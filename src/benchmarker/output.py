@@ -130,7 +130,7 @@ def get_stat_table(
 
     result_columns = []
     if pivot_columns:
-        result_df = results_df.pivot(
+        results_df = results_df.pivot(
             index=[
                 col
                 for col in results_df.columns
@@ -139,40 +139,44 @@ def get_stat_table(
             columns=pivot_columns,
             values=[RESULT_COLUMN],
         )
-        for old_name in result_df.columns:
+        for old_name in results_df.columns:
             comb = {}
             for variable_name, value in zip(pivot_columns, old_name[1:]):
                 comb[variable_name] = value
-            result_columns.append(interpolate_variables(pivot, comb))
-        result_df.columns = pd.Index(result_columns)
-        result_df = result_df.reset_index()
+            result_columns.append(interpolate_variables(pivot, comb))  # type: ignore
+        results_df.columns = pd.Index(result_columns)
+        results_df = results_df.reset_index()
     else:
         result_columns = [RESULT_COLUMN]
 
-    result_df = result_df.loc[:, show_columns + result_columns]
+    results_df = results_df.loc[:, show_columns + result_columns]
 
     if show_columns:
-        grouped = result_df.groupby(show_columns, observed=True)
+        grouped = results_df.groupby(show_columns, observed=True)
         stat_table = grouped.size().reset_index()[show_columns]
     else:
-        grouped = result_df
+        grouped = results_df  # type: ignore
         stat_table = pd.DataFrame()
-    for col in result_columns:
-        for stat in stats:
-            match stat:
-                case "min":
-                    statistic_column = grouped[col].min()
-                case "max":
-                    statistic_column = grouped[col].max()
-                case "median":
-                    statistic_column = grouped[col].median()
-                case "mean":
-                    statistic_column = grouped[col].mean()
-            if show_columns:
-                statistic_column = statistic_column.reset_index()[col]
-            else:
-                statistic_column = [statistic_column]
-            stat_table[stat + " " + col] = statistic_column
+    if is_numeric:
+        for col in result_columns:
+            for stat in stats:
+                match stat:
+                    case "min":
+                        statistic_column = grouped[col].min()
+                    case "max":
+                        statistic_column = grouped[col].max()
+                    case "median":
+                        statistic_column = grouped[col].median()
+                    case "mean":
+                        statistic_column = grouped[col].mean()
+                if show_columns:
+                    statistic_column = statistic_column.reset_index()[col]
+                else:
+                    statistic_column = [statistic_column]  # type: ignore
+                new_name = stat + " " + col
+                stat_table[new_name] = statistic_column
+    else:
+        stat_table = results_df.drop_duplicates().reset_index(drop=True)
     return stat_table
 
 

@@ -249,7 +249,7 @@ class TableMdOutput(OutputField):
     columns: list[str] | None = None
     metric: str | None = Field(default=None, alias="result-column")
     stats: list[str] = ["min", "median", "mean"]
-    pivot: str = "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}"
+    pivot: str | None = "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}"
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):
@@ -270,8 +270,9 @@ class TableMdOutput(OutputField):
         super().check_options_exist(matrix)
         for column in self.columns:
             check_column_will_exist(column, matrix)
-        for column in findall(VAR_REGEX, self.pivot):
-            check_column_will_exist(column, matrix)
+        if self.pivot:
+            for column in findall(VAR_REGEX, self.pivot):
+                check_column_will_exist(column, matrix)
 
 
 def check_column_will_exist(option, matrix):
