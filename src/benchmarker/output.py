@@ -106,6 +106,7 @@ def get_stat_table(
     stats: Sequence[Literal["max", "min", "median", "mean", "relative", "std"]],
     show_columns: list[str] | None = None,
     pivot: str | None = None,
+    metrics: list[str] | None = None,
 ) -> pd.DataFrame:
     """Create summary table with specified columns.
 
@@ -115,6 +116,8 @@ def get_stat_table(
         show_columns: Variable names which will be included in the table.
     """
     results_df = input_df.copy()
+    if metrics:
+        results_df = results_df[results_df[METRIC_COLUMN].isin(metrics)]
     is_numeric = True
     try:
         results_df[RESULT_COLUMN] = results_df[RESULT_COLUMN].apply(pd.to_numeric)
@@ -212,6 +215,7 @@ def output_md(single_metric_df: pd.DataFrame, output: TableMdOutput, output_file
         show_columns=output.columns,
         pivot=output.pivot,
         stats=output.stats,
+        metrics=output.metrics,
     )
     print(table.to_markdown(index=False))
     table.to_markdown(output_filename, index=False)

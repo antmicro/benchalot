@@ -193,6 +193,17 @@ class CsvOutput(OutputField):
         pass
 
 
+def check_metric(metric, metrics):
+    metric_names = set()
+    for m in metrics:
+        if type(m) is dict:
+            metric_names.add(list(m.keys())[0])
+        else:
+            metric_names.add(m)
+    if metric not in metric_names:
+        raise ValueError(f"metric '{metric}' not found")
+
+
 class BarChartOutput(OutputField):
     """Schema of a bar chart output field.
 
@@ -231,14 +242,7 @@ class BarChartOutput(OutputField):
         check_column_will_exist(self.color, matrix)
 
     def check_metric_exists(self, metrics):
-        metric_names = set()
-        for metric in metrics:
-            if type(metric) is dict:
-                metric_names.add(list(metric.keys())[0])
-            else:
-                metric_names.add(metric)
-        if self.metric not in metric_names:
-            raise ValueError(f"metric '{self.metric}' not found")
+        check_metric(self.metric, metrics)
 
 
 class TableMdOutput(OutputField):
@@ -257,6 +261,7 @@ class TableMdOutput(OutputField):
         "mean",
     ]
     pivot: str | None = "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}"
+    metrics: list[str] | None = None
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):
@@ -278,6 +283,11 @@ class TableMdOutput(OutputField):
         if self.pivot:
             for column in findall(VAR_REGEX, self.pivot):
                 check_column_will_exist(column, matrix)
+
+    def check_metric_exists(self, metrics):
+        if self.metrics is not None:
+            for metric in self.metrics:
+                check_metric(metric, metrics)
 
 
 def check_column_will_exist(option, matrix):
