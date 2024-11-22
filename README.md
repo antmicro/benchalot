@@ -167,7 +167,7 @@ Configured using these options:
 * `result-column` (optional, default = `"time"`): name of a metric which will be included in the resulting table.
 
 Additionally, instead of using variable names you can use one of the following:
-* `benchmark_date` - column containing time stamp (date and hour) of when the benchmarks completed.
+* `benchmark_date` - time stamp (date and hour) of when the benchmarks completed.
 * `stage` - column containing stages' names.
 * `has_failed` - column containing `True` or `False` depending on whether the benchmark failed.
 

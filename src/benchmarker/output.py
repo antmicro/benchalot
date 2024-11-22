@@ -32,7 +32,7 @@ from benchmarker.structs import (
 from sys import argv
 from re import findall
 from atexit import register, unregister
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -147,25 +147,41 @@ def get_stat_table(
         return table_df
 
 
-def get_bar_chart(
+def output_md(single_metric_df: pd.DataFrame, output: TableMdOutput, output_filename):
+    logger.debug("Outputting markdown table.")
+    table = get_stat_table(
+        single_metric_df,
+        show_columns=output.columns,
+        metric=output.metric,  # type: ignore
+    )
+    table.to_markdown(output_filename, index=False)
+
+
+def output_bar_chart(
     input_df: pd.DataFrame,
+    output_filename: str,
     x_axis: str | None,
     y_axis: str,
     color: str | None,
     facet: str | None,
     stat: str,
-) -> ggplot | None:
-    """Create bar plot object.
+    width: int,
+    height: int,
+    dpi: int,
+) -> None:
+    """Output bar plot.
 
     Args:
         output_df: Dataframe containing benchmark results.
+        output_filename: Name of the output plot image.
         x_axis: Name of the variable used as x-axis of the plot.
         y_axis: Name of the variable used as y-axis of the plot.
         color: Name of the variable used as color channel of the plot.
         facet: Name of the variable used to facet the plot.
-
-    Returns:
-        ggplot: The bar chart object.
+        stat: Name of the statistic which will be used to determine bar heights.
+        width: Output image width (in inches).
+        height: Output image height (in inches).
+        dpi: Output image dpi.
     """
     output_df = input_df.copy()
     try:
@@ -210,63 +226,14 @@ def get_bar_chart(
             axis_title_x=element_blank(),
             axis_ticks_x=element_blank(),
         )
-    return plot
-
-
-def create_non_csv_output(
-    single_metric_df: pd.DataFrame,
-    output: BarChartOutput | TableMdOutput,
-    overwrite_filename: str | None = None,
-):
-    """Function creates non csv file based on passed configuration.
-
-    Args:
-        single_metric_df: Dataframe containing benchmark results for a single metric.
-        output: Output configuration.
-        overwrite_filename: Output file's name. If left `None`, uses `output.filename` field.
-    """
-    if single_metric_df.shape[0] == 0:
-        logger.error(f"No results to create output '{output}'.")
-        return
-    if not overwrite_filename:
-        output_filename = output.filename
-    else:
-        output_filename = overwrite_filename
-    match output.format:
-        case "bar-chart":
-            bar_chart_output: BarChartOutput = output  # type: ignore
-            logger.debug("Outputting bar chart.")
-            plot = get_bar_chart(
-                input_df=single_metric_df,
-                x_axis=bar_chart_output.x_axis,
-                y_axis=bar_chart_output.metric,  # type: ignore
-                color=bar_chart_output.color,
-                facet=bar_chart_output.facet,
-                stat=bar_chart_output.stat,
-            )
-            if plot:
-                plot.save(
-                    output_filename,
-                    width=bar_chart_output.width,
-                    height=bar_chart_output.height,
-                    dpi=bar_chart_output.dpi,
-                    limitsize=False,
-                    verbose=False,
-                )
-            else:
-                return
-        case "table-md":
-            logger.debug("Outputting markdown table.")
-            table_md_output: TableMdOutput = output  # type: ignore
-            table = get_stat_table(
-                single_metric_df,
-                show_columns=table_md_output.columns,
-                metric=table_md_output.metric,  # type: ignore
-            )
-            table.to_markdown(output_filename, index=False)
-        case _:
-            raise ValueError(f"Invalid output format: {output.format}.")
-    print(f"Created '{output_filename}'")
+    plot.save(
+        output_filename,
+        width=width,
+        height=height,
+        dpi=dpi,
+        limitsize=False,
+        verbose=False,
+    )
 
 
 def get_combination_filtered_dfs(
@@ -376,14 +343,37 @@ def _output_results(
         ]
         single_metric_df = single_metric_df.dropna(axis=1, how="all")
         variables_in_filename = findall(VAR_REGEX, output.filename)
+        multiplied_results: Iterable[tuple[dict, pd.DataFrame]]
         if not variables_in_filename:
-            create_non_csv_output(single_metric_df, output)  # type: ignore
+            multiplied_results = [({}, single_metric_df)]
         else:
-            for comb, combination_df in get_combination_filtered_dfs(
+            multiplied_results = get_combination_filtered_dfs(
                 single_metric_df, variables_in_filename
-            ):
-                overwrite_filename = interpolate_variables(output.filename, comb)
-                create_non_csv_output(combination_df, output, overwrite_filename)  # type: ignore
+            )
+        match output.format:
+            case "table-md":
+                for comb, df in multiplied_results:
+                    table_md_output: TableMdOutput = output  # type: ignore
+                    overwrite_filename = interpolate_variables(output.filename, comb)
+                    output_md(df, table_md_output, overwrite_filename)
+                    print(f"Created '{overwrite_filename}'")
+            case "bar-chart":
+                for comb, df in multiplied_results:
+                    bar_chart_output: BarChartOutput = output  # type: ignore
+                    overwrite_filename = interpolate_variables(output.filename, comb)
+                    output_bar_chart(
+                        df,
+                        overwrite_filename,
+                        bar_chart_output.x_axis,
+                        bar_chart_output.metric,  # type: ignore
+                        bar_chart_output.color,
+                        bar_chart_output.facet,
+                        bar_chart_output.stat,
+                        bar_chart_output.width,
+                        bar_chart_output.height,
+                        bar_chart_output.dpi,
+                    )
+                    print(f"Created '{overwrite_filename}'")
 
     if os.getuid() == 0:
         os.umask(prev_umask)
