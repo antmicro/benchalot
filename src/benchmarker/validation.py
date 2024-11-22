@@ -13,6 +13,7 @@ from os.path import isdir
 from benchmarker.structs import DISPLAYABLE_COLUMNS
 from re import findall
 from benchmarker.interpolation import VAR_REGEX
+from benchmarker.structs import METRIC_COLUMN, STAGE_COLUMN
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -247,6 +248,8 @@ class TableMdOutput(OutputField):
     format: Literal["table-md"]
     columns: list[str] | None = None
     metric: str | None = Field(default=None, alias="result-column")
+    stats: list[str] = ["min", "median", "mean"]
+    pivot: str = "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}"
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):
@@ -266,6 +269,8 @@ class TableMdOutput(OutputField):
         """Check if columns contain valid variables' names."""
         super().check_options_exist(matrix)
         for column in self.columns:
+            check_column_will_exist(column, matrix)
+        for column in findall(VAR_REGEX, self.pivot):
             check_column_will_exist(column, matrix)
 
 

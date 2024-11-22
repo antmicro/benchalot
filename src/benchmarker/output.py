@@ -102,7 +102,9 @@ def output_results_from_file(
 def get_stat_table(
     input_df: pd.DataFrame,
     metric: str,
+    stats: list[str],
     show_columns: list[str] | None = None,
+    pivot: str | None = None,
 ) -> pd.DataFrame:
     """Create summary table with specified columns.
 
@@ -111,9 +113,6 @@ def get_stat_table(
         result_column: A name of a metric which will be included in the table.
         show_columns: Variable names which will be included in the table.
     """
-    # TODO turn those to arguments
-    pivot_columns = [STAGE_COLUMN, METRIC_COLUMN]
-    stats = ["min", "median", "max"]
     results_df = input_df.copy()
     is_numeric = True
     try:
@@ -121,9 +120,12 @@ def get_stat_table(
     except (ValueError, TypeError):
         is_numeric = False
 
-    show_columns = []
     if show_columns is None:
         show_columns = []
+    if pivot:
+        pivot_columns = findall(VAR_REGEX, pivot)
+    else:
+        pivot_columns = []
     show_columns = [col for col in show_columns if col not in pivot_columns]
 
     result_columns = []
@@ -137,20 +139,15 @@ def get_stat_table(
             columns=pivot_columns,
             values=[RESULT_COLUMN],
         )
-        new_col_names = []
         for old_name in result_df.columns:
-            new_name = ""
-            is_result_column = False
-            for name in old_name:
-                if name != RESULT_COLUMN:
-                    new_name += " " + str(name)
-                else:
-                    is_result_column = True
-            new_col_names.append(new_name.strip())
-            if is_result_column:
-                result_columns.append(new_name.strip())
-        result_df.columns = pd.Index(new_col_names)
+            comb = {}
+            for variable_name, value in zip(pivot_columns, old_name[1:]):
+                comb[variable_name] = value
+            result_columns.append(interpolate_variables(pivot, comb))
+        result_df.columns = pd.Index(result_columns)
         result_df = result_df.reset_index()
+    else:
+        result_columns = [RESULT_COLUMN]
 
     result_df = result_df.loc[:, show_columns + result_columns]
 
@@ -169,14 +166,14 @@ def get_stat_table(
                     statistic_column = grouped[col].max()
                 case "median":
                     statistic_column = grouped[col].median()
+                case "mean":
+                    statistic_column = grouped[col].mean()
             if show_columns:
                 statistic_column = statistic_column.reset_index()[col]
             else:
-                statistic_column = pd.Series([statistic_column])
+                statistic_column = [statistic_column]
             stat_table[stat + " " + col] = statistic_column
-    print(stat_table)
-    exit(1)
-    # return table_df
+    return stat_table
 
 
 def output_md(single_metric_df: pd.DataFrame, output: TableMdOutput, output_filename):
@@ -184,8 +181,11 @@ def output_md(single_metric_df: pd.DataFrame, output: TableMdOutput, output_file
     table = get_stat_table(
         single_metric_df,
         show_columns=output.columns,
+        pivot=output.pivot,
+        stats=output.stats,
         metric=output.metric,  # type: ignore
     )
+    print(table.to_markdown(index=False))
     table.to_markdown(output_filename, index=False)
 
 
@@ -439,7 +439,9 @@ def _output_results(
             print_table = get_stat_table(
                 table_df,
                 metric,
+                ["min", "mean", "max"],
                 [col for col in table_df.columns if col not in excluded_columns],
+                "{{stage}} {{metric}}",
             )
             print()
             print(print_table.to_markdown(index=False))
