@@ -17,6 +17,7 @@ import os
 from pandas.api.types import is_string_dtype
 from uuid import uuid4
 from benchmarker.validation import BarChartOutput, CsvOutput, TableMdOutput
+from benchmarker.utils import create_variable_combinations
 from sys import argv
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -220,6 +221,47 @@ def get_bar_chart(
     return plot
 
 
+def create_fancy_output(
+    filtered_df: pd.DataFrame,
+    output: BarChartOutput | TableMdOutput,
+    overwrite_filename: str | None = None,
+):
+    if not overwrite_filename:
+        output_file_name = output.filename
+    else:
+        output_file_name = overwrite_filename
+    match output.format:
+        case "bar-chart":
+            logger.debug("Outputting bar chart.")
+            plot = get_bar_chart(
+                input_df=filtered_df,
+                x_axis=output.x_axis,
+                y_axis=output.metric,  # type: ignore
+                color=output.color,
+                facet=output.facet,
+                stat=output.stat,
+            )
+            if plot:
+                plot.save(
+                    output_file_name,
+                    width=output.width,
+                    height=output.height,
+                    dpi=output.dpi,
+                    limitsize=False,
+                    verbose=False,
+                )
+        case "table-md":
+            logger.debug("Outputting markdown table.")
+            table = get_stat_table(
+                filtered_df,
+                show_columns=output.columns,
+                metric=output.metric,  # type: ignore
+            )
+            table.to_markdown(output_file_name, index=False)
+        case _:
+            raise ValueError(f"Invalid output format: {output.format}.")
+
+
 def _output_results(
     results_df: pd.DataFrame,
     output_config: dict[str, CsvOutput | TableMdOutput | BarChartOutput],
@@ -274,36 +316,19 @@ def _output_results(
             outputs_without_failed.append(output_name)
         filtered_df = output_df.loc[output_df[METRIC_COLUMN] == output.metric]
         filtered_df = filtered_df = filtered_df.dropna(axis=1, how="all")
-        if output.format == "bar-chart":
-            logger.debug("Outputting bar chart.")
-            plot = get_bar_chart(
-                input_df=filtered_df,
-                x_axis=output.x_axis,
-                y_axis=output.metric,  # type: ignore
-                color=output.color,
-                facet=output.facet,
-                stat=output.stat,
-            )
-            if not plot:
-                continue
-            plot.save(
-                output.filename,
-                width=output.width,
-                height=output.height,
-                dpi=output.dpi,
-                limitsize=False,
-                verbose=False,
-            )
-
-        elif output.format == "table-md":
-            logger.debug("Outputting markdown table.")
-            table = get_stat_table(
-                filtered_df,
-                show_columns=output.columns,
-                metric=output.metric,  # type: ignore
-            )
-            table.to_markdown(output.filename, index=False)
-            print_table = table
+        variables = {}
+        for variable_name in output.foreach:
+            variables[variable_name] = filtered_df[variable_name].unique()
+        if len(variables) > 0:
+            combinations = create_variable_combinations(**variables)
+            for comb in combinations:
+                combination_df = filtered_df.loc[
+                    (filtered_df[list(comb.keys())] == pd.Series(comb)).all(axis=1)
+                ]
+                overwrite_filename = str(comb) + output.filename
+                create_fancy_output(combination_df, output, overwrite_filename)
+        else:
+            create_fancy_output(filtered_df, output)
 
     if os.getuid() == 0:
         os.umask(prev_umask)

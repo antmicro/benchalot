@@ -205,6 +205,7 @@ class BarChartOutput(OutputField):
     height: int = Field(default=9, ge=1)
     dpi: int = Field(default=100, ge=50)
     stat: Literal["min", "mean", "median", "max"] = "median"
+    foreach: list[str] = []
     model_config = ConfigDict(extra="forbid")
 
     def check_vars_exist(self, matrix):
@@ -230,6 +231,7 @@ class TableMdOutput(OutputField):
     format: Literal["table-md"]
     columns: list[str] | None = None
     metric: str | None = Field(default=None, alias="result-column")
+    foreach: list[str] = []
     model_config = ConfigDict(extra="forbid")
 
     def apply_default_values(self, matrix, metrics):
