@@ -255,10 +255,10 @@ class TableMdOutput(OutputField):
 
     format: Literal["table-md"]
     columns: list[str] | None = None
-    stats: Sequence[Literal["min", "median", "mean", "relative", "std"]] = [
+    stats: Sequence[Literal["min", "median", "mean", "relative", "std", "max"]] = [
         "min",
         "median",
-        "mean",
+        "max",
     ]
     pivot: str | None = "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}"
     metrics: list[str] | None = None

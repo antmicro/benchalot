@@ -468,7 +468,7 @@ def _output_results(
                 excluded_columns += [STAGE_COLUMN]
             print_table = get_stat_table(
                 table_df,
-                ["min", "mean", "max"],
+                ["min", "median", "max"],
                 [col for col in table_df.columns if col not in excluded_columns],
                 "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
             )
