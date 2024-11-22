@@ -186,12 +186,12 @@ def execute_benchmark(
             else:
                 log_output(process)
                 process.wait()
-            success = check_return_code(command, process.returncode)
-            if not success:
-                has_failed = True
             stage_elapsed_time += monotonic_ns() - start
             stage_stdout += process_stdout.decode("utf-8")
             stage_stderr += process_stderr.decode("utf-8")
+            success = check_return_code(command, process.returncode)
+            if not success:
+                has_failed = True
         if measure_time:
             time_measurements[stage] = stage_elapsed_time / 1e9
         if gather_stdout:
