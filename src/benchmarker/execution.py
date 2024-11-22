@@ -12,6 +12,7 @@ from benchmarker.structs import (
     STAGE_COLUMN,
     RESULT_COLUMN,
     BENCHMARK_ID_COLUMN,
+    DEFAULT_STAGE_NAME,
 )
 from uuid import uuid4
 
@@ -138,7 +139,7 @@ def gather_custom_metric(metric_command: str) -> dict[str, float | str | None]:
     output, _ = process.communicate()
     output = output.decode("utf-8")
     if len(output.splitlines()) == 1:
-        return {"result": try_convert_to_float(output)}
+        return {DEFAULT_STAGE_NAME: try_convert_to_float(output)}
     elif len(output.splitlines()) == 2:
         output_stream = StringIO(output)
         reader = DictReader(output_stream)
@@ -153,7 +154,7 @@ def gather_custom_metric(metric_command: str) -> dict[str, float | str | None]:
     else:
         logger.warning("Invalid custom metric output format:")
         logger.warning(output)
-        return {"result": None}
+        return {DEFAULT_STAGE_NAME: None}
 
 
 def perform_benchmarks(

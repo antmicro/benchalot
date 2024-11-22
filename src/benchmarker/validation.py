@@ -10,10 +10,14 @@ from pydantic import (
 from typing import Any, Literal
 from logging import getLogger
 from os.path import isdir
-from benchmarker.structs import DISPLAYABLE_COLUMNS
+from benchmarker.structs import (
+    DISPLAYABLE_COLUMNS,
+    DEFAULT_STAGE_NAME,
+    METRIC_COLUMN,
+    STAGE_COLUMN,
+)
 from re import findall
 from benchmarker.interpolation import VAR_REGEX
-from benchmarker.structs import METRIC_COLUMN, STAGE_COLUMN
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -91,7 +95,7 @@ class RunSection(BaseModel):
     def name_stages(self):
         """Transform list of commands to dictionary of lists of commands."""
         if type(self["benchmark"]) is list:
-            self["benchmark"] = {"result": self["benchmark"]}
+            self["benchmark"] = {DEFAULT_STAGE_NAME: self["benchmark"]}
             return self
         return self
 

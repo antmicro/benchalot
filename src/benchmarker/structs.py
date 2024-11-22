@@ -22,6 +22,7 @@ DISPLAYABLE_COLUMNS = [
     METRIC_COLUMN,
     STAGE_COLUMN,
 ]
+DEFAULT_STAGE_NAME = "onlystage"
 
 
 @dataclass
