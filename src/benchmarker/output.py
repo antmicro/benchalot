@@ -112,9 +112,8 @@ def get_stat_table(
         show_columns: Variable names which will be included in the table.
     """
     # TODO turn those to arguments
-    pivot_columns = [METRIC_COLUMN, STAGE_COLUMN]
+    pivot_columns = [STAGE_COLUMN, METRIC_COLUMN]
     stats = ["min", "median", "max"]
-
     results_df = input_df.copy()
     is_numeric = True
     try:
@@ -122,8 +121,11 @@ def get_stat_table(
     except (ValueError, TypeError):
         is_numeric = False
 
+    show_columns = []
     if show_columns is None:
         show_columns = []
+    show_columns = [col for col in show_columns if col not in pivot_columns]
+
     result_columns = []
     if pivot_columns:
         result_df = results_df.pivot(
@@ -152,18 +154,25 @@ def get_stat_table(
 
     result_df = result_df.loc[:, show_columns + result_columns]
 
-    grouped = result_df.groupby(show_columns, observed=True)
-
-    stat_table = grouped.size().reset_index()[show_columns]
+    if show_columns:
+        grouped = result_df.groupby(show_columns, observed=True)
+        stat_table = grouped.size().reset_index()[show_columns]
+    else:
+        grouped = result_df
+        stat_table = pd.DataFrame()
     for col in result_columns:
         for stat in stats:
             match stat:
                 case "min":
-                    statistic_column = grouped[col].min().reset_index()[col]
+                    statistic_column = grouped[col].min()
                 case "max":
-                    statistic_column = grouped[col].max().reset_index()[col]
+                    statistic_column = grouped[col].max()
                 case "median":
-                    statistic_column = grouped[col].median().reset_index()[col]
+                    statistic_column = grouped[col].median()
+            if show_columns:
+                statistic_column = statistic_column.reset_index()[col]
+            else:
+                statistic_column = pd.Series([statistic_column])
             stat_table[stat + " " + col] = statistic_column
     print(stat_table)
     exit(1)
