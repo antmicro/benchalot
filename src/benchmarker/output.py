@@ -28,11 +28,10 @@ from benchmarker.structs import (
     HAS_FAILED_COLUMN,
     BENCHMARK_ID_COLUMN,
     METRIC_COLUMN,
-    DEFAULT_STAGE_NAME,
     CONSTANT_COLUMNS,
 )
 from sys import argv
-from re import findall
+from re import findall, sub
 from atexit import register, unregister
 from collections.abc import Generator, Iterable, Sequence
 from typing import Literal
@@ -153,7 +152,8 @@ def get_stat_table(
             for variable_name, value in zip(pivot_columns, old_name[1:]):
                 comb[variable_name] = value
             new_name = interpolate_variables(pivot, comb)  # type: ignore
-            new_name = new_name.replace(DEFAULT_STAGE_NAME + " ", "")
+            new_name = sub(r"\s+", " ", new_name.strip())
+            print(new_name)
             result_columns.append(new_name)
         results_df.columns = pd.Index(result_columns)
         results_df = results_df.reset_index()
