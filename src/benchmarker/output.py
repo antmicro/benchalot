@@ -268,6 +268,9 @@ def _output_results(
         output_config: Configuration file's output section.
         include_failed: Whether to filter out failed benchmarks.
     """
+    if len(results_df) == 0:
+        logger.critical("No results available! Bailing out.")
+        exit(1)
 
     logger.info("Outputting results...")
     logger.debug(results_df)
