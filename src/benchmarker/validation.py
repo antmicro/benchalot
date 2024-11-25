@@ -15,6 +15,7 @@ from benchmarker.structs import (
     DEFAULT_STAGE_NAME,
     METRIC_COLUMN,
     STAGE_COLUMN,
+    CONSTANT_COLUMNS,
 )
 from re import findall
 from benchmarker.interpolation import VAR_REGEX
@@ -325,6 +326,15 @@ class ConfigFile(BaseModel):
     run: RunSection
     output: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("matrix")
+    @classmethod
+    def not_resevered_keyword(cls, matrix: dict[str, list]):
+        """Check if one of matrix variable names is reserved keyword (one of the built-in column names)."""
+        for var_name in matrix:
+            if var_name in CONSTANT_COLUMNS:
+                raise ValueError(f"'{var_name}' is a reserved keyword")
+        return matrix
 
     @field_validator("output")
     @classmethod
