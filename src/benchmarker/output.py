@@ -153,7 +153,6 @@ def get_stat_table(
                 comb[variable_name] = value
             new_name = interpolate_variables(pivot, comb)  # type: ignore
             new_name = sub(r"\s+", " ", new_name.strip())
-            print(new_name)
             result_columns.append(new_name)
         results_df.columns = pd.Index(result_columns)
         results_df = results_df.reset_index()
