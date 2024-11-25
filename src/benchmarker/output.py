@@ -29,6 +29,7 @@ from benchmarker.structs import (
     BENCHMARK_ID_COLUMN,
     METRIC_COLUMN,
     DEFAULT_STAGE_NAME,
+    CONSTANT_COLUMNS,
 )
 from sys import argv
 from re import findall
@@ -55,6 +56,7 @@ def read_old_outputs(include: list[str]) -> pd.DataFrame:
         old_output = pd.read_csv(file)
         logger.debug(old_output.head())
         results_df = pd.concat([results_df, old_output], ignore_index=True)
+    results_df[CONSTANT_COLUMNS] = results_df[CONSTANT_COLUMNS].fillna("")
     return results_df
 
 
@@ -334,7 +336,7 @@ def _output_results(
 
     Args:
         results_df: Dataframe containing benchmark results.
-        output_config: Configurat1pion file's output section.
+        output_config: Configuration file's output section.
         include_failed: Whether to filter out failed benchmarks.
     """
     if len(results_df) == 0:
