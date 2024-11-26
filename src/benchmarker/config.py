@@ -10,7 +10,7 @@ from pydantic import (
 from typing import Any, Literal
 from logging import getLogger
 from os.path import isdir
-from benchmarker.structs import (
+from benchmarker.output_constants import (
     DISPLAYABLE_COLUMNS,
     DEFAULT_STAGE_NAME,
     METRIC_COLUMN,

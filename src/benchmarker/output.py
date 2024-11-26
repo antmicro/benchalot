@@ -21,7 +21,7 @@ from benchmarker.interpolate import (
     VAR_REGEX,
     interpolate_variables,
 )
-from benchmarker.structs import (
+from benchmarker.output_constants import (
     RESULT_COLUMN,
     TIME_STAMP_COLUMN,
     STAGE_COLUMN,

@@ -5,8 +5,8 @@ from os import getcwd
 from time import monotonic_ns
 from io import StringIO
 from csv import DictReader
-from benchmarker.structs import (
-    PreparedBenchmark,
+from benchmarker.prepare import PreparedBenchmark
+from benchmarker.output_constants import (
     HAS_FAILED_COLUMN,
     METRIC_COLUMN,
     STAGE_COLUMN,
