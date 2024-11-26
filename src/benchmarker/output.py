@@ -392,29 +392,20 @@ def _output_results(
                 exit(1)
 
     # Remove outliers
-    grouped = without_failed_df.groupby(
-        [
-            col
-            for col in without_failed_df.columns
-            if col not in [RESULT_COLUMN, BENCHMARK_ID_COLUMN, HAS_FAILED_COLUMN]
-        ],
-        observed=True,
-    )
-
+    grouped = without_failed_df.groupby([col for col in without_failed_df.columns if col not in [ RESULT_COLUMN, BENCHMARK_ID_COLUMN, HAS_FAILED_COLUMN]], observed=True)
     def detect_outliers(df):
-        results = df.to_numpy(copy=True)
+        results = df.to_numpy(copy = True)
         median = np.median(results)
-        mad = np.median(np.abs(results - median))
-        z_score = (0.6745 * (results - median)) / mad
+        mad = np.median(np.abs(results-median))
+        z_score = (0.6745 * (results-median))/mad
         outliers = np.full_like(results, False, np.bool)
         outliers[np.where(np.abs(z_score) > 3.5)] = True
         return outliers
 
-    without_failed_df[OUTLIER_COLUMN] = grouped[RESULT_COLUMN].transform(
-        detect_outliers
-    )
-    print(without_failed_df)
-    exit(1)
+    without_failed_df[OUTLIER_COLUMN] = grouped[RESULT_COLUMN].transform(detect_outliers)
+    without_failed_df = without_failed_df.loc[without_failed_df[OUTLIER_COLUMN] == False]
+
+
 
     # Output non-csv file formats.
     for output_name in non_csv_outputs:
@@ -471,6 +462,7 @@ def _output_results(
                 BENCHMARK_ID_COLUMN,
                 METRIC_COLUMN,
                 RESULT_COLUMN,
+                OUTLIER_COLUMN
             ]
             if table_df[TIME_STAMP_COLUMN].nunique() == 1:
                 excluded_columns += [TIME_STAMP_COLUMN]
