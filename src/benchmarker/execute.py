@@ -134,7 +134,7 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
     Args:
         metric_command: Command to be executed as custom metric.
     Returns:
-        dict[str, float | None]: Containing single or multi stage result.
+        tuple[dict[str, float | None], bool]: Containing single or multi stage result and whether the custom_metric failed.
     """
     process = execute_command(metric_command)
     output, _ = process.communicate()
