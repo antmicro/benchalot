@@ -370,7 +370,6 @@ def _output_results(
     register(notify_about_csv, csv_output_filenames)
 
     # Filter out failed output.
-    without_failed_df: pd.DataFrame = results_df
     has_filtered_output: bool = False
     if not include_failed:
         failed_benchmarks = results_df[
@@ -381,45 +380,70 @@ def _output_results(
             has_filtered_output = True
             logger.error(f"{n_failed} benchmarks failed!")
             logger.warning("Failed benchmarks:\n" + failed_benchmarks.to_markdown())
-            without_failed_df = pd.DataFrame(
+            results_df = pd.DataFrame(
                 results_df.loc[results_df[HAS_FAILED_COLUMN] == False]  # noqa: E712
             )
-            if len(without_failed_df.index) == 0:
-                logger.critical("All benchmarks failed! Bailing out.")
+            if len(non_csv_outputs) > 0:
                 logger.warning(
                     f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-failed"
                 )
+            if len(results_df.index) == 0:
+                logger.critical("All benchmarks failed! Bailing out.")
                 exit(1)
 
-    # Remove outliers
-    grouped = without_failed_df.groupby([col for col in without_failed_df.columns if col not in [ RESULT_COLUMN, BENCHMARK_ID_COLUMN, HAS_FAILED_COLUMN]], observed=True)
-    def detect_outliers(df):
-        results = df.to_numpy(copy = True)
-        median = np.median(results)
-        mad = np.median(np.abs(results-median))
-        z_score = (0.6745 * (results-median))/mad
-        outliers = np.full_like(results, False, np.bool)
-        outliers[np.where(np.abs(z_score) > 3.5)] = True
-        return outliers
+    # TODO: make it a parameter:
+    include_outliers = True
 
-    without_failed_df[OUTLIER_COLUMN] = grouped[RESULT_COLUMN].transform(detect_outliers)
-    without_failed_df = without_failed_df.loc[without_failed_df[OUTLIER_COLUMN] == False]
+    if not include_outliers:
 
+        def detect_outliers(df):
+            results = df.to_numpy(copy=True)
+            median = np.median(results)
+            mad = np.median(np.abs(results - median))
+            z_score = (0.6745 * (results - median)) / mad
+            outliers = np.full_like(results, False, np.bool)
+            outliers[np.where(np.abs(z_score) > 3.5)] = True
+            return outliers
 
+        grouped = results_df.groupby(
+            [
+                col
+                for col in results_df.columns
+                if col not in [RESULT_COLUMN, BENCHMARK_ID_COLUMN, HAS_FAILED_COLUMN]
+            ],
+            observed=True,
+        )
+        results_df[OUTLIER_COLUMN] = grouped[RESULT_COLUMN].transform(detect_outliers)
+        outlier_benchmarks = results_df[
+            results_df[OUTLIER_COLUMN] == True  # noqa: E712
+        ]
+        n_outliers = outlier_benchmarks[BENCHMARK_ID_COLUMN].nunique()
+
+        if n_outliers > 0:
+            has_filtered_output = True
+            logger.error(f"Detected {n_outliers} outliers.")
+            logger.warning("Outliers:\n" + outlier_benchmarks.to_markdown())
+            results_df = pd.DataFrame(
+                results_df.loc[results_df[OUTLIER_COLUMN] == False]  # noqa: E712
+            )
+            if len(non_csv_outputs) > 0:
+                logger.warning(
+                    f"To generate output with outliers included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-outliers"
+                )
 
     # Output non-csv file formats.
     for output_name in non_csv_outputs:
         output = output_config[output_name]
         logger.debug(f"Creating output for {output}")
         if has_filtered_output:
-            logger.warning(f"Generating {output_name} without failed benchmarks...")
+            logger.warning(f"'{output_name}' will not include all benchmarks.")
         variables_in_filename = findall(VAR_REGEX, output.filename)
         multiplied_results: Iterable[tuple[dict, pd.DataFrame]]
         if not variables_in_filename:
-            multiplied_results = [({}, without_failed_df)]
+            multiplied_results = [({}, results_df)]
         else:
             multiplied_results = get_combination_filtered_dfs(
-                without_failed_df, variables_in_filename
+                results_df, variables_in_filename
             )
         match output.format:
             case "table-md":
@@ -449,32 +473,26 @@ def _output_results(
     if os.getuid() == 0:
         os.umask(prev_umask)
     unregister(notify_about_csv)
-    # Warn user if Benchmarker created  output without failed benchmarks, otherwise print summary tables
-    if has_filtered_output and len(non_csv_outputs) > 0:
-        logger.warning(
-            f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-failed"
+    for metric in results_df[METRIC_COLUMN].unique():
+        table_df = results_df.loc[results_df[METRIC_COLUMN] == metric]
+        excluded_columns = [
+            HAS_FAILED_COLUMN,
+            BENCHMARK_ID_COLUMN,
+            METRIC_COLUMN,
+            RESULT_COLUMN,
+            OUTLIER_COLUMN,
+        ]
+        if table_df[TIME_STAMP_COLUMN].nunique() == 1:
+            excluded_columns += [TIME_STAMP_COLUMN]
+        if table_df[STAGE_COLUMN].nunique() == 1:
+            excluded_columns += [STAGE_COLUMN]
+        print_table = get_stat_table(
+            table_df,
+            ["min", "median", "max"],
+            [col for col in table_df.columns if col not in excluded_columns],
+            "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
         )
-    else:
-        for metric in results_df[METRIC_COLUMN].unique():
-            table_df = results_df.loc[results_df[METRIC_COLUMN] == metric]
-            excluded_columns = [
-                HAS_FAILED_COLUMN,
-                BENCHMARK_ID_COLUMN,
-                METRIC_COLUMN,
-                RESULT_COLUMN,
-                OUTLIER_COLUMN
-            ]
-            if table_df[TIME_STAMP_COLUMN].nunique() == 1:
-                excluded_columns += [TIME_STAMP_COLUMN]
-            if table_df[STAGE_COLUMN].nunique() == 1:
-                excluded_columns += [STAGE_COLUMN]
-            print_table = get_stat_table(
-                table_df,
-                ["min", "median", "max"],
-                [col for col in table_df.columns if col not in excluded_columns],
-                "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
-            )
-            print()
-            print(print_table.to_markdown(index=False))
+        print()
+        print(print_table.to_markdown(index=False))
 
     logger.info("Finished outputting results.")
