@@ -73,6 +73,7 @@ def output_results_from_dict(
         output_config: Configuration file's output section.
         include: Lit of previous results file names to be combined with new results.
         include_failed: Whether to filter out failed benchmarks.
+        include_outliers: Whether to filter out outliers.
     """
     try:
         results_df = pd.DataFrame(results)
@@ -99,6 +100,7 @@ def output_results_from_file(
         output_config: Configuration file's output section.
         include: List of file names with old results.
         include_failed: Whether to filter out failed benchmarks.
+        include_outliers: Whether to filter out outliers.
     """
     old_outputs = read_old_outputs(include)
     _output_results(old_outputs, output_config, include_failed, include_outliers)
@@ -321,6 +323,7 @@ def _output_results(
         results_df: Dataframe containing benchmark results.
         output_config: Configuration file's output section.
         include_failed: Whether to filter out failed benchmarks.
+        include_outliers: Whether to filter out outliers.
     """
     if len(results_df) == 0:
         logger.critical("No results available! Bailing out.")
