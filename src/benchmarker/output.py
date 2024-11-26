@@ -430,7 +430,10 @@ def _output_results(
             )
             print(results_df)
             results_df = results_df.drop(outlier_column_name, axis=1)
-            logger.warning("Outliers:\n" + outlier_benchmarks.to_markdown())
+            logger.warning(
+                "Outliers:\n"
+                + outlier_benchmarks.drop(outlier_column_name, axis=1).to_markdown()
+            )
             if len(non_csv_outputs) > 0:
                 logger.warning(
                     f"To generate output with outliers included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-outliers"
