@@ -3,12 +3,11 @@ stages:
   - formatting 
 
 
-image:
-  name: external/docker/debian
 black:
+  image: "debian:bookworm"
   stage: formatting
   before_script:
-    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make git -y
+    - apt update -y && apt install python3 python3-pip python3-venv make git -y
     - python3 -m venv .venv
     - source .venv/bin/activate
     - pip install .[dev]
@@ -17,9 +16,10 @@ black:
     - make check_format
 
 flake8:
+  image: "debian:bookworm"
   stage: linting
   before_script:
-    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv make git -y
+    - apt update -y && apt install python3 python3-pip python3-venv make git -y
     - python3 -m venv .venv
     - source .venv/bin/activate
     - pip install .[dev]
@@ -29,9 +29,10 @@ flake8:
     - make typecheck
 
 tuttest:
+  image: "debian:bookworm"
   stage: formatting
   before_script:
-    - apt update -y && apt upgrade -y && apt install python3 python3-venv make sudo git gcc gzip bzip2 xz-utils -y
+    - apt update -y && apt install python3 python3-venv make sudo git gcc gzip bzip2 xz-utils -y
     - python3 -m venv .venv
     - source .venv/bin/activate
     - pip install git+https://github.com/antmicro/tuttest

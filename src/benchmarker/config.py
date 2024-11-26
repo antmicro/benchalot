@@ -19,7 +19,6 @@ from benchmarker.output_constants import (
 )
 from re import findall
 from benchmarker.interpolate import VAR_REGEX
-from collections.abc import Sequence
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -259,7 +258,7 @@ class TableMdOutput(OutputField):
 
     format: Literal["table-md"]
     columns: list[str] | None = None
-    stats: Sequence[Literal["min", "median", "mean", "relative", "std", "max"]] = [
+    stats: list[Literal["min", "median", "mean", "relative", "std", "max"]] = [
         "min",
         "median",
         "max",

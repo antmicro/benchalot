@@ -33,7 +33,7 @@ from benchmarker.output_constants import (
 from sys import argv
 from re import findall, sub
 from atexit import register, unregister
-from collections.abc import Generator, Iterable, Sequence
+from collections.abc import Generator, Iterable
 from typing import Literal
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -108,7 +108,7 @@ def output_results_from_file(
 
 def get_stat_table(
     input_df: pd.DataFrame,
-    stats: Sequence[Literal["max", "min", "median", "mean", "relative", "std"]],
+    stats: list[Literal["min", "median", "mean", "relative", "std", "max"]],
     show_columns: list[str] | None = None,
     pivot: str | None = None,
     metrics: list[str] | None = None,
@@ -161,12 +161,28 @@ def get_stat_table(
 
     if show_columns:
         grouped = results_df.groupby(show_columns, observed=True)
+        n_in_group = grouped.size().max()
         stat_table = grouped.size().reset_index()[show_columns]
     else:
         grouped = results_df  # type: ignore
+        n_in_group = 0
+        for column in grouped.columns:
+            group_len = len(grouped[column].dropna(axis=0, how="all"))  # type: ignore
+            n_in_group = max(n_in_group, group_len)  # type: ignore
         stat_table = pd.DataFrame()
+
+    displayable_stats: list[str] = list(stats)
+    if n_in_group == 1 or n_in_group == 2:
+        if n_in_group == 2:
+            to_remove = ["median"]
+        else:
+            to_remove = ["min", "median", "mean", "max", "std"]
+        for i in range(len(displayable_stats)):
+            if displayable_stats[i] in to_remove:
+                displayable_stats[i] = ""
+
     for col in result_columns:
-        for stat in stats:
+        for stat in displayable_stats:
             match stat:
                 case "min":
                     statistic_column = grouped[col].min()
@@ -196,6 +212,8 @@ def get_stat_table(
                         stat = "mean"
                     else:
                         statistic_column = grouped[col].std()
+                case "":
+                    statistic_column = grouped[col].mean()
             if show_columns:
                 statistic_column = statistic_column.reset_index()[col]
             else:
@@ -398,7 +416,7 @@ def _output_results(
 
     # Filter out outliers
     if not include_outliers:
-
+        # Remove outliers using modified Z-Score http://d-scholarship.pitt.edu/7948/1/Seo.pdf
         def detect_outliers(df):
             results = df.to_numpy(copy=True)
             if len(results) < 5:

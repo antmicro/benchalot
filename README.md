@@ -292,7 +292,7 @@ benchmarker config.yml --u result.csv --include-failed
 ```
 
 
-The Benchmarker will try to automatically detect and remove outliers (the `csv` file will still include them) with Z-score method.
+The Benchmarker will try to automatically detect and remove outliers (the `csv` file will still include them) using (modified Z-Score)[http://d-scholarship.pitt.edu/7948/1/Seo.pdf].
 To generate outputs with outliers, use `--include-outliers`:
 <!--name="outliers"-->
 ```bash
