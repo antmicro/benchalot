@@ -18,6 +18,7 @@ RUN_UPDATE=$(tuttest README.md update-output)
 RUN_INCLUDE=$(tuttest README.md include)
 RUN_SPLIT=$(tuttest README.md split)
 RUN_FAILED=$(tuttest README.md failed)
+RUN_OUTLIERS=$(tuttest README.md outliers)
 SIZE_CONFIG=$(tuttest README.md size-config)
 EXCLUSION=$(tuttest README.md exclusions)
 MUL=$(tuttest README.md mul)
@@ -74,6 +75,7 @@ rm result.csv
 mv file_size.csv result.csv
 eval $RUN_INCLUDE
 eval $RUN_FAILED
+eval $RUN_OUTLIERS
 echo "$CONFIG" > config.yml
 eval $RUN_SPLIT
 assert_file_exists "out/config.yml.part0.yml"
