@@ -28,6 +28,7 @@ from benchmarker.output_constants import (
     HAS_FAILED_COLUMN,
     BENCHMARK_ID_COLUMN,
     METRIC_COLUMN,
+    OUTLIER_COLUMN,
     CONSTANT_COLUMNS,
 )
 from sys import argv
@@ -389,6 +390,31 @@ def _output_results(
                     f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-failed"
                 )
                 exit(1)
+
+    # Remove outliers
+    grouped = without_failed_df.groupby(
+        [
+            col
+            for col in without_failed_df.columns
+            if col not in [RESULT_COLUMN, BENCHMARK_ID_COLUMN, HAS_FAILED_COLUMN]
+        ],
+        observed=True,
+    )
+
+    def detect_outliers(df):
+        results = df.to_numpy(copy=True)
+        median = np.median(results)
+        mad = np.median(np.abs(results - median))
+        z_score = (0.6745 * (results - median)) / mad
+        outliers = np.full_like(results, False, np.bool)
+        outliers[np.where(np.abs(z_score) > 3.5)] = True
+        return outliers
+
+    without_failed_df[OUTLIER_COLUMN] = grouped[RESULT_COLUMN].transform(
+        detect_outliers
+    )
+    print(without_failed_df)
+    exit(1)
 
     # Output non-csv file formats.
     for output_name in non_csv_outputs:
