@@ -433,7 +433,6 @@ def _output_results(
             results_df = pd.DataFrame(
                 results_df.loc[results_df[outlier_column_name] == False]  # noqa: E712
             )
-            results_df = results_df.drop(outlier_column_name, axis=1)
             logger.warning(
                 "Outliers:\n"
                 + outlier_benchmarks.drop(outlier_column_name, axis=1).to_markdown()
@@ -442,6 +441,7 @@ def _output_results(
                 logger.warning(
                     f"To generate output with outliers included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-outliers"
                 )
+        results_df = results_df.drop(outlier_column_name, axis=1)
 
     # Output non-csv file formats.
     for output_name in non_csv_outputs:
