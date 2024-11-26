@@ -65,6 +65,7 @@ def output_results_from_dict(
     output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
     include: list,
     include_failed: bool,
+    include_outliers: bool,
 ) -> None:
     """Create output for the results, optionally including old results.
 
@@ -84,13 +85,14 @@ def output_results_from_dict(
     )
     old_outputs = read_old_outputs(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
-    _output_results(results_df, output_config, include_failed)
+    _output_results(results_df, output_config, include_failed, include_outliers)
 
 
 def output_results_from_file(
     output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
     include: list,
     include_failed: bool,
+    include_outliers: bool,
 ) -> None:
     """Create output for the results contained in files.
 
@@ -100,7 +102,7 @@ def output_results_from_file(
         include_failed: Whether to filter out failed benchmarks.
     """
     old_outputs = read_old_outputs(include)
-    _output_results(old_outputs, output_config, include_failed)
+    _output_results(old_outputs, output_config, include_failed, include_outliers)
 
 
 def get_stat_table(
@@ -312,6 +314,7 @@ def _output_results(
     results_df: pd.DataFrame,
     output_config: dict[str, CsvOutput | TableMdOutput | BarChartOutput],
     include_failed: bool,
+    include_outliers: bool,
 ) -> None:
     """Create output based on results and configuration.
 
@@ -332,6 +335,25 @@ def _output_results(
         if column != RESULT_COLUMN:
             series = results_df[column]
             results_df[column] = pd.Categorical(series, categories=series.unique())
+
+    def detect_outliers(df):
+        results = df.to_numpy(copy=True)
+        median = np.median(results)
+        mad = np.median(np.abs(results - median))
+        z_score = (0.6745 * (results - median)) / mad
+        outliers = np.full_like(results, False, np.bool)
+        outliers[np.where(np.abs(z_score) > 3.5)] = True
+        return outliers
+
+    grouped = results_df.groupby(
+        [
+            col
+            for col in results_df.columns
+            if col not in [RESULT_COLUMN, BENCHMARK_ID_COLUMN, HAS_FAILED_COLUMN]
+        ],
+        observed=True,
+    )
+    results_df[OUTLIER_COLUMN] = grouped[RESULT_COLUMN].transform(detect_outliers)
 
     # If is root, set file permissions for other users
     if os.getuid() == 0:
@@ -391,29 +413,7 @@ def _output_results(
                 logger.critical("All benchmarks failed! Bailing out.")
                 exit(1)
 
-    # TODO: make it a parameter:
-    include_outliers = True
-
     if not include_outliers:
-
-        def detect_outliers(df):
-            results = df.to_numpy(copy=True)
-            median = np.median(results)
-            mad = np.median(np.abs(results - median))
-            z_score = (0.6745 * (results - median)) / mad
-            outliers = np.full_like(results, False, np.bool)
-            outliers[np.where(np.abs(z_score) > 3.5)] = True
-            return outliers
-
-        grouped = results_df.groupby(
-            [
-                col
-                for col in results_df.columns
-                if col not in [RESULT_COLUMN, BENCHMARK_ID_COLUMN, HAS_FAILED_COLUMN]
-            ],
-            observed=True,
-        )
-        results_df[OUTLIER_COLUMN] = grouped[RESULT_COLUMN].transform(detect_outliers)
         outlier_benchmarks = results_df[
             results_df[OUTLIER_COLUMN] == True  # noqa: E712
         ]

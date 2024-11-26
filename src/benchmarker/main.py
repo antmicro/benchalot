@@ -46,6 +46,7 @@ def main():
             config.output,
             args.update_output,
             args.include_failed,
+            args.include_outliers,
         )
         exit_benchmarker()
     elif args.split:  # Split configuration file and exit
@@ -94,6 +95,7 @@ def main():
         config.output,
         args.include,
         args.include_failed,
+        args.include_outliers,
     )
 
     exit_benchmarker()
@@ -169,6 +171,13 @@ def get_argument_parser() -> ArgumentParser:
         action="store_true",
         default=False,
         help="do not filter out failed benchmarks when creating output.",
+    )
+    parser.add_argument(
+        "--include-outliers",
+        dest="include_outliers",
+        action="store_true",
+        default=False,
+        help="do not filter out outliers when creating output.",
     )
 
     return parser
