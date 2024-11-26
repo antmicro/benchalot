@@ -430,7 +430,6 @@ def _output_results(
             results_df = pd.DataFrame(
                 results_df.loc[results_df[outlier_column_name] == False]  # noqa: E712
             )
-            print(results_df)
             results_df = results_df.drop(outlier_column_name, axis=1)
             logger.warning(
                 "Outliers:\n"
