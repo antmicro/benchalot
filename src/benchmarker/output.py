@@ -398,6 +398,8 @@ def _output_results(
 
         def detect_outliers(df):
             results = df.to_numpy(copy=True)
+            if len(results) < 5:
+                return np.full_like(results, False, np.bool)
             median = np.median(results)
             mad = np.median(np.abs(results - median))
             z_score = (0.6745 * (results - median)) / mad
