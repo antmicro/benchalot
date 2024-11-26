@@ -381,11 +381,9 @@ def _output_results(
 
     def notify_about_csv(filenames: list[str]):
         logger.critical("Benchmarker crashed while creating output.")
-        files_str = ""
-        for file in filenames:
-            files_str += "'" + file + "' "
-        files_str = files_str.strip()
-        logger.critical(f"Benchmark results were saved in {files_str}")
+        logger.warning(
+            f"Benchmark results were saved in: {' '.join(filenames).strip()}"
+        )
 
     register(notify_about_csv, csv_output_filenames)
 
@@ -404,6 +402,12 @@ def _output_results(
             without_failed_df = pd.DataFrame(
                 results_df.loc[results_df[HAS_FAILED_COLUMN] == False]  # noqa: E712
             )
+            if len(without_failed_df.index) == 0:
+                logger.critical("All benchmarks failed! Bailing out.")
+                logger.warning(
+                    f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-failed"
+                )
+                exit(1)
 
     # Output non-csv file formats.
     for output_name in non_csv_outputs:
@@ -449,12 +453,8 @@ def _output_results(
     unregister(notify_about_csv)
     # Warn user if Benchmarker created  output without failed benchmarks, otherwise print summary tables
     if has_filtered_output and len(non_csv_outputs) > 0:
-        files_str = ""
-        for file in csv_output_filenames:
-            files_str += file + " "
-        files_str = files_str.strip()
         logger.warning(
-            f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {files_str} --include-failed"
+            f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-failed"
         )
     else:
         for metric in results_df[METRIC_COLUMN].unique():
