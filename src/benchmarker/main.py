@@ -1,17 +1,17 @@
 import yaml
 from sys import argv, executable
-from benchmarker.validation import validate_config
-from benchmarker.preparation import (
+from benchmarker.config import validate_config
+from benchmarker.prepare import (
     prepare_benchmarks,
     prepare_before_after_all_commands,
 )
-from benchmarker.execution import (
+from benchmarker.execute import (
     perform_benchmarks,
     execute_section,
     set_working_directory,
 )
 from os import geteuid, execvp
-from benchmarker.variance import modify_system_state, restore_system_state
+from benchmarker.system import modify_system_state, restore_system_state
 from benchmarker.output import output_results_from_dict, output_results_from_file
 from argparse import ArgumentParser
 from os.path import isfile
@@ -24,7 +24,7 @@ from logging import getLogger
 from atexit import unregister
 from os import environ
 from pathlib import Path
-from benchmarker.validation import ConfigFile
+from benchmarker.config import ConfigFile
 
 logger = getLogger(f"benchmarker.{__name__}")
 

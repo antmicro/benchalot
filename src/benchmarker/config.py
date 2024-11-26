@@ -18,7 +18,7 @@ from benchmarker.structs import (
     CONSTANT_COLUMNS,
 )
 from re import findall
-from benchmarker.interpolation import VAR_REGEX
+from benchmarker.interpolate import VAR_REGEX
 from collections.abc import Sequence
 
 logger = getLogger(f"benchmarker.{__name__}")

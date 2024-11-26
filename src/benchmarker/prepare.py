@@ -1,8 +1,8 @@
 from logging import getLogger
 from re import findall
 from benchmarker.structs import PreparedBenchmark
-from benchmarker.validation import RunSection
-from benchmarker.interpolation import (
+from benchmarker.config import RunSection
+from benchmarker.interpolate import (
     VAR_REGEX,
     create_variable_combinations,
     interpolate_variables,

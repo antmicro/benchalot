@@ -2,7 +2,7 @@ from atexit import register, unregister
 from subprocess import run
 from multiprocessing import cpu_count
 from logging import getLogger
-from benchmarker.validation import SystemSection
+from benchmarker.config import SystemSection
 from os.path import isfile
 
 logger = getLogger(f"benchmarker.{__name__}")

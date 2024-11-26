@@ -15,8 +15,8 @@ from datetime import timezone, datetime
 import numpy as np
 import os
 from uuid import uuid4
-from benchmarker.validation import BarChartOutput, CsvOutput, TableMdOutput
-from benchmarker.interpolation import (
+from benchmarker.config import BarChartOutput, CsvOutput, TableMdOutput
+from benchmarker.interpolate import (
     create_variable_combinations,
     VAR_REGEX,
     interpolate_variables,
