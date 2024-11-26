@@ -111,50 +111,56 @@ def execute_section(commands: list[str], section_name: str = "") -> None:
     logger.info(f"Execution of '{section_name}' section finished.")
 
 
-def try_convert_to_float(value: str) -> float | str:
+def try_convert_to_float(value: str) -> float | None:
     """Try to convert string to float.
 
     Args:
         value: String to be converted.
 
     Retruns:
-        float | str: Depending on whether the conversion succeeded.
+        float | None: Depending on whether the conversion succeeded.
     """
     try:
         return float(value)
     except ValueError:
-        return value
+        logger.error(f"Converting '{value.strip()}' to float failed!")
+        return None
 
 
-def gather_custom_metric(metric_command: str) -> dict[str, float | str | None]:
+def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], bool]:
     """Gather custom metric measurements.
     If output has more than one line, treat output as csv file, with each column representing separate stage.
 
     Args:
         metric_command: Command to be executed as custom metric.
     Returns:
-        dict[str, float | str]: Containing single or multi stage result.
+        dict[str, float | None]: Containing single or multi stage result.
     """
     process = execute_command(metric_command)
     output, _ = process.communicate()
     output = output.decode("utf-8")
     if len(output.splitlines()) == 1:
-        return {DEFAULT_STAGE_NAME: try_convert_to_float(output)}
+        out = try_convert_to_float(output)
+        return ({DEFAULT_STAGE_NAME: out}, out is None)
     elif len(output.splitlines()) == 2:
         output_stream = StringIO(output)
         reader = DictReader(output_stream)
         tmp_dict = {}
         for row in reader:
             tmp_dict = row
-        output_dict: dict[str, float | str | None] = {}
+        output_dict: dict[str, float | None] = {}
+        has_failed = False
         for stage in tmp_dict:
             value = tmp_dict[stage]
-            output_dict[stage] = try_convert_to_float(value)
-        return output_dict
+            out = try_convert_to_float(value)
+            output_dict[stage] = out
+            if out is None:
+                has_failed = True
+        return (output_dict, has_failed)
     else:
         logger.warning("Invalid custom metric output format:")
         logger.warning(output)
-        return {DEFAULT_STAGE_NAME: None}
+        return ({DEFAULT_STAGE_NAME: None}, True)
 
 
 def perform_benchmarks(
@@ -191,14 +197,15 @@ def perform_benchmarks(
                     f"Executing {text[:20] + '...' if len(text)>20 else text}"
                 )
 
-                has_failed = False
                 measure_time = "time" in benchmark.builtin_metrics
                 gather_stdout = "stdout" in benchmark.builtin_metrics
                 gather_stderr = "stderr" in benchmark.builtin_metrics
 
+                has_failed = False
+
                 time_measurements: dict[str, float] = {}
-                stdout_measurements: dict[str, float | str | None] = {}
-                stderr_measurements: dict[str, float | str | None] = {}
+                stdout_measurements: dict[str, float | None] = {}
+                stderr_measurements: dict[str, float | None] = {}
 
                 for stage in benchmark.benchmark:
                     stage_elapsed_time = 0.0
@@ -223,17 +230,27 @@ def perform_benchmarks(
                     if measure_time:
                         time_measurements[stage] = stage_elapsed_time / 1e9
                     if gather_stdout:
-                        stdout_measurements[stage] = try_convert_to_float(stage_stdout)
+                        out_float = try_convert_to_float(stage_stdout)
+                        stdout_measurements[stage] = out_float
+                        if out_float is None:
+                            has_failed = True
                     if gather_stderr:
-                        stderr_measurements[stage] = try_convert_to_float(stage_stderr)
+                        out_float = try_convert_to_float(stage_stderr)
+                        stderr_measurements[stage] = out_float
+                        if out_float is None:
+                            has_failed = True
 
                 execute_section(benchmark.after, "after")
 
-                benchmark_results: dict[str, dict[str, float | str | None]] = {}
+                benchmark_results: dict[str, dict[str, float | None]] = {}
 
                 for custom_metric in benchmark.custom_metrics:
                     metric_name, command = list(custom_metric.items())[0]
-                    custom_measurements = gather_custom_metric(command)
+                    custom_measurements, custom_metric_failed = gather_custom_metric(
+                        command
+                    )
+                    if custom_metric_failed:
+                        has_failed = True
                     benchmark_results[metric_name] = custom_measurements
 
                 if measure_time:

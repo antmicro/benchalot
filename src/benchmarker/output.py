@@ -122,12 +122,6 @@ def get_stat_table(
     results_df = input_df.copy()
     if metrics:
         results_df = results_df[results_df[METRIC_COLUMN].isin(metrics)]
-    is_numeric = True
-    try:
-        results_df[RESULT_COLUMN] = results_df[RESULT_COLUMN].apply(pd.to_numeric)
-    except (ValueError, TypeError):
-        is_numeric = False
-
     if show_columns is None:
         show_columns = []
     if pivot:
@@ -167,48 +161,43 @@ def get_stat_table(
     else:
         grouped = results_df  # type: ignore
         stat_table = pd.DataFrame()
-    if is_numeric:
-        for col in result_columns:
-            for stat in stats:
-                match stat:
-                    case "min":
-                        statistic_column = grouped[col].min()
-                    case "max":
-                        statistic_column = grouped[col].max()
-                    case "median":
-                        statistic_column = grouped[col].median()
-                    case "mean":
-                        if "std" in stats:
-                            continue
-                        statistic_column = grouped[col].mean()
-                    case "relative":
-                        statistic_column = grouped[col].mean() / np.min(
-                            grouped[col].mean()
-                        )
-                    case "std":
-                        if "mean" in stats:
-                            mean = pd.Series(grouped[col].mean())
-                            std = pd.Series(grouped[col].std())
-                            mean_std = []
-                            for m, s in zip(mean, std):
-                                row = f"{m:.3f} ± {s:.3f}"
-                                mean_std.append(row)
+    for col in result_columns:
+        for stat in stats:
+            match stat:
+                case "min":
+                    statistic_column = grouped[col].min()
+                case "max":
+                    statistic_column = grouped[col].max()
+                case "median":
+                    statistic_column = grouped[col].median()
+                case "mean":
+                    if "std" in stats:
+                        continue
+                    statistic_column = grouped[col].mean()
+                case "relative":
+                    statistic_column = grouped[col].mean() / np.min(grouped[col].mean())
+                case "std":
+                    if "mean" in stats:
+                        mean = pd.Series(grouped[col].mean())
+                        std = pd.Series(grouped[col].std())
+                        mean_std = []
+                        for m, s in zip(mean, std):
+                            row = f"{m:.3f} ± {s:.3f}"
+                            mean_std.append(row)
 
-                            if show_columns:
-                                statistic_column = pd.Series(mean_std, name=col)
-                            else:
-                                statistic_column = mean_std[0]  # type: ignore
-                            stat = "mean"
+                        if show_columns:
+                            statistic_column = pd.Series(mean_std, name=col)
                         else:
-                            statistic_column = grouped[col].std()
-                if show_columns:
-                    statistic_column = statistic_column.reset_index()[col]
-                else:
-                    statistic_column = [statistic_column]  # type: ignore
-                new_name = stat + " " + col
-                stat_table[new_name] = statistic_column
-    else:
-        stat_table = results_df.drop_duplicates().reset_index(drop=True)
+                            statistic_column = mean_std[0]  # type: ignore
+                        stat = "mean"
+                    else:
+                        statistic_column = grouped[col].std()
+            if show_columns:
+                statistic_column = statistic_column.reset_index()[col]
+            else:
+                statistic_column = [statistic_column]  # type: ignore
+            new_name = stat + " " + col
+            stat_table[new_name] = statistic_column
     return stat_table
 
 
@@ -253,14 +242,6 @@ def output_bar_chart(
     """
     output_df = input_df.copy()
     output_df = output_df.loc[output_df[METRIC_COLUMN] == y_axis]
-    output_df = output_df.dropna(axis=1, how="all")
-    try:
-        output_df[RESULT_COLUMN] = output_df[RESULT_COLUMN].apply(pd.to_numeric)
-    except (ValueError, TypeError):
-        logger.error(
-            f"y-axis ({y_axis}) of bar-chart has non-numeric type; bar-chart will not be generated"
-        )
-        return None
 
     stack = output_df[STAGE_COLUMN].nunique() > 1
     if stack and color:
@@ -459,7 +440,6 @@ def _output_results(
     else:
         for metric in results_df[METRIC_COLUMN].unique():
             table_df = results_df.loc[results_df[METRIC_COLUMN] == metric]
-            table_df = table_df.dropna(axis=1, how="all")
             excluded_columns = [
                 HAS_FAILED_COLUMN,
                 BENCHMARK_ID_COLUMN,
