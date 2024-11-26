@@ -28,7 +28,6 @@ from benchmarker.output_constants import (
     HAS_FAILED_COLUMN,
     BENCHMARK_ID_COLUMN,
     METRIC_COLUMN,
-    OUTLIER_COLUMN,
     CONSTANT_COLUMNS,
 )
 from sys import argv
@@ -336,25 +335,6 @@ def _output_results(
             series = results_df[column]
             results_df[column] = pd.Categorical(series, categories=series.unique())
 
-    def detect_outliers(df):
-        results = df.to_numpy(copy=True)
-        median = np.median(results)
-        mad = np.median(np.abs(results - median))
-        z_score = (0.6745 * (results - median)) / mad
-        outliers = np.full_like(results, False, np.bool)
-        outliers[np.where(np.abs(z_score) > 3.5)] = True
-        return outliers
-
-    grouped = results_df.groupby(
-        [
-            col
-            for col in results_df.columns
-            if col not in [RESULT_COLUMN, BENCHMARK_ID_COLUMN, HAS_FAILED_COLUMN]
-        ],
-        observed=True,
-    )
-    results_df[OUTLIER_COLUMN] = grouped[RESULT_COLUMN].transform(detect_outliers)
-
     # If is root, set file permissions for other users
     if os.getuid() == 0:
         prev_umask = os.umask(0)
@@ -391,8 +371,8 @@ def _output_results(
 
     register(notify_about_csv, csv_output_filenames)
 
-    # Filter out failed output.
     has_filtered_output: bool = False
+    # Filter out failed output.
     if not include_failed:
         failed_benchmarks = results_df[
             results_df[HAS_FAILED_COLUMN] == True  # noqa: E712
@@ -413,19 +393,44 @@ def _output_results(
                 logger.critical("All benchmarks failed! Bailing out.")
                 exit(1)
 
+    # Filter out outliers
     if not include_outliers:
+
+        def detect_outliers(df):
+            results = df.to_numpy(copy=True)
+            median = np.median(results)
+            mad = np.median(np.abs(results - median))
+            z_score = (0.6745 * (results - median)) / mad
+            outliers = np.full_like(results, False, np.bool)
+            outliers[np.where(np.abs(z_score) > 3.5)] = True
+            return outliers
+
+        grouped = results_df.groupby(
+            [
+                col
+                for col in results_df.columns
+                if col not in [RESULT_COLUMN, BENCHMARK_ID_COLUMN, HAS_FAILED_COLUMN]
+            ],
+            observed=True,
+        )
+        outlier_column_name = uuid4()
+        results_df[outlier_column_name] = grouped[RESULT_COLUMN].transform(
+            detect_outliers
+        )
         outlier_benchmarks = results_df[
-            results_df[OUTLIER_COLUMN] == True  # noqa: E712
+            results_df[outlier_column_name] == True  # noqa: E712
         ]
         n_outliers = outlier_benchmarks[BENCHMARK_ID_COLUMN].nunique()
 
         if n_outliers > 0:
             has_filtered_output = True
             logger.error(f"Detected {n_outliers} outliers.")
-            logger.warning("Outliers:\n" + outlier_benchmarks.to_markdown())
             results_df = pd.DataFrame(
-                results_df.loc[results_df[OUTLIER_COLUMN] == False]  # noqa: E712
+                results_df.loc[results_df[outlier_column_name] == False]  # noqa: E712
             )
+            print(results_df)
+            results_df = results_df.drop(outlier_column_name, axis=1)
+            logger.warning("Outliers:\n" + outlier_benchmarks.to_markdown())
             if len(non_csv_outputs) > 0:
                 logger.warning(
                     f"To generate output with outliers included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-outliers"
@@ -480,7 +485,6 @@ def _output_results(
             BENCHMARK_ID_COLUMN,
             METRIC_COLUMN,
             RESULT_COLUMN,
-            OUTLIER_COLUMN,
         ]
         if table_df[TIME_STAMP_COLUMN].nunique() == 1:
             excluded_columns += [TIME_STAMP_COLUMN]
