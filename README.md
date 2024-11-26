@@ -258,7 +258,7 @@ stage1,stage2
 ```
 Benchmarker will store `19.3` as the measurement for `stage1` and `30.12` as the measurement for `stage2`.
 
-## Arguments
+## CLI
 
 To see available command line arguments type:
 <!--name="help-information"-->
@@ -289,4 +289,12 @@ To generate outputs with failed benchmarks, use `--include-failed`:
 <!--name="failed"-->
 ```bash
 benchmarker config.yml --u result.csv --include-failed
+```
+
+
+The Benchmarker will try to automatically detect and remove outliers (the `csv` file will still include them) with Z-score method.
+To generate outputs with outliers, use `--include-outliers`:
+<!--name="outliers"-->
+```bash
+benchmarker config.yml --u result.csv --include-outliers
 ```
