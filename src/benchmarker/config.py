@@ -242,6 +242,12 @@ class ConfigFile(BaseModel):
 
 
 class OutputConfig(BaseModel):
+    """Schema of the configuration file used for generating output without running benchmarks.
+
+    Attributes:
+        output: Section containing desired outputs.
+    """
+
     output: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
 
 

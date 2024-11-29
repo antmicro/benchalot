@@ -221,7 +221,7 @@ def get_stat_table(
     return stat_table
 
 
-def error_msg(msg, output_filename):
+def failed_to_create_file_msg(msg, output_filename):
     logger.error(f"Failed to create '{output_filename}':")
     logger.error(msg)
 
@@ -239,7 +239,7 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
         show_columns = output.columns.copy()
         for column in show_columns:
             if column not in results_df.columns:
-                error_msg(
+                failed_to_create_file_msg(
                     f"'{column}' is not a column (columns: [{', '.join(results_df.columns)}]).",
                     output_filename,
                 )
@@ -248,7 +248,7 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
         metrics = results_df[METRIC_COLUMN].unique()
         for m in output.metrics:
             if m not in metrics:
-                error_msg(
+                failed_to_create_file_msg(
                     f"'{m}' is not a metric (metrics: [{', '.join(metrics)}]).",
                     output_filename,
                 )
@@ -295,7 +295,7 @@ def output_bar_chart(
     def valid(option) -> bool:
         if option:
             if option not in output_df.columns:
-                error_msg(
+                failed_to_create_file_msg(
                     f"'{option}' is not a column (columns: [{', '.join(output_df.columns)}]).",
                     output_filename,
                 )
@@ -306,11 +306,11 @@ def output_bar_chart(
     # validate options and apply defaults
     if y_axis is None:
         if output_df[METRIC_COLUMN].nunique() > 1:
-            error_msg("no metric specified.", output_filename)
+            failed_to_create_file_msg("no metric specified.", output_filename)
             return
         y_axis = output_df[METRIC_COLUMN].iloc[0]
     elif y_axis not in output_df[METRIC_COLUMN].unique():
-        error_msg(
+        failed_to_create_file_msg(
             f"'{y_axis}' is not a metric (metrics: [{', '.join(output_df[METRIC_COLUMN].unique())}]).",
             output_filename,
         )
