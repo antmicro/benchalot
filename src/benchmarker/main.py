@@ -1,6 +1,6 @@
 import yaml
 from sys import argv, executable
-from benchmarker.config import validate_config
+from benchmarker.config import validate_config, validate_output_config
 from benchmarker.prepare import (
     prepare_benchmarks,
     prepare_before_after_all_commands,
@@ -35,13 +35,13 @@ def main():
     setup_benchmarker_logging(args.verbose, args.debug)
 
     config_file = load_configuration_file(args.config_filename)
-    config = validate_config(config_file)
 
     if args.update_output:  # Update output and exit
         for file in args.update_output:
             if not isfile(file):
                 logger.critical(f"File '{file}' not found")
                 exit(1)
+        config = validate_output_config(config_file)
         output_results_from_file(
             config.output,
             args.update_output,
@@ -49,7 +49,8 @@ def main():
             args.include_outliers,
         )
         exit_benchmarker()
-    elif args.split:  # Split configuration file and exit
+    config = validate_config(config_file)
+    if args.split:  # Split configuration file and exit
         generate_config_files(config, args.config_filename, args.split)
         exit_benchmarker()
 
