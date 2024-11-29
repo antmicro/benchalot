@@ -164,7 +164,7 @@ class BarChartOutput(OutputField):
 
     format: Literal["bar-chart"]
     x_axis: str | None = Field(default=None, alias="x-axis")
-    metric: str | None = Field(default=None, alias="y-axis")
+    y_axis: str | None = Field(default=None, alias="y-axis")
     facet: str | None = None
     color: str | None = None
     width: int = Field(default=10, ge=1)

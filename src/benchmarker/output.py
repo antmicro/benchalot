@@ -269,7 +269,7 @@ def output_bar_chart(
     input_df: pd.DataFrame,
     output_filename: str,
     x_axis: str | None,
-    y_axis: str,
+    y_axis: str | None,
     color: str | None,
     facet: str | None,
     stat: str,
@@ -549,7 +549,7 @@ def _output_results(
                         df,
                         overwrite_filename,
                         bar_chart_output.x_axis,
-                        bar_chart_output.metric,  # type: ignore
+                        bar_chart_output.y_axis,
                         bar_chart_output.color,
                         bar_chart_output.facet,
                         bar_chart_output.stat,
