@@ -109,7 +109,7 @@ def output_results_from_file(
 def get_stat_table(
     input_df: pd.DataFrame,
     stats: list[Literal["min", "median", "mean", "relative", "std", "max"]],
-    show_columns: list[str] | None = None,
+    show_columns: list[str] = [],
     pivot: str | None = None,
     metrics: list[str] | None = None,
 ) -> pd.DataFrame:
@@ -126,10 +126,6 @@ def get_stat_table(
     results_df = input_df.copy()
     if metrics:
         results_df = results_df[results_df[METRIC_COLUMN].isin(metrics)]
-    if show_columns is None:
-        show_columns = [
-            col for col in results_df.columns if col not in CONSTANT_COLUMNS
-        ]  # matrix columns
     if pivot:
         pivot_columns = findall(VAR_REGEX, pivot)
     else:
@@ -225,11 +221,41 @@ def get_stat_table(
     return stat_table
 
 
-def output_md(single_metric_df: pd.DataFrame, output: TableMdOutput, output_filename):
+def error_msg(msg, output_filename):
+    logger.error(f"Failed to create '{output_filename}':")
+    logger.error(msg)
+
+
+def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
     logger.debug("Outputting markdown table.")
+    show_columns: list[str]
+    if output.columns is None:
+        show_columns = [
+            col
+            for col in results_df.columns
+            if col not in CONSTANT_COLUMNS  # matrix columns
+        ]
+    else:
+        show_columns = output.columns.copy()
+        for column in show_columns:
+            if column not in results_df.columns:
+                error_msg(
+                    f"'{column}' is not a column (columns: [{', '.join(results_df.columns)}]).",
+                    output_filename,
+                )
+                return
+    if output.metrics:
+        metrics = results_df[METRIC_COLUMN].unique()
+        for m in output.metrics:
+            if m not in metrics:
+                error_msg(
+                    f"'{m}' is not a metric (metrics: [{', '.join(metrics)}]).",
+                    output_filename,
+                )
+                return
     table = get_stat_table(
-        single_metric_df,
-        show_columns=output.columns,
+        results_df,
+        show_columns=show_columns,
         pivot=output.pivot,
         stats=output.stats,
         metrics=output.metrics,
@@ -265,14 +291,32 @@ def output_bar_chart(
         height: Output image height (in inches).
         dpi: Output image dpi.
     """
+
+    def valid(option) -> bool:
+        if option:
+            if option not in output_df.columns:
+                error_msg(
+                    f"'{option}' is not a column (columns: [{', '.join(output_df.columns)}]).",
+                    output_filename,
+                )
+                return False
+        return True
+
     output_df = input_df.copy()
     if y_axis is None:
         if output_df[METRIC_COLUMN].nunique() > 1:
-            logger.error(
-                f"Failed to create '{output_filename}': no metric specified for y-axis."
-            )
+            error_msg("no metric specified.", output_filename)
             return
         y_axis = output_df[METRIC_COLUMN][0]
+
+    # validate options
+    if not valid(x_axis):
+        return
+    if not valid(color):
+        return
+    if not valid(facet):
+        return
+
     output_df = output_df.loc[output_df[METRIC_COLUMN] == y_axis]
 
     stack = output_df[STAGE_COLUMN].nunique() > 1

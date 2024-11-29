@@ -11,14 +11,11 @@ from typing import Any, Literal
 from logging import getLogger
 from os.path import isdir
 from benchmarker.output_constants import (
-    DISPLAYABLE_COLUMNS,
     DEFAULT_STAGE_NAME,
     METRIC_COLUMN,
     STAGE_COLUMN,
     CONSTANT_COLUMNS,
 )
-from re import findall
-from benchmarker.interpolate import VAR_REGEX
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -138,19 +135,6 @@ class OutputField(BaseModel):
     filename: str
     format: str
 
-    def check_options_exist(self, matrix):
-        """Verify if options used in the output are present in the `matrix` section or are part of `DISPLAYABLE_COLUMNS`.
-
-        Args:
-            matrix: `matrix` section from the configuration file.
-
-        Raises:
-            ValueError
-        """
-        options = findall(VAR_REGEX, self.filename)
-        for option in options:
-            check_column_will_exist(option, matrix)
-
 
 class CsvOutput(OutputField):
     """Schema of a csv output field.
@@ -161,17 +145,6 @@ class CsvOutput(OutputField):
 
     format: Literal["csv"]
     model_config = ConfigDict(extra="forbid")
-
-
-def check_metric(metric, metrics):
-    metric_names = set()
-    for m in metrics:
-        if type(m) is dict:
-            metric_names.add(list(m.keys())[0])
-        else:
-            metric_names.add(m)
-    if metric not in metric_names:
-        raise ValueError(f"metric '{metric}' not found")
 
 
 class BarChartOutput(OutputField):
@@ -200,17 +173,6 @@ class BarChartOutput(OutputField):
     stat: Literal["max", "min", "mean", "median", "max"] = "median"
     model_config = ConfigDict(extra="forbid")
 
-    def check_options_exist(self, matrix):
-        """Check if facet, x-axis and color are present in the matrix section
-
-        Args:
-            matrix: `matrix` section from the configuration file.
-        """
-        super().check_options_exist(matrix)
-        check_column_will_exist(self.facet, matrix)
-        check_column_will_exist(self.x_axis, matrix)
-        check_column_will_exist(self.color, matrix)
-
 
 class TableMdOutput(OutputField):
     """Schema of a markdown table output field.
@@ -233,31 +195,6 @@ class TableMdOutput(OutputField):
     pivot: str | None = "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}"
     metrics: list[str] | None = None
     model_config = ConfigDict(extra="forbid")
-
-    def check_options_exist(self, matrix):
-        """Check if columns contain valid variables' names."""
-        super().check_options_exist(matrix)
-        if self.columns is not None:
-            for column in self.columns:
-                check_column_will_exist(column, matrix)
-        if self.pivot:
-            for column in findall(VAR_REGEX, self.pivot):
-                check_column_will_exist(column, matrix)
-
-
-def check_column_will_exist(option, matrix):
-    """Check if option specified will be present in results.
-
-    Args:
-        option: Is valid if it is variable name or one of the `DISPLAYABLE_COLUMNS`.
-        matrix: `matrix` section from the configuration file.
-    """
-    if (
-        option is not None
-        and option not in matrix
-        and option not in DISPLAYABLE_COLUMNS
-    ):
-        raise ValueError(f"'{option}' not found")
 
 
 class ConfigFile(BaseModel):
@@ -302,14 +239,6 @@ class ConfigFile(BaseModel):
             if type(output) is CsvOutput:
                 return outputs
         raise ValueError("at least one 'csv' output is required")
-
-    @model_validator(mode="after")
-    def check_output_vars(self):
-        """Check whether variables used in outputs are present in the `matrix` section."""
-        for output_key in self.output:
-            output = self.output[output_key]
-            output.check_options_exist(self.matrix)
-        return self
 
 
 class OutputConfig(BaseModel):
