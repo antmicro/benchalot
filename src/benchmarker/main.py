@@ -17,7 +17,6 @@ from argparse import ArgumentParser
 from os.path import isfile
 from benchmarker.log import (
     setup_benchmarker_logging,
-    setup_command_logging,
     crash_msg_log_file,
 )
 from logging import getLogger
@@ -74,8 +73,6 @@ def main():
         run_config, config.matrix, config.exclusions
     )
 
-    if config.run.save_output:
-        setup_command_logging(config.run.save_output)
     set_working_directory(config.run.cwd)
     environ.update(config.run.env)
 
@@ -84,7 +81,7 @@ def main():
     if config.system.modify:
         modify_system_state(config.system)
 
-    results = perform_benchmarks(benchmarks, config.run.samples)
+    results = perform_benchmarks(benchmarks, config.run.samples, config.run.save_output)
 
     if config.system.modify:
         restore_system_state()

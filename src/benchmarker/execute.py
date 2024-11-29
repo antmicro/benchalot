@@ -15,6 +15,7 @@ from benchmarker.output_constants import (
     DEFAULT_STAGE_NAME,
 )
 from uuid import uuid4
+from sys import stdout, stderr
 
 logger = getLogger(f"benchmarker.{__name__}")
 command_logger = getLogger("run")
@@ -164,13 +165,14 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
 
 
 def perform_benchmarks(
-    benchmarks: list[PreparedBenchmark], samples: int
+    benchmarks: list[PreparedBenchmark], samples: int, log_file_path: str | None
 ) -> dict[str, list]:
     """Perform benchmarks and return their results.
 
     Args:
         benchmarks: List of benchmarks, each containing variable values, preprocessed commands and callable metrics.
         samples: How many times each benchmark needs to be repeated.
+        log_file_path: Path to a file where output of bechmark commands will be saved. Can be also set to `"STDERR"`, `"STDOUT"` or `None`.
 
     Returns:
         dict[str, list]: Dictionary containing results.
@@ -184,7 +186,18 @@ def perform_benchmarks(
         leave=False,
         mininterval=1,
     )
-    with open("run.log", "w") as log_file:
+    log_file_desc: str | int
+    close_fd = True
+    if log_file_path is None:
+        log_file_desc = "/dev/null"
+    elif log_file_path == "STDOUT":
+        log_file_desc = stdout.fileno()
+        close_fd = False
+    elif log_file_path == "STDERR":
+        log_file_desc = stderr.fileno()
+        close_fd = False
+
+    with open(log_file_desc, "w", closefd=close_fd) as log_file:
         for benchmark in benchmarks:
             try:
                 for _ in range(0, samples):
