@@ -127,7 +127,9 @@ def get_stat_table(
     if metrics:
         results_df = results_df[results_df[METRIC_COLUMN].isin(metrics)]
     if show_columns is None:
-        show_columns = []
+        show_columns = [
+            col for col in results_df.columns if col not in CONSTANT_COLUMNS
+        ]  # matrix columns
     if pivot:
         pivot_columns = findall(VAR_REGEX, pivot)
     else:
@@ -233,6 +235,7 @@ def output_md(single_metric_df: pd.DataFrame, output: TableMdOutput, output_file
         metrics=output.metrics,
     )
     print(table.to_markdown(index=False))
+    print(f"Created '{output_filename}'")
     table.to_markdown(output_filename, index=False)
 
 
@@ -263,6 +266,13 @@ def output_bar_chart(
         dpi: Output image dpi.
     """
     output_df = input_df.copy()
+    if y_axis is None:
+        if output_df[METRIC_COLUMN].nunique() > 1:
+            logger.error(
+                f"Failed to create '{output_filename}': no metric specified for y-axis."
+            )
+            return
+        y_axis = output_df[METRIC_COLUMN][0]
     output_df = output_df.loc[output_df[METRIC_COLUMN] == y_axis]
 
     stack = output_df[STAGE_COLUMN].nunique() > 1
@@ -307,6 +317,7 @@ def output_bar_chart(
         limitsize=False,
         verbose=False,
     )
+    print(f"Created '{output_filename}'")
 
 
 def get_combination_filtered_dfs(
@@ -481,7 +492,6 @@ def _output_results(
                     table_md_output: TableMdOutput = output  # type: ignore
                     overwrite_filename = interpolate_variables(output.filename, comb)
                     output_md(df, table_md_output, overwrite_filename)
-                    print(f"Created '{overwrite_filename}'")
             case "bar-chart":
                 for comb, df in multiplied_results:
                     bar_chart_output: BarChartOutput = output  # type: ignore
@@ -498,7 +508,6 @@ def _output_results(
                         bar_chart_output.height,
                         bar_chart_output.dpi,
                     )
-                    print(f"Created '{overwrite_filename}'")
 
     if os.getuid() == 0:
         os.umask(prev_umask)

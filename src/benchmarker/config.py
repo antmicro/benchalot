@@ -137,21 +137,6 @@ class OutputField(BaseModel):
 
     filename: str
     format: str
-    metric: str | None = None
-
-    def apply_default_values(self, matrix, metrics):
-        """Apply default values to missing fields.
-
-        Args:
-            matrix: `matrix` section from the configuration file.
-            metrics: `run.metrics` section from the configuration file.
-        """
-        if self.metric is None:
-            if len(metrics) != 1:
-                raise ValueError(f"Metric for '{self.filename}' not specified")
-            self.metric = (
-                metrics[0] if type(metrics[0]) is str else list(metrics[0].keys())[0]
-            )
 
     def check_options_exist(self, matrix):
         """Verify if options used in the output are present in the `matrix` section or are part of `DISPLAYABLE_COLUMNS`.
@@ -166,15 +151,6 @@ class OutputField(BaseModel):
         for option in options:
             check_column_will_exist(option, matrix)
 
-    def check_metric_exists(self, metrics):
-        """Check if metric is present in the `run.metrics` section.
-
-        Args:
-            metric_name: Name of the metric.
-            metrics: `run.metrics` section.
-        """
-        pass
-
 
 class CsvOutput(OutputField):
     """Schema of a csv output field.
@@ -185,12 +161,6 @@ class CsvOutput(OutputField):
 
     format: Literal["csv"]
     model_config = ConfigDict(extra="forbid")
-
-    def check_metric_exists(self, metrics):
-        pass
-
-    def apply_default_values(self, matrix, metrics):
-        pass
 
 
 def check_metric(metric, metrics):
@@ -241,9 +211,6 @@ class BarChartOutput(OutputField):
         check_column_will_exist(self.x_axis, matrix)
         check_column_will_exist(self.color, matrix)
 
-    def check_metric_exists(self, metrics):
-        check_metric(self.metric, metrics)
-
 
 class TableMdOutput(OutputField):
     """Schema of a markdown table output field.
@@ -267,30 +234,15 @@ class TableMdOutput(OutputField):
     metrics: list[str] | None = None
     model_config = ConfigDict(extra="forbid")
 
-    def apply_default_values(self, matrix, metrics):
-        """Apply default values.
-        If `None`, set `columns` to contain all variables from `matrix` section.
-
-        Raises:
-            ValueError: If there are more than one metrics in `run.metrics` section and `result_column` is `None`.
-
-        """
-        if self.columns is None:
-            self.columns = list(matrix.keys())
-
     def check_options_exist(self, matrix):
         """Check if columns contain valid variables' names."""
         super().check_options_exist(matrix)
-        for column in self.columns:
-            check_column_will_exist(column, matrix)
+        if self.columns is not None:
+            for column in self.columns:
+                check_column_will_exist(column, matrix)
         if self.pivot:
             for column in findall(VAR_REGEX, self.pivot):
                 check_column_will_exist(column, matrix)
-
-    def check_metric_exists(self, metrics):
-        if self.metrics is not None:
-            for metric in self.metrics:
-                check_metric(metric, metrics)
 
 
 def check_column_will_exist(option, matrix):
@@ -352,14 +304,6 @@ class ConfigFile(BaseModel):
         raise ValueError("at least one 'csv' output is required")
 
     @model_validator(mode="after")
-    def apply_default_values(self):
-        """Apply default values for the output fields."""
-        for output_key in self.output:
-            output = self.output[output_key]
-            output.apply_default_values(self.matrix, self.run.metrics)
-        return self
-
-    @model_validator(mode="after")
     def check_output_vars(self):
         """Check whether variables used in outputs are present in the `matrix` section."""
         for output_key in self.output:
@@ -367,13 +311,9 @@ class ConfigFile(BaseModel):
             output.check_options_exist(self.matrix)
         return self
 
-    @model_validator(mode="after")
-    def check_output_metrics(self):
-        """Check whether metrics used in outputs are present in the `run.metrics` section."""
-        for output_key in self.output:
-            output = self.output[output_key]
-            output.check_metric_exists(self.run.metrics)
-        return self
+
+class OutputConfig(BaseModel):
+    output: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
 
 
 def validate_config(config) -> ConfigFile:
@@ -386,3 +326,15 @@ def validate_config(config) -> ConfigFile:
     logger.info("Successfully validated config.")
     logger.debug(normalized_config)
     return normalized_config
+
+
+def validate_output_config(config) -> OutputConfig:
+    logger.info("Validating output config...")
+    try:
+        config_validator = OutputConfig(**config)
+    except ValidationError as e:
+        error_and_exit(e)
+    normalized_config = config_validator
+    logger.info("Successfully validated config.")
+    logger.debug(normalized_config)
+    return config_validator
