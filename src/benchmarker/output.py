@@ -307,7 +307,7 @@ def output_bar_chart(
         if output_df[METRIC_COLUMN].nunique() > 1:
             error_msg("no metric specified.", output_filename)
             return
-        y_axis = output_df[METRIC_COLUMN][0]
+        y_axis = output_df[METRIC_COLUMN].iloc[0]
 
     # validate options
     if not valid(x_axis):
