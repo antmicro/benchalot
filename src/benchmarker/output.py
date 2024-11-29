@@ -227,6 +227,16 @@ def failed_to_create_file_msg(msg, output_filename):
 
 
 def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
+    def valid(columns):
+        for column in columns:
+            if column not in results_df.columns:
+                failed_to_create_file_msg(
+                    f"'{column}' is not a column (columns: [{', '.join(results_df.columns)}]).",
+                    output_filename,
+                )
+                return False
+        return True
+
     logger.debug("Outputting markdown table.")
     show_columns: list[str]
     if output.columns is None:
@@ -237,13 +247,11 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
         ]
     else:
         show_columns = output.columns.copy()
-        for column in show_columns:
-            if column not in results_df.columns:
-                failed_to_create_file_msg(
-                    f"'{column}' is not a column (columns: [{', '.join(results_df.columns)}]).",
-                    output_filename,
-                )
-                return
+        if not valid(show_columns):
+            return
+    if output.pivot:
+        if not valid(findall(VAR_REGEX, output.pivot)):
+            return
     if output.metrics:
         metrics = results_df[METRIC_COLUMN].unique()
         for m in output.metrics:
