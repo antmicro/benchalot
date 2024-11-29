@@ -303,13 +303,18 @@ def output_bar_chart(
         return True
 
     output_df = input_df.copy()
+    # validate options and apply defaults
     if y_axis is None:
         if output_df[METRIC_COLUMN].nunique() > 1:
             error_msg("no metric specified.", output_filename)
             return
         y_axis = output_df[METRIC_COLUMN].iloc[0]
-
-    # validate options
+    elif y_axis not in output_df[METRIC_COLUMN].unique():
+        error_msg(
+            f"'{y_axis}' is not a metric (metrics: [{', '.join(output_df[METRIC_COLUMN].unique())}]).",
+            output_filename,
+        )
+        return
     if not valid(x_axis):
         return
     if not valid(color):
