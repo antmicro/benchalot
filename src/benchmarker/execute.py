@@ -61,6 +61,7 @@ def log_output(process: Popen, command_logger: FastLogger) -> None:
 
     Args:
         process: Process object.
+        command_logger: Object which is used to save output.
     """
     with process.stdout as output:  # type: ignore
         for line in output:
@@ -79,6 +80,7 @@ def execute_section(
 
     Args:
         commands: List of commands to be executed.
+        command_logger: Object which is used to save output.
         section_name: Name of the section, used in logging.
     """
     if not commands:
@@ -154,6 +156,7 @@ def perform_benchmarks(
     Args:
         benchmarks: List of benchmarks, each containing variable values, preprocessed commands and callable metrics.
         samples: How many times each benchmark needs to be repeated.
+        command_logger: Object which is used to save output.
 
     Returns:
         dict[str, list]: Dictionary containing results.

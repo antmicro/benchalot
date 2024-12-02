@@ -17,10 +17,17 @@ logger = getLogger(f"benchmarker.{__name__}")
 
 class FastLogger:
     def __init__(self, file: TextIO, verbose: bool):
+        """Simple logging class without the overhead of the built-in Python logger.
+
+        Args:
+            file: File object which will be used to save output.
+            verbose: If true, print to `stdout`.
+        """
         self.file = file
         self.verbose = verbose
 
     def write(self, text: str):
+        """Write `text` to file and/or terminal."""
         self.file.write(text)
         if self.verbose:
             print(text, end="")
