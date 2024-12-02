@@ -188,14 +188,18 @@ def perform_benchmarks(
     )
     log_file_desc: str | int
     close_fd = True
-    if log_file_path is None:
-        log_file_desc = "/dev/null"
-    elif log_file_path == "STDOUT":
-        log_file_desc = stdout.fileno()
-        close_fd = False
-    elif log_file_path == "STDERR":
-        log_file_desc = stderr.fileno()
-        close_fd = False
+
+    match log_file_path:
+        case None:
+            log_file_desc = "/dev/null"
+        case "STDOUT":
+            log_file_desc = stdout.fileno()
+            close_fd = False
+        case "STDERR":
+            log_file_desc = stderr.fileno()
+            close_fd = False
+        case _:
+            log_file_desc = log_file_path
 
     with open(log_file_desc, "w", closefd=close_fd) as log_file:
         for benchmark in benchmarks:
