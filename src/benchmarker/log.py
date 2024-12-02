@@ -9,9 +9,22 @@ from logging import (
 )
 from tempfile import NamedTemporaryFile
 from atexit import register
+from typing import TextIO
+from sys import stdout
 
 
 logger = getLogger(f"benchmarker.{__name__}")
+
+
+class FastLogger:
+    def __init__(self, file: TextIO, verbose: bool):
+        self.file = file
+        self.verbose = verbose
+
+    def write(self, text: str):
+        self.file.write(text)
+        if self.verbose:
+            stdout.write(text)
 
 
 def setup_benchmarker_logging(verbose: bool, debug: bool) -> None:

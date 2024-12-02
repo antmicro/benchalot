@@ -1,5 +1,5 @@
 from subprocess import Popen, PIPE
-from logging import getLogger, INFO, ERROR
+from logging import getLogger
 from tqdm import tqdm
 from os import getcwd
 from time import monotonic_ns
@@ -15,10 +15,9 @@ from benchmarker.output_constants import (
     DEFAULT_STAGE_NAME,
 )
 from uuid import uuid4
-from sys import stdout, stderr
+from benchmarker.log import FastLogger
 
 logger = getLogger(f"benchmarker.{__name__}")
-command_logger = getLogger("run")
 working_directory = getcwd()
 
 
@@ -57,44 +56,25 @@ def execute_command(command: str) -> Popen:
     return Popen(command, shell=True, stdout=PIPE, stderr=PIPE, cwd=working_directory)
 
 
-def log_output(process: Popen) -> None:
+def log_output(process: Popen, command_logger: FastLogger) -> None:
     """Log output piped by the process.
 
     Args:
         process: Process object.
     """
-    level = INFO
     with process.stdout as output:  # type: ignore
         for line in output:
-            if len(line) > 0:
-                if process.poll() is not None and process.poll() != 0:
-                    level = ERROR
-                command_logger.log(msg=line.decode("utf-8").strip(), level=level)
+            decoded = line.decode("utf-8")
+            command_logger.write(decoded)
     with process.stderr as output:  # type: ignore
         for line in output:
-            if len(line) > 0:
-                if process.poll() is not None and process.poll() != 0:
-                    level = ERROR
-                command_logger.log(msg=line.decode("utf-8").strip(), level=level)
+            decoded = line.decode("utf-8")
+            command_logger.write(decoded)
 
 
-def execute_and_handle_output(command: str) -> bool:
-    """Execute command, log its output and check its return code.
-
-    Args:
-        command: Command to be executed.
-
-    Returns:
-        bool: True if program returned 0, otherwise False.
-    """
-    process = execute_command(command)
-    log_output(process)
-    result = process.wait()
-    success = check_return_code(command, result)
-    return success
-
-
-def execute_section(commands: list[str], section_name: str = "") -> None:
+def execute_section(
+    commands: list[str], command_logger: FastLogger, section_name: str = ""
+) -> None:
     """Execute and log output multiple of commands.
 
     Args:
@@ -108,7 +88,9 @@ def execute_section(commands: list[str], section_name: str = "") -> None:
     bar = tqdm(commands, leave=False, delay=1)
     for c in bar:
         bar.set_description(c[:20] + "..." if len(c) > 20 else c, refresh=False)
-        execute_and_handle_output(c)
+        process = execute_command(c)
+        log_output(process, command_logger)
+        process.wait()
     logger.info(f"Execution of '{section_name}' section finished.")
 
 
@@ -165,14 +147,13 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
 
 
 def perform_benchmarks(
-    benchmarks: list[PreparedBenchmark], samples: int, log_file_path: str | None
+    benchmarks: list[PreparedBenchmark], samples: int, command_logger: FastLogger
 ) -> dict[str, list]:
     """Perform benchmarks and return their results.
 
     Args:
         benchmarks: List of benchmarks, each containing variable values, preprocessed commands and callable metrics.
         samples: How many times each benchmark needs to be repeated.
-        log_file_path: Path to a file where output of bechmark commands will be saved. Can be also set to `"STDERR"`, `"STDOUT"` or `None`.
 
     Returns:
         dict[str, list]: Dictionary containing results.
@@ -186,123 +167,100 @@ def perform_benchmarks(
         leave=False,
         mininterval=1,
     )
-    log_file_desc: str | int
-    close_fd = True
+    for benchmark in benchmarks:
+        try:
+            for _ in range(0, samples):
+                logger.debug(f"Running benchmark: {benchmark}")
 
-    match log_file_path:
-        case None:
-            log_file_desc = "/dev/null"
-        case "STDOUT":
-            log_file_desc = stdout.fileno()
-            close_fd = False
-        case "STDERR":
-            log_file_desc = stderr.fileno()
-            close_fd = False
-        case _:
-            log_file_desc = log_file_path
+                execute_section(benchmark.before, command_logger, "before")
+                text = str([benchmark.benchmark[key] for key in benchmark.benchmark])
+                text = text.replace("[", "")
+                text = text.replace("]", "")
+                bar.set_description(
+                    f"Executing {text[:20] + '...' if len(text)>20 else text}"
+                )
 
-    with open(log_file_desc, "w", closefd=close_fd) as log_file:
-        for benchmark in benchmarks:
-            try:
-                for _ in range(0, samples):
-                    logger.debug(f"Running benchmark: {benchmark}")
+                measure_time = "time" in benchmark.builtin_metrics
+                gather_stdout = "stdout" in benchmark.builtin_metrics
+                gather_stderr = "stderr" in benchmark.builtin_metrics
 
-                    execute_section(benchmark.before, "before")
-                    text = str(
-                        [benchmark.benchmark[key] for key in benchmark.benchmark]
-                    )
-                    text = text.replace("[", "")
-                    text = text.replace("]", "")
-                    bar.set_description(
-                        f"Executing {text[:20] + '...' if len(text)>20 else text}"
-                    )
+                has_failed = False
 
-                    measure_time = "time" in benchmark.builtin_metrics
-                    gather_stdout = "stdout" in benchmark.builtin_metrics
-                    gather_stderr = "stderr" in benchmark.builtin_metrics
+                time_measurements: dict[str, float] = {}
+                stdout_measurements: dict[str, float | None] = {}
+                stderr_measurements: dict[str, float | None] = {}
 
-                    has_failed = False
-
-                    time_measurements: dict[str, float] = {}
-                    stdout_measurements: dict[str, float | None] = {}
-                    stderr_measurements: dict[str, float | None] = {}
-
-                    for stage in benchmark.benchmark:
-                        stage_elapsed_time = 0.0
-                        stage_stdout = ""
-                        stage_stderr = ""
-                        for command in benchmark.benchmark[stage]:
-                            start = monotonic_ns()
-                            process = execute_command(command)
-                            if gather_stderr or gather_stdout:
-                                process_stdout, process_stderr = process.communicate()
-                            else:
-                                with process.stdout as output:  # type: ignore
-                                    for line in output:
-                                        log_file.write(line.decode("utf-8"))
-                                with process.stderr as output:  # type: ignore
-                                    for line in output:
-                                        log_file.write(line.decode("utf-8"))
-                                process.wait()
-                            stage_elapsed_time += monotonic_ns() - start
-                            if gather_stdout:
-                                stage_stdout += process_stdout.decode("utf-8")
-                            if gather_stderr:
-                                stage_stderr += process_stderr.decode("utf-8")
-                            success = check_return_code(command, process.returncode)
-                            if not success:
-                                has_failed = True
-                        if measure_time:
-                            time_measurements[stage] = stage_elapsed_time / 1e9
+                for stage in benchmark.benchmark:
+                    stage_elapsed_time = 0.0
+                    stage_stdout = ""
+                    stage_stderr = ""
+                    for command in benchmark.benchmark[stage]:
+                        start = monotonic_ns()
+                        process = execute_command(command)
+                        if gather_stderr or gather_stdout:
+                            process_stdout, process_stderr = process.communicate()
+                        else:
+                            log_output(process, command_logger)
+                            process.wait()
+                        stage_elapsed_time += monotonic_ns() - start
                         if gather_stdout:
-                            out_float = try_convert_to_float(stage_stdout)
-                            stdout_measurements[stage] = out_float
-                            if out_float is None:
-                                has_failed = True
+                            stage_stdout += process_stdout.decode("utf-8")
                         if gather_stderr:
-                            out_float = try_convert_to_float(stage_stderr)
-                            stderr_measurements[stage] = out_float
-                            if out_float is None:
-                                has_failed = True
-
-                    execute_section(benchmark.after, "after")
-
-                    benchmark_results: dict[str, dict[str, float | None]] = {}
-
-                    for custom_metric in benchmark.custom_metrics:
-                        metric_name, command = list(custom_metric.items())[0]
-                        custom_measurements, custom_metric_failed = (
-                            gather_custom_metric(command)
-                        )
-                        if custom_metric_failed:
+                            stage_stderr += process_stderr.decode("utf-8")
+                        success = check_return_code(command, process.returncode)
+                        if not success:
                             has_failed = True
-                        benchmark_results[metric_name] = custom_measurements
-
                     if measure_time:
-                        benchmark_results["time"] = time_measurements  # type: ignore
+                        time_measurements[stage] = stage_elapsed_time / 1e9
                     if gather_stdout:
-                        benchmark_results["stdout"] = stdout_measurements
+                        out_float = try_convert_to_float(stage_stdout)
+                        stdout_measurements[stage] = out_float
+                        if out_float is None:
+                            has_failed = True
                     if gather_stderr:
-                        benchmark_results["stderr"] = stderr_measurements
+                        out_float = try_convert_to_float(stage_stderr)
+                        stderr_measurements[stage] = out_float
+                        if out_float is None:
+                            has_failed = True
 
-                    bar.update(1)
-                    id = uuid4()
-                    for metric_name, measurements in benchmark_results.items():
-                        for stage, result in measurements.items():
-                            results.setdefault(BENCHMARK_ID_COLUMN, []).append(id)
-                            for variable in benchmark.matrix:
-                                results.setdefault(variable, []).append(
-                                    benchmark.matrix[variable]
-                                )
-                            results.setdefault(HAS_FAILED_COLUMN, []).append(has_failed)
-                            results.setdefault(METRIC_COLUMN, []).append(metric_name)
-                            results.setdefault(STAGE_COLUMN, []).append(stage)
-                            results.setdefault(RESULT_COLUMN, []).append(result)
+                execute_section(benchmark.after, command_logger, "after")
 
-            except KeyboardInterrupt:
-                logger.warning("Stopped benchmarks.")
-                logger.warning("Creating output...")
-                break
+                benchmark_results: dict[str, dict[str, float | None]] = {}
+
+                for custom_metric in benchmark.custom_metrics:
+                    metric_name, command = list(custom_metric.items())[0]
+                    custom_measurements, custom_metric_failed = gather_custom_metric(
+                        command
+                    )
+                    if custom_metric_failed:
+                        has_failed = True
+                    benchmark_results[metric_name] = custom_measurements
+
+                if measure_time:
+                    benchmark_results["time"] = time_measurements  # type: ignore
+                if gather_stdout:
+                    benchmark_results["stdout"] = stdout_measurements
+                if gather_stderr:
+                    benchmark_results["stderr"] = stderr_measurements
+
+                bar.update(1)
+                id = uuid4()
+                for metric_name, measurements in benchmark_results.items():
+                    for stage, result in measurements.items():
+                        results.setdefault(BENCHMARK_ID_COLUMN, []).append(id)
+                        for variable in benchmark.matrix:
+                            results.setdefault(variable, []).append(
+                                benchmark.matrix[variable]
+                            )
+                        results.setdefault(HAS_FAILED_COLUMN, []).append(has_failed)
+                        results.setdefault(METRIC_COLUMN, []).append(metric_name)
+                        results.setdefault(STAGE_COLUMN, []).append(stage)
+                        results.setdefault(RESULT_COLUMN, []).append(result)
+
+        except KeyboardInterrupt:
+            logger.warning("Stopped benchmarks.")
+            logger.warning("Creating output...")
+            break
     bar.close()
     logger.info("Finished performing benchmarks.")
     logger.debug(f"Benchmark results: {results}")

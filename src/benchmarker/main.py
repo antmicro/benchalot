@@ -15,15 +15,13 @@ from benchmarker.system import modify_system_state, restore_system_state
 from benchmarker.output import output_results_from_dict, output_results_from_file
 from argparse import ArgumentParser
 from os.path import isfile
-from benchmarker.log import (
-    setup_benchmarker_logging,
-    crash_msg_log_file,
-)
+from benchmarker.log import setup_benchmarker_logging, crash_msg_log_file, FastLogger
 from logging import getLogger
 from atexit import unregister
 from os import environ
 from pathlib import Path
 from benchmarker.config import ConfigFile
+from sys import stderr, stdout
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -76,17 +74,36 @@ def main():
     set_working_directory(config.run.cwd)
     environ.update(config.run.env)
 
-    execute_section(before_all_commands, "before-all")
+    close_fd = True
+    verbose = args.verbose or args.debug
 
-    if config.system.modify:
-        modify_system_state(config.system)
+    match config.run.save_output:
+        case None:
+            log_file_desc = "/dev/null"
+        case "STDOUT":
+            log_file_desc = stdout.fileno()
+            close_fd = False
+            verbose = False
+        case "STDERR":
+            log_file_desc = stderr.fileno()
+            close_fd = False
+            verbose = False
+        case _:
+            log_file_desc = config.save_output
 
-    results = perform_benchmarks(benchmarks, config.run.samples, config.run.save_output)
+    with open(log_file_desc, "w", closefd=close_fd) as log_file:
+        command_logger = FastLogger(log_file, verbose)
+        execute_section(before_all_commands, command_logger, "before-all")
 
-    if config.system.modify:
-        restore_system_state()
+        if config.system.modify:
+            modify_system_state(config.system)
 
-    execute_section(after_all_commands, "after-all")
+        results = perform_benchmarks(benchmarks, config.run.samples, command_logger)
+
+        if config.system.modify:
+            restore_system_state()
+
+        execute_section(after_all_commands, command_logger, "after-all")
 
     output_results_from_dict(
         results,
