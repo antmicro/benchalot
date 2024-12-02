@@ -89,7 +89,7 @@ def main():
             close_fd = False
             verbose = False
         case _:
-            log_file_desc = config.save_output
+            log_file_desc = config.run.save_output
 
     with open(log_file_desc, "w", closefd=close_fd) as log_file:
         command_logger = FastLogger(log_file, verbose)
