@@ -174,18 +174,16 @@ class BarChartOutput(OutputField):
     model_config = ConfigDict(extra="forbid")
 
 
-class TableMdOutput(OutputField):
+class TableOutput(OutputField):
     """Schema of a markdown table output field.
 
     Attributes:
-        format: Must be "table-md".
         columns: List of variables which will be included in the output table.
         stats: What mathematical functions should be used to determine values in result columns.
         pivot: String containing variable names determining names and contents of result columns.
         metrics: List of metrics to be included in the table.
     """
 
-    format: Literal["table-md"]
     columns: list[str] | None = None
     stats: list[Literal["min", "median", "mean", "relative", "std", "max"]] = [
         "min",
@@ -195,6 +193,14 @@ class TableMdOutput(OutputField):
     pivot: str | None = "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}"
     metrics: list[str] | None = None
     model_config = ConfigDict(extra="forbid")
+
+
+class TableMdOutput(TableOutput):
+    format: Literal["table-md"]
+
+
+class TableHTMLOutput(TableOutput):
+    format: Literal["table-html"]
 
 
 class ConfigFile(BaseModel):
@@ -212,7 +218,7 @@ class ConfigFile(BaseModel):
     exclusions: list[dict[str, str | int | float]] = []
     system: SystemSection = SystemSection()
     run: RunSection
-    output: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
+    output: dict[str, CsvOutput | BarChartOutput | TableMdOutput | TableHTMLOutput]
     model_config = ConfigDict(extra="forbid")
 
     @field_validator("matrix")

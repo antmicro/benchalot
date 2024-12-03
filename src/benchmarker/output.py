@@ -15,7 +15,7 @@ from datetime import timezone, datetime
 import numpy as np
 import os
 from uuid import uuid4
-from benchmarker.config import BarChartOutput, CsvOutput, TableMdOutput
+from benchmarker.config import BarChartOutput, CsvOutput, TableMdOutput, TableHTMLOutput
 from benchmarker.interpolate import (
     create_variable_combinations,
     VAR_REGEX,
@@ -109,10 +109,10 @@ def output_results_from_file(
 def get_stat_table(
     input_df: pd.DataFrame,
     stats: list[Literal["min", "median", "mean", "relative", "std", "max"]],
-    show_columns: list[str] = [],
+    show_columns: list[str] | None = [],
     pivot: str | None = None,
     metrics: list[str] | None = None,
-) -> pd.DataFrame:
+) -> pd.DataFrame | None:
     """Create summary table with specified columns.
 
     Args:
@@ -124,6 +124,36 @@ def get_stat_table(
 
     """
     results_df = input_df.copy()
+
+    def valid(columns):
+        for column in columns:
+            if column not in results_df.columns:
+                logger.error(
+                    f"'{column}' is not a column (columns: [{', '.join(results_df.columns)}]).",
+                )
+                return False
+        return True
+
+    if show_columns is None:
+        show_columns = [
+            col for col in results_df.columns if col not in CONSTANT_COLUMNS
+        ]
+    else:
+        show_columns = show_columns.copy()
+        if not valid(show_columns):
+            return None
+    if pivot:
+        if not valid(findall(VAR_REGEX, pivot)):
+            return None
+    if metrics:
+        metrics_in_table = results_df[METRIC_COLUMN].unique()
+        for m in metrics:
+            if m not in metrics_in_table:
+                logger.error(
+                    f"'{m}' is not a metric (metrics: [{', '.join(metrics)}])."
+                )
+                return None
+
     if metrics:
         results_df = results_df[results_df[METRIC_COLUMN].isin(metrics)]
     if pivot:
@@ -221,56 +251,41 @@ def get_stat_table(
     return stat_table
 
 
-def failed_to_create_file_msg(msg, output_filename):
-    logger.error(f"Failed to create '{output_filename}':")
-    logger.error(msg)
-
-
 def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
-    def valid(columns):
-        for column in columns:
-            if column not in results_df.columns:
-                failed_to_create_file_msg(
-                    f"'{column}' is not a column (columns: [{', '.join(results_df.columns)}]).",
-                    output_filename,
-                )
-                return False
-        return True
-
     logger.debug("Outputting markdown table.")
-    show_columns: list[str]
-    if output.columns is None:
-        show_columns = [
-            col
-            for col in results_df.columns
-            if col not in CONSTANT_COLUMNS  # matrix columns
-        ]
-    else:
-        show_columns = output.columns.copy()
-        if not valid(show_columns):
-            return
-    if output.pivot:
-        if not valid(findall(VAR_REGEX, output.pivot)):
-            return
-    if output.metrics:
-        metrics = results_df[METRIC_COLUMN].unique()
-        for m in output.metrics:
-            if m not in metrics:
-                failed_to_create_file_msg(
-                    f"'{m}' is not a metric (metrics: [{', '.join(metrics)}]).",
-                    output_filename,
-                )
-                return
     table = get_stat_table(
         results_df,
-        show_columns=show_columns,
+        show_columns=output.columns,
         pivot=output.pivot,
         stats=output.stats,
         metrics=output.metrics,
     )
-    print(table.to_markdown(index=False))
-    print(f"Created '{output_filename}'")
-    table.to_markdown(output_filename, index=False)
+    if table is not None:
+        print(table.to_markdown(index=False))
+        print(f"Created '{output_filename}'")
+        table.to_markdown(output_filename, index=False)
+        return True
+    else:
+        return False
+
+
+def output_html(
+    results_df: pd.DataFrame, output: TableHTMLOutput, output_filename
+) -> bool:
+    logger.debug("Outputting HTML table.")
+    table = get_stat_table(
+        results_df,
+        show_columns=output.columns,
+        pivot=output.pivot,
+        stats=output.stats,
+        metrics=output.metrics,
+    )
+    if table is not None:
+        print(table.to_html(index=False))
+        table.to_html(output_filename, index=False)
+        return True
+    else:
+        return False
 
 
 def output_bar_chart(
@@ -284,7 +299,7 @@ def output_bar_chart(
     width: int,
     height: int,
     dpi: int,
-) -> None:
+) -> bool:
     """Output bar plot.
 
     Args:
@@ -303,9 +318,8 @@ def output_bar_chart(
     def valid(option) -> bool:
         if option:
             if option not in output_df.columns:
-                failed_to_create_file_msg(
-                    f"'{option}' is not a column (columns: [{', '.join(output_df.columns)}]).",
-                    output_filename,
+                logger.error(
+                    f"'{option}' is not a column (columns: [{', '.join(output_df.columns)}])."
                 )
                 return False
         return True
@@ -314,21 +328,20 @@ def output_bar_chart(
     # validate options and apply defaults
     if y_axis is None:
         if output_df[METRIC_COLUMN].nunique() > 1:
-            failed_to_create_file_msg("no metric specified.", output_filename)
-            return
+            logger.error("no metric specified.")
+            return False
         y_axis = output_df[METRIC_COLUMN].iloc[0]
     elif y_axis not in output_df[METRIC_COLUMN].unique():
-        failed_to_create_file_msg(
-            f"'{y_axis}' is not a metric (metrics: [{', '.join(output_df[METRIC_COLUMN].unique())}]).",
-            output_filename,
+        logger.error(
+            f"'{y_axis}' is not a metric (metrics: [{', '.join(output_df[METRIC_COLUMN].unique())}])."
         )
-        return
+        return False
     if not valid(x_axis):
-        return
+        return False
     if not valid(color):
-        return
+        return False
     if not valid(facet):
-        return
+        return False
 
     output_df = output_df.loc[output_df[METRIC_COLUMN] == y_axis]
 
@@ -374,7 +387,7 @@ def output_bar_chart(
         limitsize=False,
         verbose=False,
     )
-    print(f"Created '{output_filename}'")
+    return True
 
 
 def get_combination_filtered_dfs(
@@ -543,17 +556,16 @@ def _output_results(
             multiplied_results = get_combination_filtered_dfs(
                 results_df, variables_in_filename
             )
-        match output.format:
-            case "table-md":
-                for comb, df in multiplied_results:
+        for comb, df in multiplied_results:
+            overwrite_filename = interpolate_variables(output.filename, comb)
+            success: bool
+            match output.format:
+                case "table-md":
                     table_md_output: TableMdOutput = output  # type: ignore
-                    overwrite_filename = interpolate_variables(output.filename, comb)
-                    output_md(df, table_md_output, overwrite_filename)
-            case "bar-chart":
-                for comb, df in multiplied_results:
+                    success = output_md(df, table_md_output, overwrite_filename)
+                case "bar-chart":
                     bar_chart_output: BarChartOutput = output  # type: ignore
-                    overwrite_filename = interpolate_variables(output.filename, comb)
-                    output_bar_chart(
+                    success = output_bar_chart(
                         df,
                         overwrite_filename,
                         bar_chart_output.x_axis,
@@ -565,6 +577,13 @@ def _output_results(
                         bar_chart_output.height,
                         bar_chart_output.dpi,
                     )
+                case "table-html":
+                    table_html_output: TableHTMLOutput = output  # type: ignore
+                    success = output_html(df, table_html_output, overwrite_filename)
+            if success:
+                print(f"Created {overwrite_filename}.")
+            else:
+                logger.error(f"Failed to create {overwrite_filename}.")
 
     if os.getuid() == 0:
         os.umask(prev_umask)
@@ -588,6 +607,7 @@ def _output_results(
             "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
         )
         print()
-        print(print_table.to_markdown(index=False))
+        if print_table is not None:
+            print(print_table.to_markdown(index=False))
 
     logger.info("Finished outputting results.")
