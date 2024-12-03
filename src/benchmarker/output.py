@@ -262,7 +262,6 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
     )
     if table is not None:
         print(table.to_markdown(index=False))
-        print(f"Created '{output_filename}'")
         table.to_markdown(output_filename, index=False)
         return True
     else:
@@ -281,7 +280,6 @@ def output_html(
         metrics=output.metrics,
     )
     if table is not None:
-        print(table.to_html(index=False))
         table.to_html(output_filename, index=False)
         return True
     else:
