@@ -175,6 +175,8 @@ For each combination of the variable values, the Benchmarker will create a colum
 * `stats` (optional, default = ["min", "median", "max"]): contains an array of statistics which will be calculated for each result column.
 Available are: `min`, `max`, `mean`, `std` and `relative`.
 
+`table-html` is an HTML version of the `table-md`.
+
 Additionally, instead of using variable names you can use one of the following:
 * `benchmark_date` - time stamp (date and hour) of when the benchmarks completed.
 * `stage` - column containing stages' names.
