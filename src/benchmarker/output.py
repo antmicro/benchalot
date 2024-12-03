@@ -261,7 +261,7 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
         metrics=output.metrics,
     )
     if table is not None:
-        print(table.to_markdown(index=False))
+        logger.info("\n" + table.to_markdown(index=False))
         table.to_markdown(output_filename, index=False)
         return True
     else:
@@ -449,7 +449,7 @@ def _output_results(
             if not variables_in_filename:
                 results_df.to_csv(output.filename, encoding="utf-8", index=False)
                 csv_output_filenames.append(output.filename)
-                print(f"Created '{output.filename}'")
+                logger.info(f"Created '{output.filename}'")
             else:
                 for comb, combination_df in get_combination_filtered_dfs(
                     results_df, variables_in_filename
@@ -459,7 +459,7 @@ def _output_results(
                         overwrite_filename, encoding="utf-8", index=False
                     )
                     csv_output_filenames.append(overwrite_filename)
-                    print(f"Created '{overwrite_filename}'")
+                    logger.info(f"Created '{overwrite_filename}'")
         else:
             non_csv_outputs.append(output_name)
 
@@ -579,7 +579,7 @@ def _output_results(
                     table_html_output: TableHTMLOutput = output  # type: ignore
                     success = output_html(df, table_html_output, overwrite_filename)
             if success:
-                print(f"Created {overwrite_filename}.")
+                logger.info(f"Created {overwrite_filename}.")
             else:
                 logger.error(f"Failed to create {overwrite_filename}.")
 
@@ -604,7 +604,6 @@ def _output_results(
             [col for col in table_df.columns if col not in excluded_columns],
             "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
         )
-        print()
         if print_table is not None:
             print(print_table.to_markdown(index=False))
 
