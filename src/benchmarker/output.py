@@ -2,6 +2,7 @@ from plotnine import (
     ggplot,
     aes,
     geom_bar,
+    geom_boxplot,
     facet_grid,
     theme_classic,
     labs,
@@ -358,7 +359,7 @@ def output_bar_chart(
 
     funcs = {"mean": np.mean, "median": np.median, "min": np.min, "max": np.max}
     if color:
-        plot += aes(fill=f"factor({color})")
+        plot += aes(fill=color)
         plot += labs(fill=color)
     if stack and not color:
         plot += aes(fill="stage")
@@ -387,6 +388,94 @@ def output_bar_chart(
     )
     return True
 
+def output_boxplot(
+    input_df: pd.DataFrame,
+    output_filename: str,
+    x_axis: str | None,
+    y_axis: str | None,
+    color: str | None,
+    facet: str | None,
+    width: int,
+    height: int,
+    dpi: int,
+) -> bool:
+    """Output box plot.
+
+    Args:
+        output_df: Dataframe containing benchmark results.
+        output_filename: Name of the output plot image.
+        x_axis: Name of the variable used as x-axis of the plot.
+        y_axis: Name of the variable used as y-axis of the plot.
+        color: Name of the variable used as color channel of the plot.
+        facet: Name of the variable used to facet the plot.
+        width: Output image width (in inches).
+        height: Output image height (in inches).
+        dpi: Output image dpi.
+    """
+
+    def valid(option) -> bool:
+        if option:
+            if option not in output_df.columns:
+                logger.error(
+                    f"'{option}' is not a column (columns: [{', '.join(output_df.columns)}])."
+                )
+                return False
+        return True
+
+    output_df = input_df.copy()
+    # validate options and apply defaults
+    if y_axis is None:
+        if output_df[METRIC_COLUMN].nunique() > 1:
+            logger.error("no metric specified.")
+            return False
+        y_axis = output_df[METRIC_COLUMN].iloc[0]
+    elif y_axis not in output_df[METRIC_COLUMN].unique():
+        logger.error(
+            f"'{y_axis}' is not a metric (metrics: [{', '.join(output_df[METRIC_COLUMN].unique())}])."
+        )
+        return False
+    if not valid(x_axis):
+        return False
+    if not valid(color):
+        return False
+    if not valid(facet):
+        return False
+
+    output_df = output_df.loc[output_df[METRIC_COLUMN] == y_axis]
+
+    plot = ggplot(output_df, aes(y=RESULT_COLUMN))
+    if x_axis:
+        plot += aes(x=x_axis)
+    else:
+        # create dummy column since geom_bar always needs to have an x-axis
+        dummy_column = str(uuid4())
+        output_df[dummy_column] = 0
+        plot += aes(x=dummy_column)
+
+    if color:
+        plot += aes(fill=color)
+        plot += labs(fill=color)
+    plot += geom_boxplot()
+
+    if facet:
+        plot += facet_grid(cols=facet)
+    plot += labs(y=y_axis)
+    plot += theme_classic()
+    if not x_axis:
+        plot += theme(
+            axis_text_x=element_blank(),
+            axis_title_x=element_blank(),
+            axis_ticks_x=element_blank(),
+        )
+    plot.save(
+        output_filename,
+        width=width,
+        height=height,
+        dpi=dpi,
+        limitsize=False,
+        verbose=False,
+    )
+    return True
 
 def get_combination_filtered_dfs(
     df: pd.DataFrame, columns: list[str]
@@ -582,6 +671,17 @@ def _output_results(
                 logger.info(f"Created {overwrite_filename}.")
             else:
                 logger.error(f"Failed to create {overwrite_filename}.")
+    success = output_boxplot(
+        results_df,
+        "plot.png",
+        "max",
+        "time",
+        None,
+        None,
+        9,
+        10,
+        100
+    )
 
     if os.getuid() == 0:
         os.umask(prev_umask)
