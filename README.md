@@ -60,7 +60,7 @@ output:
     format: "csv"
   plot:
     filename: "plot.png"
-    format: "bar-chart"
+    format: "bar"
     x-axis: input
     facet: tag
     color: thread
@@ -68,12 +68,23 @@ output:
     height: 9
     dpi: 100
   table:
-    format: "table-md"
+    format: "md"
     filename: "table.md"
     columns: ["tag"]
     pivot: "{{metric}} to process {{input}}"
     stats: ["mean", "std"]
 ```
+
+The config above will generate this `plot.png`:
+
+<img src="plot.png" alt="plot created automatically based on configuration file" width="700" height="630"/>
+
+And this `table.md`:
+```markdown
+| tag   | mean time to process data1   | mean time to process data2   | mean time to process data3   |
+|:------|:-----------------------------|:-----------------------------|:-----------------------------|
+| slow  | 0.474 ± 0.235                | 0.222 ± 0.087                | 0.508 ± 0.247                |
+| fast  | 0.362 ± 0.166                | 0.212 ± 0.081                | 0.475 ± 0.229                |
 
 ### Matrix
 
@@ -149,33 +160,59 @@ The section is optional; if no options are specified, Benchmarker can be run wit
 
 ### Output
 
-In the `output` section user can specify desired output of the program.
-Each subsection of the `output` corresponds to one output file described by `filename` and `format`.
-Currently there are three supported formats: `csv`, `bar-plot` and `table-md`.
+```
+---
+# Here are examples of available output formats.
+output:
+    # Results in a csv file with a format that is compatible with the Benchmarker
+    csv-table:
+        format: csv
+        filename: example.csv
 
-`csv` output will contain columns corresponding to variables and one column with benchmark results.
+    # Results in a text file containing a markdown table
+    markdown-table:
+        format: md
+        filename: example.md
+        columns: [tag, input, thread] # Column names which will be used to group the results in the table. By default names of all variables are used.
+        metrics: [time] # Metrics which will be included in the table. By default all metrics are included.
+        pivot: "{{stage}} {{metric}}" # Result columns' name pattern, containing names of the variables which will be used to create columns.
+        stats: ["min", "median", "max"] # Statistics which will be calculated for each result column. Available are: `min`, `max`, `mean`, `std` and `relative`.
 
-`bar-chart` will result in a `.png` image containing the plot.
-Configure using these options:
-* `x-axis` (optional, default = None): contains name of the variable which will be used as x-axis on the plot.
-* `y-axis` (optional, default = `time`): contains name of metric to be used as y-axis on the plot.
-* `facet` (optional): contains name of the variable which will be used to facet (divide into subplots) the plot.
-* `width` (optional, default = 10in): width of resulting image in inches.
-* `height` (optional, default = 9in): height of resulting image in inches.
-* `dpi` (optional, default = 100): DPI of resulting image.
-* `stat` (optional, default = `median`): what statistic function should determine bar height.
-Available are: `min`, `mean`, `median` and `max`.
+    # HTML version of the `md` format.
+    html-table:
+        format: html
+        filename: table.html
 
-`table-md` will result in a text file containing a markdown table. 
-Configured using these options:
-* `columns` (optional, default - include variable columns): contains an array of variable names which will be used to group the results in the table.
-* `metrics` (optional, default = all the metrics): list of names of metrics, which will be included in the table.
-* `pivot` (optional, default = `"{{stage}} {{metric}}"`): contains result column name pattern, containing names of the variables which will be used to create columns.
-For each combination of the variable values, the Benchmarker will create a column.
-* `stats` (optional, default = ["min", "median", "max"]): contains an array of statistics which will be calculated for each result column.
-Available are: `min`, `max`, `mean`, `std` and `relative`.
+    # Results in an image of a scatter plot. 
+    scatter-plot:
+        format: scatter 
+        filename: example_scatter.png
+        # Options that are common for all the plots:
+        x-axis: input # Variable which will be used as x-axis on the plot.
+        y-axis: tag # Metric which will be used as y-axis on the plot.
+        facet: thread # Variable which will be used to facet (divide into subplots) the plot.
+        color: input # Variable which will be used as color channel of the plot.
+        width: 10 # Width of resulting image in inches.
+        height: 9 # Height of resulting image in inches.
+        dpi: 100 # DPI of resulting image.
 
-`table-html` is an HTML version of `table-md`.
+    # Results in an image of a box plot.
+    box-plot:
+        format: box 
+        filename: example_box.png
+
+    # Results in an image of a violin plot.
+    violin-plot:
+        format: violin 
+        filename: example_violin.png
+
+    # Results in an image of a bar chart.
+    bar-chart:
+        format: box 
+        filename: example_box.png
+        # Option bar chart specific
+        stat: median # Function which will determine bar height. Available are: `min`, `mean`, `median` and `max`.
+```
 
 Additionally, instead of using variable names you can use one of the following:
 * `benchmark_date` - time stamp (date and hour) of when the benchmarks completed.
@@ -183,16 +220,6 @@ Additionally, instead of using variable names you can use one of the following:
 * `has_failed` - column containing `True` or `False` depending on whether the benchmark failed.
 
 
-For example, the config above will generate this `plot.png`:
-
-<img src="plot.png" alt="plot created automatically based on configuration file" width="700" height="630"/>
-
-And this `table.md`:
-```markdown
-| tag   | mean time to process data1   | mean time to process data2   | mean time to process data3   |
-|:------|:-----------------------------|:-----------------------------|:-----------------------------|
-| slow  | 0.474 ± 0.235                | 0.222 ± 0.087                | 0.508 ± 0.247                |
-| fast  | 0.362 ± 0.166                | 0.212 ± 0.081                | 0.475 ± 0.229                |
 ```
 
 #### Multiplying output
