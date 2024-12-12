@@ -261,24 +261,52 @@ def get_stat_table(
     return stat_table
 
 
+def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
+    logger.debug("Outputting markdown table.")
+    table = get_stat_table(
+        results_df,
+        show_columns=output.columns,
+        pivot=output.pivot,
+        stats=output.stats,
+        metrics=output.metrics,
+    )
+    if table is not None:
+        logger.info("\n" + table.to_markdown(index=False))
+        table.to_markdown(output_filename, index=False)
+        return True
+    else:
+        return False
+
+
+def output_html(
+    results_df: pd.DataFrame, output: TableHTMLOutput, output_filename
+) -> bool:
+    logger.debug("Outputting HTML table.")
+    table = get_stat_table(
+        results_df,
+        show_columns=output.columns,
+        pivot=output.pivot,
+        stats=output.stats,
+        metrics=output.metrics,
+    )
+    if table is not None:
+        table.to_html(output_filename, index=False)
+        return True
+    else:
+        return False
+
+
 def output_plot(
     input_df: pd.DataFrame,
     output_filename: str,
     plot_config: BasePlotOutput,
 ) -> bool:
-    """Output bar plot.
+    """Output a plot.
 
     Args:
         output_df: Dataframe containing benchmark results.
         output_filename: Name of the output plot image.
-        x_axis: Name of the variable used as x-axis of the plot.
-        y_axis: Name of the variable used as y-axis of the plot.
-        color: Name of the variable used as color channel of the plot.
-        facet: Name of the variable used to facet the plot.
-        stat: Name of the statistic which will be used to determine bar heights.
-        width: Output image width (in inches).
-        height: Output image height (in inches).
-        dpi: Output image dpi.
+        plot_config: Configuration regarding the plot.
     """
 
     def column_exists(option, df) -> bool:
@@ -374,41 +402,6 @@ def output_plot(
         verbose=False,
     )
     return True
-
-
-def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
-    logger.debug("Outputting markdown table.")
-    table = get_stat_table(
-        results_df,
-        show_columns=output.columns,
-        pivot=output.pivot,
-        stats=output.stats,
-        metrics=output.metrics,
-    )
-    if table is not None:
-        logger.info("\n" + table.to_markdown(index=False))
-        table.to_markdown(output_filename, index=False)
-        return True
-    else:
-        return False
-
-
-def output_html(
-    results_df: pd.DataFrame, output: TableHTMLOutput, output_filename
-) -> bool:
-    logger.debug("Outputting HTML table.")
-    table = get_stat_table(
-        results_df,
-        show_columns=output.columns,
-        pivot=output.pivot,
-        stats=output.stats,
-        metrics=output.metrics,
-    )
-    if table is not None:
-        table.to_html(output_filename, index=False)
-        return True
-    else:
-        return False
 
 
 def get_combination_filtered_dfs(
