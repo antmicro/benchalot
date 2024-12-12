@@ -5,12 +5,11 @@ import numpy as np
 import os
 from uuid import uuid4
 from benchmarker.config import (
-    BarChartOutput,
-    CsvOutput,
     TableMdOutput,
     TableHTMLOutput,
     BasePlotOutput,
     OutputFormat,
+    OutputSection,
 )
 from benchmarker.interpolate import (
     create_variable_combinations,
@@ -72,7 +71,7 @@ def read_old_outputs(include: list[str]) -> pd.DataFrame:
 
 def output_results_from_dict(
     results: dict,
-    output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
+    output_config: OutputSection,
     include: list,
     include_failed: bool,
     include_outliers: bool,
@@ -100,7 +99,7 @@ def output_results_from_dict(
 
 
 def output_results_from_file(
-    output_config: dict[str, BarChartOutput | CsvOutput | TableMdOutput],
+    output_config: OutputSection,
     include: list,
     include_failed: bool,
     include_outliers: bool,
@@ -436,7 +435,7 @@ def get_combination_filtered_dfs(
 
 def _output_results(
     results_df: pd.DataFrame,
-    output_config: dict[str, CsvOutput | TableMdOutput | BarChartOutput],
+    output_config: OutputSection,
     include_failed: bool,
     include_outliers: bool,
 ) -> None:

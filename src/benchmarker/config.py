@@ -238,6 +238,18 @@ class TableHTMLOutput(TableOutput):
     format: Literal[OutputFormat.HTML]
 
 
+OutputSection = dict[
+    str,
+    TableHTMLOutput
+    | CsvOutput
+    | BarChartOutput
+    | BoxPlotOutput
+    | ScatterPlotOutput
+    | ViolinPlotOutput
+    | TableMdOutput,
+]
+
+
 class ConfigFile(BaseModel):
     """Schema of the configuration file.
 
@@ -253,16 +265,7 @@ class ConfigFile(BaseModel):
     exclusions: list[dict[str, str | int | float]] = []
     system: SystemSection = SystemSection()
     run: RunSection
-    output: dict[
-        str,
-        CsvOutput
-        | BarChartOutput
-        | BasePlotOutput
-        | ScatterPlotOutput
-        | ViolinPlotOutput
-        | TableMdOutput
-        | TableHTMLOutput,
-    ]
+    output: OutputSection
 
     model_config = ConfigDict(extra="forbid")
 
@@ -299,7 +302,7 @@ class OutputConfig(BaseModel):
         output: Section containing desired outputs.
     """
 
-    output: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
+    output: OutputSection
 
 
 def validate_config(config) -> ConfigFile:

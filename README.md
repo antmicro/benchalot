@@ -160,6 +160,7 @@ The section is optional; if no options are specified, Benchmarker can be run wit
 
 ### Output
 
+<!-- name="output" -->
 ```
 ---
 # Here are examples of available output formats.
@@ -181,7 +182,7 @@ output:
     # HTML version of the `md` format.
     html-table:
         format: html
-        filename: table.html
+        filename: example.html
 
     # Results in an image of a scatter plot. 
     scatter-plot:
@@ -208,8 +209,8 @@ output:
 
     # Results in an image of a bar chart.
     bar-chart:
-        format: box 
-        filename: example_box.png
+        format: bar 
+        filename: example_bar.png
         # Option bar chart specific
         stat: median # Function which will determine bar height. Available are: `min`, `mean`, `median` and `max`.
 ```
