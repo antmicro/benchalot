@@ -191,7 +191,7 @@ output:
         filename: example_scatter.png
         # Options that are common for all the plots:
         x-axis: input # Variable which will be used as x-axis on the plot.
-        y-axis: tag # Metric which will be used as y-axis on the plot.
+        y-axis: time # Metric which will be used as y-axis on the plot.
         facet: thread # Variable which will be used to facet (divide into subplots) the plot.
         color: input # Variable which will be used as color channel of the plot.
         width: 10 # Width of resulting image in inches.
