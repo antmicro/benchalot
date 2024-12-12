@@ -4,7 +4,14 @@ from datetime import timezone, datetime
 import numpy as np
 import os
 from uuid import uuid4
-from benchmarker.config import BarChartOutput, CsvOutput, TableMdOutput, TableHTMLOutput
+from benchmarker.config import (
+    BarChartOutput,
+    CsvOutput,
+    TableMdOutput,
+    TableHTMLOutput,
+    BasePlotOutput,
+    OutputFormat,
+)
 from benchmarker.interpolate import (
     create_variable_combinations,
     VAR_REGEX,
@@ -24,7 +31,6 @@ from re import findall, sub
 from atexit import register, unregister
 from collections.abc import Generator, Iterable
 from typing import Literal
-from benchmarker.config import BasePlotOutput
 from copy import deepcopy
 from plotnine import (
     ggplot,
@@ -318,7 +324,6 @@ def output_plot(
     if valid_config.x_axis:
         plot += aes(x=valid_config.x_axis)
     else:
-        # create dummy column since geom_bar always needs to have an x-axis
         dummy_column = str(uuid4())
         output_df[dummy_column] = 0
         plot += aes(x=dummy_column)
@@ -327,7 +332,7 @@ def output_plot(
         plot += aes(fill=valid_config.color)
         plot += labs(fill=valid_config.color)
     match valid_config.format:
-        case "bar-chart":
+        case OutputFormat.BAR:
             funcs = {"mean": np.mean, "median": np.median, "min": np.min, "max": np.max}
             stack = output_df[STAGE_COLUMN].nunique() > 1
             if stack and valid_config.color:
@@ -346,11 +351,11 @@ def output_plot(
                 plot += geom_bar(
                     position="dodge", stat="summary", fun_y=funcs[valid_config.stat]
                 )
-        case "box-plot":
+        case OutputFormat.BOX:
             plot += geom_boxplot()
-        case "scatter-plot":
+        case OutputFormat.SCATTER:
             plot += geom_point()
-        case "violin":
+        case OutputFormat.VIOLIN:
             plot += geom_violin()
 
     if valid_config.facet:
@@ -464,7 +469,7 @@ def _output_results(
     non_csv_outputs = []
     csv_output_filenames = []
     for output_name, output in output_config.items():
-        if output.format == "csv":
+        if output.format == OutputFormat.CSV:
             logger.debug("Outputting .csv file.")
             variables_in_filename = findall(VAR_REGEX, output.filename)
             if not variables_in_filename:
@@ -579,13 +584,18 @@ def _output_results(
             overwrite_filename = interpolate_variables(output.filename, comb)
             success: bool
             match output.format:
-                case "table-md":
+                case OutputFormat.MD:
                     table_md_output: TableMdOutput = output  # type: ignore
                     success = output_md(df, table_md_output, overwrite_filename)
-                case "bar-chart" | "box-plot" | "scatter-plot" | "violin":
-                    bar_chart_output: BarChartOutput = output  # type: ignore
-                    success = output_plot(df, overwrite_filename, bar_chart_output)
-                case "table-html":
+                case (
+                    OutputFormat.BAR
+                    | OutputFormat.BOX
+                    | OutputFormat.SCATTER
+                    | OutputFormat.VIOLIN
+                ):
+                    plot_output: BasePlotOutput = output  # type: ignore
+                    success = output_plot(df, overwrite_filename, plot_output)
+                case OutputFormat.HTML:
                     table_html_output: TableHTMLOutput = output  # type: ignore
                     success = output_html(df, table_html_output, overwrite_filename)
             if success:

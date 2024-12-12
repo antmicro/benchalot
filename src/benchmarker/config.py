@@ -16,6 +16,7 @@ from benchmarker.output_constants import (
     STAGE_COLUMN,
     CONSTANT_COLUMNS,
 )
+from enum import StrEnum
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -123,6 +124,16 @@ class RunSection(BaseModel):
         return env_vars
 
 
+class OutputFormat(StrEnum):
+    CSV = "csv"
+    MD = "md"
+    HTML = "html"
+    SCATTER = "scatter"
+    BAR = "bar"
+    VIOLIN = "violin"
+    BOX = "box"
+
+
 class OutputField(BaseModel):
     """Parent class for output formats.
 
@@ -143,7 +154,7 @@ class CsvOutput(OutputField):
         format: Must be "csv".
     """
 
-    format: Literal["csv"]
+    format: Literal[OutputFormat.CSV]
     model_config = ConfigDict(extra="forbid")
 
 
@@ -178,23 +189,23 @@ class BarChartOutput(BasePlotOutput):
         stat: What mathematical function should be used to determine bar-height.
     """
 
-    format: Literal["bar-chart"]
+    format: Literal[OutputFormat.BAR]
     stat: Literal["max", "min", "mean", "median", "max"] = "median"
     model_config = ConfigDict(extra="forbid")
 
 
 class BoxPlotOutput(BasePlotOutput):
-    format: Literal["box-plot"]
+    format: Literal[OutputFormat.BOX]
     model_config = ConfigDict(extra="forbid")
 
 
 class ScatterPlotOutput(BasePlotOutput):
-    format: Literal["scatter-plot"]
+    format: Literal[OutputFormat.SCATTER]
     model_config = ConfigDict(extra="forbid")
 
 
 class ViolinPlotOutput(BasePlotOutput):
-    format: Literal["violin"]
+    format: Literal[OutputFormat.VIOLIN]
     model_config = ConfigDict(extra="forbid")
 
 
@@ -220,11 +231,11 @@ class TableOutput(OutputField):
 
 
 class TableMdOutput(TableOutput):
-    format: Literal["table-md"]
+    format: Literal[OutputFormat.MD]
 
 
 class TableHTMLOutput(TableOutput):
-    format: Literal["table-html"]
+    format: Literal[OutputFormat.HTML]
 
 
 class ConfigFile(BaseModel):
@@ -276,7 +287,7 @@ class ConfigFile(BaseModel):
         """
         for output_key in outputs:
             output = outputs[output_key]
-            if type(output) is CsvOutput:
+            if output.format == OutputFormat.CSV:
                 return outputs
         raise ValueError("at least one 'csv' output is required")
 
