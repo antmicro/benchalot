@@ -22,6 +22,7 @@ RUN_OUTLIERS=$(tuttest README.md outliers)
 SIZE_CONFIG=$(tuttest README.md size-config)
 EXCLUSION=$(tuttest README.md exclusions)
 MUL=$(tuttest README.md mul)
+OUTPUT=$(tuttest README.md output)
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
@@ -35,8 +36,19 @@ eval "$RUN"
 assert_file_exists plot.png
 assert_file_exists table.md
 assert_file_exists result.csv
-mv plot.png previous.png
 
+echo "$OUTPUT" > output_config.yml
+benchmarker output_config.yml -u result.csv
+
+assert_file_exists example.csv
+assert_file_exists example.md
+assert_file_exists example.html
+assert_file_exists example_scatter.png
+assert_file_exists example_box.png
+assert_file_exists example_violin.png
+assert_file_exists example_bar.png
+
+mv plot.png previous.png
 printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
 eval "$RUN_UPDATE"
 assert_file_exists result2.csv
@@ -52,6 +64,7 @@ printf "\n%s" "$MUL" | sed 's/^/  /' >> config.yml
 eval "$RUN_UPDATE"
 assert_file_exists plot_slow.png
 assert_file_exists plot_fast.png
+
 
 printf "\n%s" "$EXCLUSION" >> config.yml
 rm plot.png
