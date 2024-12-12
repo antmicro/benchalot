@@ -184,13 +184,12 @@ class BarChartOutput(BasePlotOutput):
 
 
 class BoxPlotOutput(BasePlotOutput):
-    """Schema of a bar chart output field.
-
-    Attributes:
-        stat: What mathematical function should be used to determine bar-height.
-    """
-
     format: Literal["box-plot"]
+    model_config = ConfigDict(extra="forbid")
+
+
+class ScatterPlotOutput(BasePlotOutput):
+    format: Literal["scatter-plot"]
     model_config = ConfigDict(extra="forbid")
 
 
@@ -240,7 +239,12 @@ class ConfigFile(BaseModel):
     run: RunSection
     output: dict[
         str,
-        CsvOutput | BarChartOutput | BasePlotOutput | TableMdOutput | TableHTMLOutput,
+        CsvOutput
+        | BarChartOutput
+        | BasePlotOutput
+        | ScatterPlotOutput
+        | TableMdOutput
+        | TableHTMLOutput,
     ]
 
     model_config = ConfigDict(extra="forbid")

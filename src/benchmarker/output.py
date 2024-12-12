@@ -37,6 +37,7 @@ from plotnine import (
     scale_fill_discrete,
     element_blank,
     theme,
+    geom_point,
 )
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -346,6 +347,8 @@ def output_plot(
                 )
         case "box-plot":
             plot += geom_boxplot()
+        case "scatter-plot":
+            plot += geom_point()
 
     if valid_config.facet:
         plot += facet_grid(cols=valid_config.facet)
@@ -576,7 +579,7 @@ def _output_results(
                 case "table-md":
                     table_md_output: TableMdOutput = output  # type: ignore
                     success = output_md(df, table_md_output, overwrite_filename)
-                case "bar-chart" | "box-plot":
+                case "bar-chart" | "box-plot" | "scatter-plot":
                     bar_chart_output: BarChartOutput = output  # type: ignore
                     success = output_plot(df, overwrite_filename, bar_chart_output)
                 case "table-html":
