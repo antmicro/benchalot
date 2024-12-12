@@ -85,6 +85,7 @@ And this `table.md`:
 |:------|:-----------------------------|:-----------------------------|:-----------------------------|
 | slow  | 0.474 ± 0.235                | 0.222 ± 0.087                | 0.508 ± 0.247                |
 | fast  | 0.362 ± 0.166                | 0.212 ± 0.081                | 0.475 ± 0.229                |
+```
 
 ### Matrix
 
@@ -161,7 +162,7 @@ The section is optional; if no options are specified, Benchmarker can be run wit
 ### Output
 
 <!-- name="output" -->
-```
+```yaml
 ---
 # Here are examples of available output formats.
 output:
