@@ -261,38 +261,6 @@ def get_stat_table(
     return stat_table
 
 
-def column_exists(option, df) -> bool:
-    if option:
-        if option not in df.columns:
-            logger.error(
-                f"'{option}' is not a column (columns: [{', '.join(df.columns)}])."
-            )
-            return False
-    return True
-
-
-def validate_columns(config: BasePlotOutput, df):
-    plot_config = deepcopy(config)
-    if not column_exists(plot_config.x_axis, df):
-        return None
-    if not column_exists(plot_config.color, df):
-        return None
-    if not column_exists(plot_config.facet, df):
-        return None
-    if plot_config.y_axis is None:
-        if df[METRIC_COLUMN].nunique() > 1:
-            logger.error("no metric specified.")
-            return None
-        else:
-            plot_config.y_axis = df[METRIC_COLUMN].iloc[0]
-    elif plot_config.y_axis not in df[METRIC_COLUMN].unique():
-        logger.error(
-            f"'{plot_config.y_axis}' is not a metric (metrics: [{', '.join(df[METRIC_COLUMN].unique())}])."
-        )
-        return None
-    return plot_config
-
-
 def output_plot(
     input_df: pd.DataFrame,
     output_filename: str,
@@ -312,6 +280,36 @@ def output_plot(
         height: Output image height (in inches).
         dpi: Output image dpi.
     """
+
+    def column_exists(option, df) -> bool:
+        if option:
+            if option not in df.columns:
+                logger.error(
+                    f"'{option}' is not a column (columns: [{', '.join(df.columns)}])."
+                )
+                return False
+        return True
+
+    def validate_columns(config: BasePlotOutput, df):
+        plot_config = deepcopy(config)
+        if not column_exists(plot_config.x_axis, df):
+            return None
+        if not column_exists(plot_config.color, df):
+            return None
+        if not column_exists(plot_config.facet, df):
+            return None
+        if plot_config.y_axis is None:
+            if df[METRIC_COLUMN].nunique() > 1:
+                logger.error("no metric specified.")
+                return None
+            else:
+                plot_config.y_axis = df[METRIC_COLUMN].iloc[0]
+        elif plot_config.y_axis not in df[METRIC_COLUMN].unique():
+            logger.error(
+                f"'{plot_config.y_axis}' is not a metric (metrics: [{', '.join(df[METRIC_COLUMN].unique())}])."
+            )
+            return None
+        return plot_config
 
     valid_config = validate_columns(plot_config, input_df)
     if not valid_config:
