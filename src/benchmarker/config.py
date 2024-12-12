@@ -193,6 +193,11 @@ class ScatterPlotOutput(BasePlotOutput):
     model_config = ConfigDict(extra="forbid")
 
 
+class ViolinPlotOutput(BasePlotOutput):
+    format: Literal["violin"]
+    model_config = ConfigDict(extra="forbid")
+
+
 class TableOutput(OutputField):
     """Schema of a markdown table output field.
 
@@ -243,6 +248,7 @@ class ConfigFile(BaseModel):
         | BarChartOutput
         | BasePlotOutput
         | ScatterPlotOutput
+        | ViolinPlotOutput
         | TableMdOutput
         | TableHTMLOutput,
     ]
