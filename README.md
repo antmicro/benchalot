@@ -166,7 +166,7 @@ The section is optional; if no options are specified, Benchmarker can be run wit
 ---
 # Here are examples of available output formats.
 output:
-    # Results in a csv file with a format that is compatible with the Benchmarker
+    # Results in a csv file in format that is compatible with the Benchmarker
     csv-table:
         format: csv
         filename: example.csv
@@ -175,9 +175,9 @@ output:
     markdown-table:
         format: md
         filename: example.md
-        columns: [tag, input, thread] # Column names which will be used to group the results in the table. By default names of all variables are used.
-        metrics: [time] # Metrics which will be included in the table. By default all metrics are included.
-        pivot: "{{stage}} {{metric}}" # Result columns' name pattern, containing names of the variables which will be used to create columns.
+        columns: [tag, input, thread]   # Column names which will be used to group the results in the table. By default names of all variables are used.
+        metrics: [time]                 # Metrics which will be included in the table. By default all metrics are included.
+        pivot: "{{stage}} {{metric}}"   # Result column name pattern, containing names of the variables which will be used to create columns.
         stats: ["min", "median", "max"] # Statistics which will be calculated for each result column. Available are: `min`, `max`, `mean`, `std` and `relative`.
 
     # HTML version of the `md` format.
@@ -190,13 +190,13 @@ output:
         format: scatter 
         filename: example_scatter.png
         # Options that are common for all the plots:
-        x-axis: input # Variable which will be used as x-axis on the plot.
-        y-axis: time # Metric which will be used as y-axis on the plot.
-        facet: thread # Variable which will be used to facet (divide into subplots) the plot.
-        color: input # Variable which will be used as color channel of the plot.
-        width: 10 # Width of resulting image in inches.
-        height: 9 # Height of resulting image in inches.
-        dpi: 100 # DPI of resulting image.
+        x-axis: input   # Variable which will be used as x-axis on the plot.
+        y-axis: time    # Metric which will be used as y-axis on the plot.
+        facet: thread   # Variable which will be used to facet (divide into subplots) the plot.
+        color: input    # Variable which will be used as color channel of the plot.
+        width: 10       # Width of resulting image in inches.
+        height: 9       # Height of resulting image in inches.
+        dpi: 100        # DPI of resulting image.
 
     # Results in an image of a box plot.
     box-plot:
