@@ -222,8 +222,6 @@ Additionally, instead of using variable names you can use one of the following:
 * `has_failed` - column containing `True` or `False` depending on whether the benchmark failed.
 
 
-```
-
 #### Multiplying output
 
 To create multiple outputs from one rule, you can use variables in filenames.
