@@ -147,8 +147,8 @@ class CsvOutput(OutputField):
     model_config = ConfigDict(extra="forbid")
 
 
-class BarChartOutput(OutputField):
-    """Schema of a bar chart output field.
+class BasePlotOutput(OutputField):
+    """Parent class for different kinds of plots.
 
     Attributes:
         format: Must be "bar-chart".
@@ -159,10 +159,9 @@ class BarChartOutput(OutputField):
         width: Resulting plot image width in inches.
         height: Resulting plot image height in inches.
         dpi: Resulting plot image DPI.
-        stat: What mathematical function should be used to determine bar-height.
     """
 
-    format: Literal["bar-chart"]
+    format: str
     x_axis: str | None = Field(default=None, alias="x-axis")
     y_axis: str | None = Field(default=None, alias="y-axis")
     facet: str | None = None
@@ -170,7 +169,28 @@ class BarChartOutput(OutputField):
     width: int = Field(default=10, ge=1)
     height: int = Field(default=9, ge=1)
     dpi: int = Field(default=100, ge=50)
+
+
+class BarChartOutput(BasePlotOutput):
+    """Schema of a bar chart output field.
+
+    Attributes:
+        stat: What mathematical function should be used to determine bar-height.
+    """
+
+    format: Literal["bar-chart"]
     stat: Literal["max", "min", "mean", "median", "max"] = "median"
+    model_config = ConfigDict(extra="forbid")
+
+
+class BoxPlotOutput(BasePlotOutput):
+    """Schema of a bar chart output field.
+
+    Attributes:
+        stat: What mathematical function should be used to determine bar-height.
+    """
+
+    format: Literal["box-plot"]
     model_config = ConfigDict(extra="forbid")
 
 
@@ -218,7 +238,11 @@ class ConfigFile(BaseModel):
     exclusions: list[dict[str, str | int | float]] = []
     system: SystemSection = SystemSection()
     run: RunSection
-    output: dict[str, CsvOutput | BarChartOutput | TableMdOutput | TableHTMLOutput]
+    output: dict[
+        str,
+        CsvOutput | BarChartOutput | BasePlotOutput | TableMdOutput | TableHTMLOutput,
+    ]
+
     model_config = ConfigDict(extra="forbid")
 
     @field_validator("matrix")
