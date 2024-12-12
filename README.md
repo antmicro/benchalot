@@ -232,7 +232,7 @@ For example, to create a separate bar chart for each value of variable `tag`, yo
 ```
 plot2:
   filename: "plot_{{tag}}.png"
-  format: "bar-chart"
+  format: "bar"
   x-axis: input
   facet: tag
   color: thread
@@ -270,11 +270,11 @@ output:
     format: "csv"
   table:
     filename: "file_table.md"
-    format: "table-md"
+    format: "md"
     metrics: [size]
 ```
 Benchmarker will then execute `stat -c %s {{compression}}.out` after commands in benchmark section and store stdout as the result. 
-The size measurements are accessible under `size` name and can be specified for `table-md` as `result-colum`.
+The size measurements are accessible under `size` name and can be specified for `md` as `result-colum`.
 
 #### Custom Metrics and Stages
 
