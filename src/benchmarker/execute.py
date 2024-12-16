@@ -179,11 +179,17 @@ def perform_benchmarks(
                             bar.set_description(command)
                             start = monotonic_ns()
                             process = execute_command(command)
+                            # taking parts of process.communicate implementation, src: https://github.com/python/cpython/blob/main/Lib/subprocess.py
                             if gather_stderr or gather_stdout:
-                                process_stdout, process_stderr = process.communicate()
+                                if process.stdout:
+                                    process_stdout = process.stdout.read()
+                                    process.stdout.close()
+                                if process.stderr:
+                                    process_stderr = process.stderr.read()
+                                    process_stderr = process.stderr.close()
                             else:
                                 log_output(process)
-                                _, exit_status, resources = wait4(process.pid, 0)
+                            _, exit_status, resources = wait4(process.pid, 0)
                             stage_elapsed_time += monotonic_ns() - start
                             if gather_stdout:
                                 stage_stdout += process_stdout.decode("utf-8")
