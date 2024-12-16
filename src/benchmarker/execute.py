@@ -158,14 +158,16 @@ def perform_benchmarks(
                     measure_time = "time" in benchmark.builtin_metrics
                     measure_utime = "utime" in benchmark.builtin_metrics
                     measure_stime = "stime" in benchmark.builtin_metrics
-                    gather_stdout = "stdout" in benchmark.builtin_metrics
-                    gather_stderr = "stderr" in benchmark.builtin_metrics
+                    measure_memory = "memory" in benchmark.builtin_metrics
+                    measure_stdout = "stdout" in benchmark.builtin_metrics
+                    measure_stderr = "stderr" in benchmark.builtin_metrics
 
                     has_failed = False
 
                     time_measurements: dict[str, float | None] = {}
                     utime_measurements: dict[str, float | None] = {}
                     stime_measurements: dict[str, float | None] = {}
+                    memory_measurements: dict[str, float | None] = {}
                     stdout_measurements: dict[str, float | None] = {}
                     stderr_measurements: dict[str, float | None] = {}
 
@@ -175,12 +177,13 @@ def perform_benchmarks(
                         stage_stderr = ""
                         stage_utime = 0.0
                         stage_stime = 0.0
+                        stage_memory = -1
                         for command in benchmark.benchmark[stage]:
                             bar.set_description(command)
                             start = monotonic_ns()
                             process = execute_command(command)
                             # taking parts of process.communicate implementation, src: https://github.com/python/cpython/blob/main/Lib/subprocess.py
-                            if gather_stderr or gather_stdout:
+                            if measure_stderr or measure_stdout:
                                 if process.stdout:
                                     process_stdout = process.stdout.read()
                                     process.stdout.close()
@@ -191,12 +194,17 @@ def perform_benchmarks(
                                 log_output(process)
                             _, exit_status, resources = wait4(process.pid, 0)
                             stage_elapsed_time += monotonic_ns() - start
-                            if gather_stdout:
+                            # source: https://manpages.debian.org/bookworm/manpages-dev/getrusage.2.en.html
+                            if measure_utime:
+                                stage_utime += resources.ru_utime
+                            if measure_stime:
+                                stage_stime += resources.ru_stime
+                            if measure_memory:
+                                stage_memory = max(stage_memory, resources.ru_maxrss)
+                            if measure_stdout:
                                 stage_stdout += process_stdout.decode("utf-8")
-                            if gather_stderr:
+                            if measure_stderr:
                                 stage_stderr += process_stderr.decode("utf-8")
-                            stage_utime += resources.ru_utime
-                            stage_stime += resources.ru_stime
                             success = check_return_code(
                                 command, waitstatus_to_exitcode(exit_status)
                             )
@@ -206,14 +214,16 @@ def perform_benchmarks(
                             time_measurements[stage] = stage_elapsed_time / 1e9
                         if measure_utime:
                             utime_measurements[stage] = stage_utime
-                        if measure_utime:
+                        if measure_stime:
                             stime_measurements[stage] = stage_stime
-                        if gather_stdout:
+                        if measure_memory:
+                            memory_measurements[stage] = stage_memory
+                        if measure_stdout:
                             out_float = try_convert_to_float(stage_stdout)
                             stdout_measurements[stage] = out_float
                             if out_float is None:
                                 has_failed = True
-                        if gather_stderr:
+                        if measure_stderr:
                             out_float = try_convert_to_float(stage_stderr)
                             stderr_measurements[stage] = out_float
                             if out_float is None:
@@ -238,9 +248,11 @@ def perform_benchmarks(
                         benchmark_results["utime"] = utime_measurements
                     if measure_stime:
                         benchmark_results["stime"] = stime_measurements
-                    if gather_stdout:
+                    if measure_memory:
+                        benchmark_results["memory"] = memory_measurements
+                    if measure_stdout:
                         benchmark_results["stdout"] = stdout_measurements
-                    if gather_stderr:
+                    if measure_stderr:
                         benchmark_results["stderr"] = stderr_measurements
 
                     bar.update(1)

@@ -117,6 +117,7 @@ class RunSection(BaseModel):
                 "stderr",
                 "stime",
                 "utime",
+                "memory",
             ]:
                 raise ValueError(f"invalid metric '{metric}'")
         return metrics
