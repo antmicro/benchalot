@@ -23,6 +23,7 @@ SIZE_CONFIG=$(tuttest README.md size-config)
 EXCLUSION=$(tuttest README.md exclusions)
 MUL=$(tuttest README.md mul)
 OUTPUT=$(tuttest README.md output)
+RUN_SECTION=$(tuttest README.md run-section)
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
@@ -47,6 +48,14 @@ assert_file_exists example_scatter.png
 assert_file_exists example_box.png
 assert_file_exists example_violin.png
 assert_file_exists example_bar.png
+
+rm -f run.log
+printf "output:\n    csv:\n        filename: \"run_section.csv\" \n        format: \"csv\"\n" > run_config.yml
+printf "matrix:\n    thread: [2, 4, 8]\n    tag: [sleeper-v1.0, sleeper-v1.1]\n    input: [data1, data2, data3]\n" >> run_config.yml
+echo "$RUN_SECTION" >> run_config.yml
+benchmarker run_config.yml
+assert_file_exists run_section.csv
+
 
 mv plot.png previous.png
 printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
