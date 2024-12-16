@@ -117,15 +117,16 @@ Benchmarker will not create benchmarks for these value combinations.
 
 ### Run
 
+<!-- name="run-section" -->
 ```yaml
 run:
     before-all:                                                 # commands to be executed once before all of the benchmarks
         - git clone . ../{{tag}}
     before:                                                     # commands to be executed before each benchmark
-        - cd ../{{tag}} && git checkout {{tag}} && make build
+        - cd ../{{tag}} && git checkout {{tag}}
     benchmark:                                                  # commands to be benchmarked
         compilation:                                            # benchmark section can be further divided into stages
-            - make build -f ../{{tag}}/Makefile
+            - cd ../{{tag}} && make build -s
         execution:
             - ../{{tag}}/sleeper {{thread}} {{input}}
     after:                                                      # contains the commands to be executed after each benchmark
@@ -140,7 +141,7 @@ run:
         - stime             # measure system time
         - memory            # measure peak memory usage
         - stdout            # treat stdout output of the command as the result
-        - stdout            # treat stderr output of the command as the result
+        - stderr            # treat stderr output of the command as the result
 
     custom-metrics:         # specify your own metrics, for more information checkout Custom Metrics section of README
         - threads: echo {{thread}}
@@ -149,7 +150,7 @@ run:
     save-output: run.log    # log file for command output
     cwd: ~                  # change working directory of the commands to specified location
     env:                    # specify additional environment variables to be used when running commands
-        cc: gcc
+        CC: gcc
 ```
 
 ### System
