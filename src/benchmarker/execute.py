@@ -192,7 +192,7 @@ def perform_benchmarks(
                                     process.stdout.close()
                                 if process.stderr:
                                     process_stderr = process.stderr.read()
-                                    process_stderr = process.stderr.close()
+                                    process.stderr.close()
                             else:
                                 log_output(process)
                             _, exit_status, resources = wait4(process.pid, 0)
