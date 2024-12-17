@@ -170,6 +170,7 @@ def perform_benchmarks(
         leave=False,
         mininterval=1,
     )
+    command_logger.set_bar(bar)
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
@@ -206,6 +207,7 @@ def perform_benchmarks(
                             log_output(process, command_logger)
                             process.wait()
                         stage_elapsed_time += monotonic_ns() - start
+                        command_logger.flush()
                         if gather_stdout:
                             stage_stdout += process_stdout.decode("utf-8")
                         if gather_stderr:
@@ -264,6 +266,7 @@ def perform_benchmarks(
             logger.warning("Stopped benchmarks.")
             logger.warning("Creating output...")
             break
+    command_logger.set_bar(None)
     bar.close()
     logger.info("Finished performing benchmarks.")
     logger.debug(f"Benchmark results: {results}")

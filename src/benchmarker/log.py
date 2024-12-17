@@ -10,10 +10,10 @@ from logging import (
 from tempfile import NamedTemporaryFile
 from atexit import register
 from typing import TextIO
+from os import get_terminal_size
 
 
 logger = getLogger(f"benchmarker.{__name__}")
-
 
 class FastLogger:
     def __init__(self):
@@ -24,46 +24,41 @@ class FastLogger:
             verbose: If true, print to `stdout`.
         """
         self.bar = None
-        self.log_q_capacity = 10000
+        self.log_q_capacity = 1024
         self.log_q = [""] * self.log_q_capacity
         self.n_in_log_q = 0
 
     def set_file(self, file):
-        """Set logging file, the FastLogger assumes that the file is opened.
+        """ Set logging file, the FastLogger assumes that the file is opened.
         Args:
             file: File object which will be used to save output.
         """
         self.file = file
-
     def set_verbose(self, verbose):
         self.verbose = verbose
 
     def set_bar(self, bar):
         self.bar = bar
-        size = os.get_terminal_size()
-        self.max_lines = size.lines - 1
-        print("\n" * (max_lines - 1))
 
-    def write(self, text: str, save_to_file=False):
+
+    def write(self, text: str, save_to_file = False):
         """Write `text` to file and/or terminal."""
         if self.n_in_log_q >= self.log_q_capacity:
             self.flush()
         self.log_q[self.n_in_log_q] = text
-        self.n_in_log_q += 1
+        self.n_in_log_q +=1
 
         if save_to_file:
-            assert self.file is not None
+            assert(self.file is not None)
             self.file.write(text)
 
     def flush(self):
+        large_msg = "".join(self.log_q[:self.n_in_log_q])
         if not self.bar:
-            for i in range(self.n_in_log_q):
-                print(self.log_q[i], end="")
-            self.n_in_log_q = 0
+            print(large_msg, end="")
         else:
-            for i in range(self.n_in_log_q):
-                self.bar.display(self.log_q[i], abs(self.bar.pos - self.max_lines + i))
-
+            self.bar.write(large_msg, end="")
+        self.n_in_log_q = 0
 
 fast_logger = FastLogger()
 
@@ -76,7 +71,7 @@ def setup_benchmarker_logging(verbose: bool, debug: bool) -> None:
         debug: If true, set logging level to `DEBUG`.
     """
     fast_logger.set_verbose(verbose or debug)
-    console = StreamHandler(stream=fast_logger)
+    console = StreamHandler(stream = fast_logger)
     console.setFormatter(
         Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
     )
