@@ -45,6 +45,7 @@ from plotnine import (
     geom_point,
     geom_violin,
 )
+from benchmarker.log import fast_logger
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -615,6 +616,7 @@ def _output_results(
             "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
         )
         if print_table is not None:
-            print(print_table.to_markdown(index=False))
+            fast_logger.write(print_table.to_markdown(index=False) + "\n")
+            fast_logger.flush()
 
     logger.info("Finished outputting results.")

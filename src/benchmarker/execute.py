@@ -66,11 +66,11 @@ def log_output(process: Popen, command_logger: FastLogger) -> None:
     with process.stdout as output:  # type: ignore
         for line in output:
             decoded = line.decode("utf-8")
-            command_logger.write(decoded)
+            command_logger.write(decoded, True)
     with process.stderr as output:  # type: ignore
         for line in output:
             decoded = line.decode("utf-8")
-            command_logger.write(decoded)
+            command_logger.write(decoded, True)
 
 
 def execute_section(
