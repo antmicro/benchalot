@@ -6,6 +6,7 @@ assert_file_exists() {
         exit 1
     fi
 }
+set -e
 
 TMP_DIR=$(mktemp -d)
 git clone . $TMP_DIR
@@ -24,6 +25,8 @@ EXCLUSION=$(tuttest README.md exclusions)
 MUL=$(tuttest README.md mul)
 OUTPUT=$(tuttest README.md output)
 RUN_SECTION=$(tuttest README.md run-section)
+MOCK=$(tuttest README.md mock)
+
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
@@ -56,6 +59,7 @@ echo "$RUN_SECTION" >> run_config.yml
 benchmarker run_config.yml
 assert_file_exists run_section.csv
 
+eval "$MOCK"
 
 mv plot.png previous.png
 printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
@@ -83,12 +87,14 @@ eval "$RUN"
 assert_file_exists plot.png
 assert_file_exists table.md
 assert_file_exists result.csv
+set +e
 cmp plot.png previous.png
 ret=$?
 if [ $ret -eq 0 ]; then
     echo "Plots are the same. Exclusion did not work."
     exit 1
 fi
+set -e
 
 echo "$SIZE_CONFIG" > config.yml
 benchmarker config.yml
