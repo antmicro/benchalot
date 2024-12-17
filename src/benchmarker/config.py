@@ -271,7 +271,7 @@ class ConfigFile(BaseModel):
     exclusions: list[dict[str, str | int | float]] = []
     system: SystemSection = SystemSection()
     run: RunSection
-    output: OutputSection
+    output: OutputSection | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -284,21 +284,23 @@ class ConfigFile(BaseModel):
                 raise ValueError(f"'{var_name}' is a reserved keyword")
         return matrix
 
-    @field_validator("output")
-    @classmethod
-    def at_least_one_csv(
-        cls, outputs: dict[str, CsvOutput | BarChartOutput | TableMdOutput]
-    ):
+    @model_validator(mode="after")
+    def at_least_one_csv(self):
         """Check if output section contains at least one csv output
 
         Raises:
             ValueError: When no csv is found.
         """
-        for output_key in outputs:
-            output = outputs[output_key]
+        if not self.output:
+            self.output = {}
+        for output_key in self.output:
+            output = self.output[output_key]
             if output.format == OutputFormat.CSV:
-                return outputs
-        raise ValueError("at least one 'csv' output is required")
+                return self
+        self.output["default-csv"] = CsvOutput(
+            format=OutputFormat.CSV, filename="result.csv"
+        )
+        return self
 
 
 class OutputConfig(BaseModel):
