@@ -25,7 +25,7 @@ EXCLUSION=$(tuttest README.md exclusions)
 MUL=$(tuttest README.md mul)
 OUTPUT=$(tuttest README.md output)
 RUN_SECTION=$(tuttest README.md run-section)
-MOCK=$(tuttest README.md mock)
+RUN_MOCK=$(tuttest README.md mock)
 
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
@@ -59,7 +59,6 @@ echo "$RUN_SECTION" >> run_config.yml
 benchmarker run_config.yml
 assert_file_exists run_section.csv
 
-eval "$MOCK"
 
 mv plot.png previous.png
 printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
@@ -104,6 +103,7 @@ mv file_size.csv result.csv
 eval $RUN_INCLUDE
 eval $RUN_FAILED
 eval $RUN_OUTLIERS
+eval "$RUN_MOCK"
 echo "$CONFIG" > config.yml
 eval $RUN_SPLIT
 assert_file_exists "out/config.yml.part0.yml"
