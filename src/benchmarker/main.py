@@ -202,7 +202,8 @@ def get_argument_parser() -> ArgumentParser:
         help="do not filter out outliers when creating output.",
     )
     parser.add_argument(
-        "--print-plan",
+        "-m",
+        "--mock",
         dest="mock",
         action="store_true",
         default=False,
