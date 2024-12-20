@@ -130,7 +130,7 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
 def perform_benchmarks(
     benchmarks: list[PreparedBenchmark],
     samples: int,
-    builtin_metrics: set[BuiltInMetrics]
+    builtin_metrics: set[BuiltInMetrics],
 ) -> dict[str, list]:
     """Perform benchmarks and return their results.
 
