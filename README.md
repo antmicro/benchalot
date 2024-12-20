@@ -123,7 +123,7 @@ Benchmarker will not create benchmarks for these value combinations.
 * `before-all` (optional) contains the commands to be executed once before all of the benchmarks.
 * `after-all` (optional) contains the commands to be executed once after all of the benchmarks.
 * `samples` (optional, default = 1) defines how many times repeat each benchmark.
-* `save-output` (optional, default = None) defines where to save the stdout and stderr of the benchmarked commands. If set to `"STDERR"` or `"STDOUT"`, the output will be printed to standard error or standard output respectively.
+* `save-output` (optional, default = None) defines where to save the stdout and stderr of the benchmarked commands.
 * `cwd` (optional) change working directory of the commands to specified location.
 * `env` (optional) specify additional environment variables to be used when running commands.
 By default commands inherit Benchmarker's environment.
