@@ -62,6 +62,15 @@ class SystemSection(BaseModel):
         )
 
 
+class BuiltInMetrics(StrEnum):
+    TIME = "time"
+    STDOUT = "stdout"
+    STDERR = "stderr"
+    STIME = "stime"
+    UTIME = "utime"
+    MEM = "memory"
+
+
 class RunSection(BaseModel):
     """Schema for `run` section of the configuration file.
 
@@ -86,7 +95,8 @@ class RunSection(BaseModel):
     after: list[str] = []
     after_all: list[str] = Field(default=[], alias="after-all")
     cwd: str | None = None
-    metrics: list[str | dict] = ["time"]
+    metrics: set[BuiltInMetrics] = set()
+    custom_metrics: list[dict[str, str]] = Field(default=[], alias="custom-metrics")
     env: dict[str, str] = {}
     model_config = ConfigDict(extra="forbid")
 
@@ -105,23 +115,6 @@ class RunSection(BaseModel):
             raise ValueError(f"directory '{value}' not found")
         return value
 
-    @field_validator("metrics")
-    @classmethod
-    def valid_metric(cls, metrics: list[str | dict]):
-        if metrics is None:
-            return metrics
-        for metric in metrics:
-            if type(metric) is str and metric not in [
-                "time",
-                "stdout",
-                "stderr",
-                "stime",
-                "utime",
-                "memory",
-            ]:
-                raise ValueError(f"invalid metric '{metric}'")
-        return metrics
-
     @field_validator("env", mode="before")
     @classmethod
     def env_values_to_str(cls, env_vars: dict[str, Any]) -> dict[str, Any]:
@@ -129,6 +122,12 @@ class RunSection(BaseModel):
             if isinstance(env_vars[key], (int, float)):
                 env_vars[key] = str(env_vars[key])
         return env_vars
+
+    @model_validator(mode="after")
+    def set_time_as_default(self):
+        if len(self.metrics) == 0 and len(self.custom_metrics) == 0:
+            self.metrics = {BuiltInMetrics.TIME}
+        return self
 
 
 class OutputFormat(StrEnum):

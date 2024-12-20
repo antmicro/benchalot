@@ -91,7 +91,7 @@ def main():
         if config.system.modify:
             modify_system_state(config.system)
 
-        results = perform_benchmarks(benchmarks, config.run.samples)
+        results = perform_benchmarks(benchmarks, config.run.samples, config.run.metrics)
 
         if config.system.modify:
             restore_system_state()

@@ -7,7 +7,6 @@ from benchmarker.interpolate import (
     interpolate_variables,
 )
 from dataclasses import dataclass
-from typing import Literal
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -21,7 +20,6 @@ class PreparedBenchmark:
         before: Commands to be executed before the measurement.
         benchmark: Commands to be measured.
         after: Commands to be executed after the measurement.
-        builtin_metrics: List of selected built-in metrics to be gathered during execution.
         custom_metrics: List of custom_metrics (names and commands) to be gathered during execution.
     """
 
@@ -29,7 +27,6 @@ class PreparedBenchmark:
     before: list[str]
     benchmark: dict[str, list[str]]
     after: list[str]
-    builtin_metrics: list[Literal["time", "stdout", "stderr"]]
     custom_metrics: list[dict[str, str]]
 
 
@@ -110,10 +107,10 @@ def prepare_before_after_all_commands(
     return (ret[0], ret[1])
 
 
-def process_metrics(
-    metrics: list[str | dict[str, str]],
+def process_custom_metrics(
+    metrics: list[dict[str, str]],
     variables: dict[str, str | int] | None = None,
-) -> tuple[list, list[dict[str, str]]]:
+) -> list[dict[str, str]]:
     """Divide metrics into custom and built-in metrics.
 
     Args:
@@ -121,20 +118,16 @@ def process_metrics(
         variables: Variable names paired with their values. Used with custom metrics.
 
     Returns:
-        tuple[list, list[dict[str, str]]]: List of built-in metrics and list of custom metrics.
+        List of custom metrics.
     """
-    builtin_metrics = []
     custom_metrics = []
     for metric in metrics:
-        if type(metric) is dict:
-            metric_command = list(metric.items())[0][1]  # type: ignore
-            metric_name = list(metric.items())[0][0]  # type: ignore
-            if variables:
-                metric_command = interpolate_variables(metric_command, variables)
-            custom_metrics.append({metric_name: metric_command})
-        else:
-            builtin_metrics.append(metric)
-    return builtin_metrics, custom_metrics
+        metric_command = list(metric.items())[0][1]  # type: ignore
+        metric_name = list(metric.items())[0][0]  # type: ignore
+        if variables:
+            metric_command = interpolate_variables(metric_command, variables)
+        custom_metrics.append({metric_name: metric_command})
+    return custom_metrics
 
 
 def prepare_benchmarks(
@@ -163,13 +156,12 @@ def prepare_benchmarks(
     logger.info("Preparing benchmarks...")
     if not matrix:
         logger.debug("`matrix` not found in the config.")
-        builtin_metrics, custom_metrics = process_metrics(run_config.metrics)
+        custom_metrics = process_custom_metrics(run_config.custom_metrics)
         benchmark = PreparedBenchmark(
             matrix={},
             before=run_config.before,
             benchmark=run_config.benchmark,
             after=run_config.after,
-            builtin_metrics=builtin_metrics,
             custom_metrics=custom_metrics,
         )
         benchmarks.append(benchmark)
@@ -187,15 +179,14 @@ def prepare_benchmarks(
                 bench[name] = interpolate_commands(
                     run_config.benchmark[name], var_combination
                 )
-            builtin_metrics, custom_metrics = process_metrics(
-                run_config.metrics, var_combination
+            custom_metrics = process_custom_metrics(
+                run_config.custom_metrics, var_combination
             )
             benchmark = PreparedBenchmark(
                 matrix=var_combination,
                 before=before,
                 benchmark=bench,
                 after=after,
-                builtin_metrics=builtin_metrics,
                 custom_metrics=custom_metrics,
             )
             benchmarks.append(benchmark)

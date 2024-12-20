@@ -15,6 +15,7 @@ from benchmarker.output_constants import (
 )
 from uuid import uuid4
 from benchmarker.log import console
+from benchmarker.config import BuiltInMetrics
 
 logger = getLogger(f"benchmarker.{__name__}")
 working_directory = getcwd()
@@ -127,7 +128,9 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
 
 
 def perform_benchmarks(
-    benchmarks: list[PreparedBenchmark], samples: int
+    benchmarks: list[PreparedBenchmark],
+    samples: int,
+    builtin_metrics: set[BuiltInMetrics]
 ) -> dict[str, list]:
     """Perform benchmarks and return their results.
 
@@ -155,12 +158,12 @@ def perform_benchmarks(
 
                     _execute_section(benchmark.before)
 
-                    measure_time = "time" in benchmark.builtin_metrics
-                    measure_utime = "utime" in benchmark.builtin_metrics
-                    measure_stime = "stime" in benchmark.builtin_metrics
-                    measure_memory = "memory" in benchmark.builtin_metrics
-                    measure_stdout = "stdout" in benchmark.builtin_metrics
-                    measure_stderr = "stderr" in benchmark.builtin_metrics
+                    measure_time = BuiltInMetrics.TIME in builtin_metrics
+                    measure_utime = BuiltInMetrics.UTIME in builtin_metrics
+                    measure_stime = BuiltInMetrics.STIME in builtin_metrics
+                    measure_memory = BuiltInMetrics.MEM in builtin_metrics
+                    measure_stdout = BuiltInMetrics.STDOUT in builtin_metrics
+                    measure_stderr = BuiltInMetrics.STDERR in builtin_metrics
 
                     has_failed = False
 
@@ -243,17 +246,17 @@ def perform_benchmarks(
                         benchmark_results[metric_name] = custom_measurements
 
                     if measure_time:
-                        benchmark_results["time"] = time_measurements
+                        benchmark_results[BuiltInMetrics.TIME] = time_measurements
                     if measure_utime:
-                        benchmark_results["utime"] = utime_measurements
+                        benchmark_results[BuiltInMetrics.UTIME] = utime_measurements
                     if measure_stime:
-                        benchmark_results["stime"] = stime_measurements
+                        benchmark_results[BuiltInMetrics.STIME] = stime_measurements
                     if measure_memory:
-                        benchmark_results["memory"] = memory_measurements
+                        benchmark_results[BuiltInMetrics.MEM] = memory_measurements
                     if measure_stdout:
-                        benchmark_results["stdout"] = stdout_measurements
+                        benchmark_results[BuiltInMetrics.STDOUT] = stdout_measurements
                     if measure_stderr:
-                        benchmark_results["stderr"] = stderr_measurements
+                        benchmark_results[BuiltInMetrics.STDERR] = stderr_measurements
 
                     bar.update(1)
                     id = uuid4()
