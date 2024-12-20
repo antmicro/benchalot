@@ -56,7 +56,7 @@ def main():
             exit(1)
 
     is_root = geteuid() == 0
-    if config.system.modify and not is_root:
+    if config.system.modify and not is_root and not args.plan:
         print(
             "To perform system configuration, root privileges are required. Running sudo..."
         )
@@ -71,19 +71,26 @@ def main():
     )
     if args.plan:
         for command in before_all_commands:
-            console.print(command)
+            print(command)
         for benchmark in benchmarks:
+            if config.run.samples > 1:
+                print()
+                msg_mul = f"x{config.run.samples}"
+                pad = 4
+                print(("─" * pad) + msg_mul + ("─" * pad))
             for command in benchmark.before:
-                console.print(command)
+                print(command)
             for _, commands in benchmark.benchmark.items():
                 for command in commands:
-                    console.print(command)
+                    print(command)
             for command in benchmark.after:
-                console.print(command)
+                print(command)
             for custom_metric in benchmark.custom_metrics:
-                console.print(list(custom_metric.items())[0][1])
+                print(list(custom_metric.items())[0][1])
+        if config.run.samples > 1:
+            print()
         for command in before_all_commands:
-            console.print(command)
+            print(command)
         exit_benchmarker()
 
     set_working_directory(config.run.cwd)
