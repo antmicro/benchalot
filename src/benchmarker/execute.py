@@ -139,7 +139,6 @@ def perform_benchmarks(
         dict[str, list]: Dictionary containing results.
     """
     results: dict[str, list] = dict()
-    logger.info("Performing benchmarks...")
     with console.bar((len(benchmarks) * samples)) as bar:
 
         def _execute_section(commands):
@@ -238,6 +237,5 @@ def perform_benchmarks(
                 logger.warning("Stopped benchmarks.")
                 logger.warning("Creating output...")
                 break
-    logger.info("Finished performing benchmarks.")
     logger.debug(f"Benchmark results: {results}")
     return results

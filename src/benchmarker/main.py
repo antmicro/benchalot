@@ -74,6 +74,7 @@ def main():
     set_working_directory(config.run.cwd)
     environ.update(config.run.env)
 
+    logger.info("Performing benchmarks...")
     with console.log_to_file(config.run.save_output):
 
         def _execute_section(commands):
@@ -110,7 +111,6 @@ def main():
 
 def exit_benchmarker():
     """Exit Benchmarker normally."""
-    logger.info("Exiting Benchmarker...")
     unregister(crash_msg_log_file)
     exit(0)
 
@@ -269,4 +269,3 @@ def generate_config_files(
     print(f"{len(matrices)} config files were created in '{directory}' directory.")
     print("To combine results of their execution use: ")
     print("\t" + command)
-    logger.info("Finished spliting configuration file.")

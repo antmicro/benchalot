@@ -272,7 +272,6 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
         metrics=output.metrics,
     )
     if table is not None:
-        logger.info("\n" + table.to_markdown(index=False))
         table.to_markdown(output_filename, index=False)
         return True
     else:
@@ -425,6 +424,9 @@ def get_combination_filtered_dfs(
         yield comb, df.loc[(df[list(comb.keys())] == pd.Series(comb)).all(axis=1)]
 
 
+CREATED_FILE_MSG = "Created '{filename}'"
+
+
 def _output_results(
     results_df: pd.DataFrame,
     output_config: OutputSection,
@@ -466,7 +468,7 @@ def _output_results(
             if not variables_in_filename:
                 results_df.to_csv(output.filename, encoding="utf-8", index=False)
                 csv_output_filenames.append(output.filename)
-                logger.info(f"Created '{output.filename}'")
+                console.print(CREATED_FILE_MSG.format(filename=output.filename))
             else:
                 for comb, combination_df in get_combination_filtered_dfs(
                     results_df, variables_in_filename
@@ -476,7 +478,7 @@ def _output_results(
                         overwrite_filename, encoding="utf-8", index=False
                     )
                     csv_output_filenames.append(overwrite_filename)
-                    logger.info(f"Created '{overwrite_filename}'")
+                    console.print(CREATED_FILE_MSG.format(filename=overwrite_filename))
         else:
             non_csv_outputs.append(output_name)
 
@@ -488,7 +490,6 @@ def _output_results(
 
     register(notify_about_csv, csv_output_filenames)
 
-    has_filtered_output: bool = False
     # Filter out failed output.
     if not include_failed:
         failed_benchmarks = results_df[
@@ -496,14 +497,13 @@ def _output_results(
         ]
         n_failed = failed_benchmarks[BENCHMARK_ID_COLUMN].nunique()
         if n_failed > 0:
-            has_filtered_output = True
-            logger.error(f"{n_failed} benchmarks failed!")
-            logger.warning("Failed benchmarks:\n" + failed_benchmarks.to_markdown())
+            console.print(f"{n_failed} benchmarks failed!")
+            logger.info("Failed benchmarks:\n" + failed_benchmarks.to_markdown())
             results_df = pd.DataFrame(
                 results_df.loc[results_df[HAS_FAILED_COLUMN] == False]  # noqa: E712
             )
             if len(non_csv_outputs) > 0:
-                logger.warning(
+                console.print(
                     f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-failed"
                 )
             if len(results_df.index) == 0:
@@ -539,20 +539,19 @@ def _output_results(
         outlier_benchmarks = results_df[
             results_df[outlier_column_name] == True  # noqa: E712
         ]
-        n_outliers = outlier_benchmarks[BENCHMARK_ID_COLUMN].nunique()
+        n_outliers = len(outlier_benchmarks[BENCHMARK_ID_COLUMN].index)
 
         if n_outliers > 0:
-            has_filtered_output = True
-            logger.error(f"Detected {n_outliers} outliers.")
+            console.print(f"Detected {n_outliers} outliers.")
             results_df = pd.DataFrame(
                 results_df.loc[results_df[outlier_column_name] == False]  # noqa: E712
             )
-            logger.warning(
+            logger.info(
                 "Outliers:\n"
                 + outlier_benchmarks.drop(outlier_column_name, axis=1).to_markdown()
             )
             if len(non_csv_outputs) > 0:
-                logger.warning(
+                console.print(
                     f"To generate output with outliers included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-outliers"
                 )
         results_df = results_df.drop(outlier_column_name, axis=1)
@@ -561,8 +560,6 @@ def _output_results(
     for output_name in non_csv_outputs:
         output = output_config[output_name]
         logger.debug(f"Creating output for {output}")
-        if has_filtered_output:
-            logger.warning(f"'{output_name}' will not include all benchmarks.")
         variables_in_filename = findall(VAR_REGEX, output.filename)
         multiplied_results: Iterable[tuple[dict, pd.DataFrame]]
         if not variables_in_filename:
@@ -590,13 +587,15 @@ def _output_results(
                     table_html_output: TableHTMLOutput = output  # type: ignore
                     success = output_html(df, table_html_output, overwrite_filename)
             if success:
-                logger.info(f"Created {overwrite_filename}.")
+                console.print(CREATED_FILE_MSG.format(filename=overwrite_filename))
             else:
                 logger.error(f"Failed to create {overwrite_filename}.")
 
     if os.getuid() == 0:
         os.umask(prev_umask)
     unregister(notify_about_csv)
+    term_size = (os.get_terminal_size().columns - len("SUMMARY")) // 2
+    console.print(("─" * term_size) + "SUMMARY" + ("─" * term_size))
     for metric in results_df[METRIC_COLUMN].unique():
         table_df = results_df.loc[results_df[METRIC_COLUMN] == metric]
         excluded_columns = [
@@ -617,5 +616,3 @@ def _output_results(
         )
         if print_table is not None:
             console.print(print_table.to_markdown(index=False))
-
-    logger.info("Finished outputting results.")

@@ -106,7 +106,6 @@ def prepare_before_after_all_commands(
                 curr_section_commands += section
         ret.append(curr_section_commands)
 
-    logger.info("Finished preparing 'before-all' and 'after-all' commands.")
     logger.debug(ret)
     return (ret[0], ret[1])
 
@@ -200,6 +199,5 @@ def prepare_benchmarks(
                 custom_metrics=custom_metrics,
             )
             benchmarks.append(benchmark)
-    logger.info("Finished preparing benchmarks.")
     logger.debug(f"Prepared benchmarks: {benchmarks}")
     return benchmarks

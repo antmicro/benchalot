@@ -312,7 +312,6 @@ def validate_config(config) -> ConfigFile:
     except ValidationError as e:
         error_and_exit(e)
     normalized_config = config_validator
-    logger.info("Successfully validated config.")
     logger.debug(normalized_config)
     return normalized_config
 
@@ -324,6 +323,5 @@ def validate_output_config(config) -> OutputConfig:
     except ValidationError as e:
         error_and_exit(e)
     normalized_config = config_validator
-    logger.info("Successfully validated config.")
     logger.debug(normalized_config)
     return config_validator
