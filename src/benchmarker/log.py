@@ -53,16 +53,18 @@ class FastConsole:
 
     @contextmanager
     def bar(self, n_iter):
-        if not self._bar:
-            bar = tqdm(total=n_iter, leave=False, mininterval=1)
-            self._bar = bar
-        else:
-            raise RuntimeError(
-                "bar() cannot be called with while other bar still exists."
-            )
-        yield self._bar
-        self._bar.close()
-        self._bar = None
+        try:
+            if not self._bar:
+                bar = tqdm(total=n_iter, leave=False, mininterval=1)
+                self._bar = bar
+            else:
+                raise RuntimeError(
+                    "bar() cannot be called with while other bar still exists."
+                )
+            yield self._bar
+        finally:
+            self._bar.close()
+            self._bar = None
 
     def log(self, msg):
         if self.verbose:
