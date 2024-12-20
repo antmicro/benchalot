@@ -111,7 +111,13 @@ class RunSection(BaseModel):
         if metrics is None:
             return metrics
         for metric in metrics:
-            if type(metric) is str and metric not in ["time", "stdout", "stderr"]:
+            if type(metric) is str and metric not in [
+                "time",
+                "stdout",
+                "stderr",
+                "stime",
+                "utime",
+            ]:
                 raise ValueError(f"invalid metric '{metric}'")
         return metrics
 

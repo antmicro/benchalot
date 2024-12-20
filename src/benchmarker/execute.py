@@ -1,6 +1,6 @@
 from subprocess import Popen, PIPE
 from logging import getLogger
-from os import getcwd
+from os import getcwd, wait4, waitstatus_to_exitcode
 from time import monotonic_ns
 from io import StringIO
 from csv import DictReader
@@ -156,12 +156,16 @@ def perform_benchmarks(
                     _execute_section(benchmark.before)
 
                     measure_time = "time" in benchmark.builtin_metrics
+                    measure_utime = "utime" in benchmark.builtin_metrics
+                    measure_stime = "stime" in benchmark.builtin_metrics
                     gather_stdout = "stdout" in benchmark.builtin_metrics
                     gather_stderr = "stderr" in benchmark.builtin_metrics
 
                     has_failed = False
 
-                    time_measurements: dict[str, float] = {}
+                    time_measurements: dict[str, float | None] = {}
+                    utime_measurements: dict[str, float | None] = {}
+                    stime_measurements: dict[str, float | None] = {}
                     stdout_measurements: dict[str, float | None] = {}
                     stderr_measurements: dict[str, float | None] = {}
 
@@ -169,6 +173,8 @@ def perform_benchmarks(
                         stage_elapsed_time = 0.0
                         stage_stdout = ""
                         stage_stderr = ""
+                        stage_utime = 0.0
+                        stage_stime = 0.0
                         for command in benchmark.benchmark[stage]:
                             bar.set_description(command)
                             start = monotonic_ns()
@@ -177,17 +183,25 @@ def perform_benchmarks(
                                 process_stdout, process_stderr = process.communicate()
                             else:
                                 log_output(process)
-                                process.wait()
+                                _, exit_status, resources = wait4(process.pid, 0)
                             stage_elapsed_time += monotonic_ns() - start
                             if gather_stdout:
                                 stage_stdout += process_stdout.decode("utf-8")
                             if gather_stderr:
                                 stage_stderr += process_stderr.decode("utf-8")
-                            success = check_return_code(command, process.returncode)
+                            stage_utime += resources.ru_utime
+                            stage_stime += resources.ru_stime
+                            success = check_return_code(
+                                command, waitstatus_to_exitcode(exit_status)
+                            )
                             if not success:
                                 has_failed = True
                         if measure_time:
                             time_measurements[stage] = stage_elapsed_time / 1e9
+                        if measure_utime:
+                            utime_measurements[stage] = stage_utime
+                        if measure_utime:
+                            stime_measurements[stage] = stage_stime
                         if gather_stdout:
                             out_float = try_convert_to_float(stage_stdout)
                             stdout_measurements[stage] = out_float
@@ -213,7 +227,11 @@ def perform_benchmarks(
                         benchmark_results[metric_name] = custom_measurements
 
                     if measure_time:
-                        benchmark_results["time"] = time_measurements  # type: ignore
+                        benchmark_results["time"] = time_measurements
+                    if measure_utime:
+                        benchmark_results["utime"] = utime_measurements
+                    if measure_stime:
+                        benchmark_results["stime"] = stime_measurements
                     if gather_stdout:
                         benchmark_results["stdout"] = stdout_measurements
                     if gather_stderr:
