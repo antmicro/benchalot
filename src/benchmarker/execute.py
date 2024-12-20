@@ -15,7 +15,7 @@ from benchmarker.output_constants import (
     DEFAULT_STAGE_NAME,
 )
 from uuid import uuid4
-from benchmarker.log import FastLogger
+from benchmarker.log import console
 
 logger = getLogger(f"benchmarker.{__name__}")
 working_directory = getcwd()
@@ -56,43 +56,45 @@ def execute_command(command: str) -> Popen:
     return Popen(command, shell=True, stdout=PIPE, stderr=PIPE, cwd=working_directory)
 
 
-def log_output(process: Popen, command_logger: FastLogger) -> None:
+def log_output(process: Popen) -> None:
     """Log output piped by the process.
 
     Args:
         process: Process object.
-        command_logger: Object which is used to save output.
     """
     with process.stdout as output:  # type: ignore
         for line in output:
             decoded = line.decode("utf-8")
-            command_logger.write(decoded, True)
+            console.log(decoded)
+    console.flush()
     with process.stderr as output:  # type: ignore
         for line in output:
             decoded = line.decode("utf-8")
-            command_logger.write(decoded, True)
+            console.log(decoded)
+    console.flush()
 
 
 def execute_section(
-    commands: list[str], command_logger: FastLogger, section_name: str = ""
+    commands: list[str], section_name: str = ""
 ) -> None:
     """Execute and log output multiple of commands.
 
     Args:
         commands: List of commands to be executed.
-        command_logger: Object which is used to save output.
         section_name: Name of the section, used in logging.
     """
     if not commands:
         return
     logger.info(f"Executing '{section_name}' section...")
     logger.debug(f"Executing: {commands}")
-    bar = tqdm(commands, leave=False, delay=1)
-    for c in bar:
-        bar.set_description(c[:20] + "..." if len(c) > 20 else c, refresh=False)
+    # bar = tqdm(commands, leave=False, delay=1)
+    # command_logger.set_bar(bar)
+    for c in commands:
+        # bar.set_description(c[:20] + "..." if len(c) > 20 else c, refresh=False)
         process = execute_command(c)
-        log_output(process, command_logger)
+        log_output(process)
         process.wait()
+    # command_logger.set_bar(None)
     logger.info(f"Execution of '{section_name}' section finished.")
 
 
@@ -149,14 +151,13 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
 
 
 def perform_benchmarks(
-    benchmarks: list[PreparedBenchmark], samples: int, command_logger: FastLogger
+    benchmarks: list[PreparedBenchmark], samples: int
 ) -> dict[str, list]:
     """Perform benchmarks and return their results.
 
     Args:
         benchmarks: List of benchmarks, each containing variable values, preprocessed commands and callable metrics.
         samples: How many times each benchmark needs to be repeated.
-        command_logger: Object which is used to save output.
 
     Returns:
         dict[str, list]: Dictionary containing results.
@@ -170,13 +171,13 @@ def perform_benchmarks(
         leave=False,
         mininterval=1,
     )
-    command_logger.set_bar(bar)
+    console.set_bar(bar)
     for benchmark in benchmarks:
         try:
             for _ in range(0, samples):
                 logger.debug(f"Running benchmark: {benchmark}")
 
-                execute_section(benchmark.before, command_logger, "before")
+                execute_section(benchmark.before, "before")
                 text = str([benchmark.benchmark[key] for key in benchmark.benchmark])
                 text = text.replace("[", "")
                 text = text.replace("]", "")
@@ -204,10 +205,9 @@ def perform_benchmarks(
                         if gather_stderr or gather_stdout:
                             process_stdout, process_stderr = process.communicate()
                         else:
-                            log_output(process, command_logger)
+                            log_output(process)
                             process.wait()
                         stage_elapsed_time += monotonic_ns() - start
-                        command_logger.flush()
                         if gather_stdout:
                             stage_stdout += process_stdout.decode("utf-8")
                         if gather_stderr:
@@ -228,7 +228,7 @@ def perform_benchmarks(
                         if out_float is None:
                             has_failed = True
 
-                execute_section(benchmark.after, command_logger, "after")
+                execute_section(benchmark.after, "after")
 
                 benchmark_results: dict[str, dict[str, float | None]] = {}
 
@@ -266,7 +266,7 @@ def perform_benchmarks(
             logger.warning("Stopped benchmarks.")
             logger.warning("Creating output...")
             break
-    command_logger.set_bar(None)
+    console.set_bar(None)
     bar.close()
     logger.info("Finished performing benchmarks.")
     logger.debug(f"Benchmark results: {results}")

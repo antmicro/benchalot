@@ -15,7 +15,7 @@ from benchmarker.system import modify_system_state, restore_system_state
 from benchmarker.output import output_results_from_dict, output_results_from_file
 from argparse import ArgumentParser
 from os.path import isfile
-from benchmarker.log import setup_benchmarker_logging, crash_msg_log_file, fast_logger
+from benchmarker.log import setup_benchmarker_logging, crash_msg_log_file, console
 from logging import getLogger
 from atexit import unregister
 from os import environ
@@ -92,18 +92,18 @@ def main():
             log_file_desc = config.run.save_output
 
     with open(log_file_desc, "w", closefd=close_fd) as log_file:
-        fast_logger.set_file(log_file)
-        execute_section(before_all_commands, fast_logger, "before-all")
+        console.set_file(log_file)
+        execute_section(before_all_commands, "before-all")
 
         if config.system.modify:
             modify_system_state(config.system)
 
-        results = perform_benchmarks(benchmarks, config.run.samples, fast_logger)
+        results = perform_benchmarks(benchmarks, config.run.samples)
 
         if config.system.modify:
             restore_system_state()
 
-        execute_section(after_all_commands, fast_logger, "after-all")
+        execute_section(after_all_commands, "after-all")
 
     output_results_from_dict(
         results,
