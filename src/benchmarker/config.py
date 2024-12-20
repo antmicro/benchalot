@@ -68,7 +68,7 @@ class BuiltInMetrics(StrEnum):
     STDERR = "stderr"
     STIME = "stime"
     UTIME = "utime"
-    MEM = "memory"
+    MEM = "rss"
 
 
 class RunSection(BaseModel):

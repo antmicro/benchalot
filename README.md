@@ -139,7 +139,7 @@ run:
         - time              # measure time
         - utime             # measure user time
         - stime             # measure system time
-        - memory            # measure peak memory usage
+        - rss               # measure resident set size
         - stdout            # treat stdout output of the command as the result
         - stderr            # treat stderr output of the command as the result
 
