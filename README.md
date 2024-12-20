@@ -117,33 +117,40 @@ Benchmarker will not create benchmarks for these value combinations.
 
 ### Run
 
-* `benchmark` contains the commands to be benchmarked.
-* `before` (optional) contains the commands to be executed before the benchmark. 
-* `after` (optional) contains the commands to be executed after the benchmark. 
-* `before-all` (optional) contains the commands to be executed once before all of the benchmarks.
-* `after-all` (optional) contains the commands to be executed once after all of the benchmarks.
-* `samples` (optional, default = 1) defines how many times repeat each benchmark.
-* `save-output` (optional, default = None) defines where to save the stdout and stderr of the benchmarked commands.
-* `cwd` (optional) change working directory of the commands to specified location.
-* `env` (optional) specify additional environment variables to be used when running commands.
-By default commands inherit Benchmarker's environment.
-* `metrics` (optional, default = `["time"]`) a list of metrics to be gathered from benchmarked commands.
-Built-in are: `time`, `stderr` and `stdout`.
-User can also specify their own metric using `metric_name: command` syntax.
-See: [Custom Metrics](#custom-metrics)
-
-Commands in the `benchmark` section can be split into stages using this syntax:
 ```yaml
 run:
-    benchmark:
-        stage-1:
-            - "command1"
-        stage-2:
-            - "command2"
-```
-Benchmarker will take measurements for each stage separately.
+    before-all:                                                 # commands to be executed once before all of the benchmarks
+        - git clone . ../{{tag}}
+    before:                                                     # commands to be executed before each benchmark
+        - cd ../{{tag}} && git checkout {{tag}} && make build
+    benchmark:                                                  # commands to be benchmarked
+        compilation:                                            # benchmark section can be further divided into stages
+            - make build -f ../{{tag}}/Makefile
+        execution:
+            - ../{{tag}}/sleeper {{thread}} {{input}}
+    after:                                                      # contains the commands to be executed after each benchmark
+        - cd ../{{tag}} && make clean
+    after-all:                                                  # contains the commands to be excetued once after all of the benchmarks
+        - rm -rf ../{{tag}}
 
-If you want to use stages with custom metrics see: [Custom Metrics and Stages](#custom-metrics-and-stages).
+    #  built-in metrics
+    metrics:
+        - time              # measure time
+        - utime             # measure user time
+        - stime             # measure system time
+        - memory            # measure peak memory usage
+        - stdout            # treat stdout output of the command as the result
+        - stdout            # treat stderr output of the command as the result
+
+    custom-metrics:         # specify your own metrics, for more information checkout Custom Metrics section of README
+        - threads: echo {{thread}}
+
+    samples: 5              # how many times repeat each benchmark (default=1)
+    save-output: run.log    # log file for command output
+    cwd: ~                  # change working directory of the commands to specified location
+    env:                    # specify additional environment variables to be used when running commands
+        cc: gcc
+```
 
 ### System
 
@@ -246,7 +253,7 @@ If we add this section to the configuration above, Benchmarker will generate two
 ### Custom Metrics
 
 Benchmarker allows usage of custom metrics.
-To use a custom metric, specify the metric name and command in `run.metrics` using the syntax `metric_name: command`.
+To use a custom metric, specify the metric name and command in `run.custom-metrics` using the syntax `metric_name: command`.
 `command` will be executed after each run of `benchmark` section.
 `command` should output results by printing them to standard output.
 
@@ -260,7 +267,7 @@ matrix:
 run:
   benchmark:
     - "{{compression}} -c plot.png > {{compression}}.out"
-  metrics: 
+  custom-metrics: 
     - "size": "stat -c %s {{compression}}.out"
   after-all:
     - rm {{compression}}.out
