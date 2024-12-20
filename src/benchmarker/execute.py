@@ -65,12 +65,12 @@ def log_output(process: Popen) -> None:
     with process.stdout as output:  # type: ignore
         for line in output:
             decoded = line.decode("utf-8")
-            console.log(decoded)
+            console.log_command_output(decoded)
     console.flush()
     with process.stderr as output:  # type: ignore
         for line in output:
             decoded = line.decode("utf-8")
-            console.log(decoded)
+            console.log_command_output(decoded)
     console.flush()
 
 

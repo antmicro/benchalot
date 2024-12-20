@@ -18,30 +18,35 @@ logger = getLogger(f"benchmarker.{__name__}")
 
 class FastConsole:
     def __init__(self):
-        """Simple logging class without the overhead of the built-in Python logger.
-
-        Args:
-            file: File object which will be used to save output.
-            verbose: If true, print to `stdout`.
+        """
+        Simple logging class without the overhead of the built-in Python logger.
+        It's main purpose is to allow provide live progress bar with very small performance penalty.
+        It is achieved by using string buffer.
         """
         self._bar = None
         self.capacity = 1024
         self.buffer = ""
-        self.file_buffer = ""
         self.verbose = False
         self.file = None
 
     def set_verbose(self, verbose):
+        """Whether to print command output to `stdout`"""
         self.verbose = verbose
 
     def write(self, text: str):
-        """Write `text` to file and/or terminal."""
+        """Write `text` to buffer. Flush the buffer if it is full."""
         if len(self.buffer) + len(text) >= self.capacity:
             self.flush()
         self.buffer += text
 
     @contextmanager
-    def log_to_file(self, filename):
+    def log_to_file(self, filename: str | None):
+        """
+        Convenience function for logging command output to a file.
+
+        Args:
+            filename: name of the logfile.  If `None`, the output will redirected to `/dev/null`
+        """
         if not filename:
             log_file_desc = "/dev/null"
         else:
@@ -52,7 +57,14 @@ class FastConsole:
         self.file = None
 
     @contextmanager
-    def bar(self, n_iter):
+    def bar(self, n_iter: int):
+        """
+        Function used to create live progress bar.
+        Caller of the function is responsible for tracking the bar progress.
+
+        Args:
+            n_iter: total number of iterations.
+        """
         try:
             if not self._bar:
                 bar = tqdm(total=n_iter, leave=False, mininterval=1)
@@ -66,16 +78,22 @@ class FastConsole:
             self._bar.close()
             self._bar = None
 
-    def log(self, msg):
+    def log_command_output(self, text: str):
+        """Print command output to stdout and/or save it to a file"""
         if self.verbose:
-            self.write(msg)
-        self.file.write(msg)
+            self.write(text)
+        self.file.write(text)
 
-    def print(self, text, end="\n"):
+    def print(self, text="", end="\n"):
+        """Print text to stdout, above the live progress bar"""
         self.write(text + end)
         self.flush()
 
-    def flush(self):
+    def flush(self) -> None:
+        """
+        If the bar is present print the buffer above the bar,
+        else simply print it to stdout.
+        """
         if self._bar:
             self._bar.write(self.buffer, end="")
         else:
