@@ -25,7 +25,7 @@ EXCLUSION=$(tuttest README.md exclusions)
 MUL=$(tuttest README.md mul)
 OUTPUT=$(tuttest README.md output)
 RUN_SECTION=$(tuttest README.md run-section)
-RUN_MOCK=$(tuttest README.md mock)
+RUN_PLAN=$(tuttest README.md plan)
 
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
@@ -103,7 +103,7 @@ mv file_size.csv result.csv
 eval $RUN_INCLUDE
 eval $RUN_FAILED
 eval $RUN_OUTLIERS
-eval "$RUN_MOCK"
+eval "$RUN_PLAN"
 echo "$CONFIG" > config.yml
 eval $RUN_SPLIT
 assert_file_exists "out/config.yml.part0.yml"

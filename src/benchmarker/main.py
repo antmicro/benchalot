@@ -69,7 +69,7 @@ def main():
     before_all_commands, after_all_commands = prepare_before_after_all_commands(
         run_config, config.matrix, config.exclusions
     )
-    if args.mock:
+    if args.plan:
         for command in before_all_commands:
             console.print(command)
         for benchmark in benchmarks:
@@ -202,9 +202,9 @@ def get_argument_parser() -> ArgumentParser:
         help="do not filter out outliers when creating output.",
     )
     parser.add_argument(
-        "-m",
-        "--mock",
-        dest="mock",
+        "-p",
+        "--plan",
+        dest="plan",
         action="store_true",
         default=False,
         help="print command execution plan.",

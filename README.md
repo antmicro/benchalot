@@ -303,10 +303,10 @@ To see available command line arguments type:
 benchmarker --help
 ```
 
-To print command execution plan without running benchmarks, use `--mock`:
-<!--name="mock"-->
+To print command execution plan without running benchmarks, use `--plan`:
+<!--name="plan"-->
 ```bash
-benchmarker config.yml --mock
+benchmarker config.yml --plan
 ```
 Please note that the execution plan will not take number of samples into account.
 
