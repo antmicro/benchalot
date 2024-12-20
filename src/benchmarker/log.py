@@ -9,11 +9,11 @@ from logging import (
 )
 from tempfile import NamedTemporaryFile
 from atexit import register
-from typing import TextIO
-from os import get_terminal_size
+from contextlib import contextmanager
 
 
 logger = getLogger(f"benchmarker.{__name__}")
+
 
 class FastConsole:
     def __init__(self):
@@ -26,14 +26,10 @@ class FastConsole:
         self.bar = None
         self.capacity = 1024
         self.buffer = ""
+        self.file_buffer = ""
         self.verbose = False
+        self.file = None
 
-    def set_file(self, file):
-        """ Set logging file, the FastLogger assumes that the file is opened.
-        Args:
-            file: File object which will be used to save output.
-        """
-        self.file = file
     def set_verbose(self, verbose):
         self.verbose = verbose
 
@@ -46,14 +42,24 @@ class FastConsole:
             self.flush()
         self.buffer += text
 
+    @contextmanager
+    def log_to_file(self, filename):
+        if not filename:
+            log_file_desc = "/dev/null"
+        else:
+            log_file_desc = filename
+        with open(log_file_desc, "w") as log_file:
+            self.file = log_file
+            yield
+        self.file = None
+
     def log(self, msg):
-        if not self.verbose:
-            return
-        self.write(msg)
+        if self.verbose:
+            self.write(msg)
         self.file.write(msg)
 
     def print(self, text, end="\n"):
-        self.write(text+end)
+        self.write(text + end)
         self.flush()
 
     def flush(self):
@@ -67,6 +73,7 @@ class FastConsole:
 
 console = FastConsole()
 
+
 def setup_benchmarker_logging(verbose: bool, debug: bool) -> None:
     """Setup loggers.
 
@@ -76,19 +83,19 @@ def setup_benchmarker_logging(verbose: bool, debug: bool) -> None:
     """
     global console
     console.set_verbose(verbose or debug)
-    console = StreamHandler(stream = console)
-    console.setFormatter(
+    consoleHandler = StreamHandler(stream=console)
+    consoleHandler.setFormatter(
         Formatter("[%(asctime)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S")
     )
-    console.setLevel(WARNING)
+    consoleHandler.setLevel(WARNING)
     getLogger().setLevel(WARNING)
     if verbose:
-        console.setLevel(INFO)
+        consoleHandler.setLevel(INFO)
         getLogger().setLevel(INFO)
     if debug:
-        console.setLevel(DEBUG)
+        consoleHandler.setLevel(DEBUG)
         getLogger().setLevel(DEBUG)
-    getLogger().addHandler(console)
+    getLogger().addHandler(consoleHandler)
     benchmarker_formatter = Formatter(
         "[%(asctime)s][%(name)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S"
     )

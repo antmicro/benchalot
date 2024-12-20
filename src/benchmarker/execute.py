@@ -74,9 +74,7 @@ def log_output(process: Popen) -> None:
     console.flush()
 
 
-def execute_section(
-    commands: list[str], section_name: str = ""
-) -> None:
+def execute_section(commands: list[str], section_name: str = "") -> None:
     """Execute and log output multiple of commands.
 
     Args:

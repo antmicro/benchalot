@@ -21,7 +21,6 @@ from atexit import unregister
 from os import environ
 from pathlib import Path
 from benchmarker.config import ConfigFile
-from sys import stderr, stdout
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -29,7 +28,6 @@ logger = getLogger(f"benchmarker.{__name__}")
 def main():
     parser = get_argument_parser()
     args = parser.parse_args()
-    verbose = args.verbose or args.debug
     setup_benchmarker_logging(args.verbose, args.debug)
 
     config_file = load_configuration_file(args.config_filename)
@@ -75,24 +73,7 @@ def main():
     set_working_directory(config.run.cwd)
     environ.update(config.run.env)
 
-    close_fd = True
-
-    match config.run.save_output:
-        case None:
-            log_file_desc = "/dev/null"
-        case "STDOUT":
-            log_file_desc = stdout.fileno()
-            close_fd = False
-            verbose = False
-        case "STDERR":
-            log_file_desc = stderr.fileno()
-            close_fd = False
-            verbose = False
-        case _:
-            log_file_desc = config.run.save_output
-
-    with open(log_file_desc, "w", closefd=close_fd) as log_file:
-        console.set_file(log_file)
+    with console.log_to_file(config.run.save_output):
         execute_section(before_all_commands, "before-all")
 
         if config.system.modify:
