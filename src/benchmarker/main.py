@@ -7,8 +7,9 @@ from benchmarker.prepare import (
 )
 from benchmarker.execute import (
     perform_benchmarks,
-    execute_section,
     set_working_directory,
+    execute_command,
+    log_output,
 )
 from os import geteuid, execvp
 from benchmarker.system import modify_system_state, restore_system_state
@@ -74,8 +75,17 @@ def main():
     environ.update(config.run.env)
 
     with console.log_to_file(config.run.save_output):
-        with console.bar(len(before_all_commands)) as bar:
-            execute_section(before_all_commands, "before-all", bar)
+
+        def _execute_section(commands):
+            with console.bar(len(commands)) as bar:
+                for c in commands:
+                    bar.set_description(c)
+                    process = execute_command(c)
+                    log_output(process)
+                    process.wait()
+                    bar.update(1)
+
+        _execute_section(before_all_commands)
 
         if config.system.modify:
             modify_system_state(config.system)
@@ -85,8 +95,7 @@ def main():
         if config.system.modify:
             restore_system_state()
 
-        with console.bar(len(after_all_commands)) as bar:
-            execute_section(after_all_commands, "after-all", bar)
+        _execute_section(after_all_commands)
 
     output_results_from_dict(
         results,

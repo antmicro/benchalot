@@ -74,26 +74,6 @@ def log_output(process: Popen) -> None:
     console.flush()
 
 
-def execute_section(commands: list[str], section_name: str, bar, update=True) -> None:
-    """Execute and log output multiple of commands.
-
-    Args:
-        commands: List of commands to be executed.
-        section_name: Name of the section, used in logging.
-    """
-    if not commands:
-        return
-    logger.debug(f"Executing '{section_name}' section...")
-    for c in commands:
-        bar.set_description(c)
-        process = execute_command(c)
-        log_output(process)
-        process.wait()
-        if update:
-            bar.update(1)
-    logger.debug(f"Execution of '{section_name}' section finished.")
-
-
 def try_convert_to_float(value: str) -> float | None:
     """Try to convert string to float.
 
@@ -161,12 +141,20 @@ def perform_benchmarks(
     results: dict[str, list] = dict()
     logger.info("Performing benchmarks...")
     with console.bar((len(benchmarks) * samples)) as bar:
+
+        def _execute_section(commands):
+            for c in commands:
+                bar.set_description(c)
+                process = execute_command(c)
+                log_output(process)
+                process.wait()
+
         for benchmark in benchmarks:
             try:
                 for _ in range(0, samples):
                     logger.debug(f"Running benchmark: {benchmark}")
 
-                    execute_section(benchmark.before, "before", bar, False)
+                    _execute_section(benchmark.before)
 
                     measure_time = "time" in benchmark.builtin_metrics
                     gather_stdout = "stdout" in benchmark.builtin_metrics
@@ -212,7 +200,7 @@ def perform_benchmarks(
                             if out_float is None:
                                 has_failed = True
 
-                    execute_section(benchmark.after, "after", bar, False)
+                    _execute_section(benchmark.after)
 
                     benchmark_results: dict[str, dict[str, float | None]] = {}
 
