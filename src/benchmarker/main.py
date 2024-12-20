@@ -32,7 +32,6 @@ def main():
     setup_benchmarker_logging(args.verbose, args.debug)
 
     config_file = load_configuration_file(args.config_filename)
-
     if args.update_output:  # Update output and exit
         for file in args.update_output:
             if not isfile(file):
@@ -70,6 +69,22 @@ def main():
     before_all_commands, after_all_commands = prepare_before_after_all_commands(
         run_config, config.matrix, config.exclusions
     )
+    if args.mock:
+        for command in before_all_commands:
+            console.print(command)
+        for benchmark in benchmarks:
+            for command in benchmark.before:
+                console.print(command)
+            for _, commands in benchmark.benchmark.items():
+                for command in commands:
+                    console.print(command)
+            for command in benchmark.after:
+                console.print(command)
+            for custom_metric in benchmark.custom_metrics:
+                console.print(list(custom_metric.items())[0][1])
+        for command in before_all_commands:
+            console.print(command)
+        exit_benchmarker()
 
     set_working_directory(config.run.cwd)
     environ.update(config.run.env)
@@ -185,6 +200,13 @@ def get_argument_parser() -> ArgumentParser:
         action="store_true",
         default=False,
         help="do not filter out outliers when creating output.",
+    )
+    parser.add_argument(
+        "--print-plan",
+        dest="mock",
+        action="store_true",
+        default=False,
+        help="print command execution plan.",
     )
 
     return parser
