@@ -595,6 +595,7 @@ def _output_results(
         os.umask(prev_umask)
     unregister(notify_about_csv)
     term_size = (os.get_terminal_size().columns - len("SUMMARY")) // 2
+    console.print()
     console.print(("─" * term_size) + "SUMMARY" + ("─" * term_size))
     for metric in results_df[METRIC_COLUMN].unique():
         table_df = results_df.loc[results_df[METRIC_COLUMN] == metric]
