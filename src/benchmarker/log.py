@@ -10,6 +10,7 @@ from logging import (
 from tempfile import NamedTemporaryFile
 from atexit import register
 from contextlib import contextmanager
+from tqdm import tqdm
 
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -23,7 +24,7 @@ class FastConsole:
             file: File object which will be used to save output.
             verbose: If true, print to `stdout`.
         """
-        self.bar = None
+        self._bar = None
         self.capacity = 1024
         self.buffer = ""
         self.file_buffer = ""
@@ -32,9 +33,6 @@ class FastConsole:
 
     def set_verbose(self, verbose):
         self.verbose = verbose
-
-    def set_bar(self, bar):
-        self.bar = bar
 
     def write(self, text: str):
         """Write `text` to file and/or terminal."""
@@ -53,6 +51,19 @@ class FastConsole:
             yield
         self.file = None
 
+    @contextmanager
+    def bar(self, n_iter):
+        if not self._bar:
+            bar = tqdm(total=n_iter, leave=False, mininterval=1)
+            self._bar = bar
+        else:
+            raise RuntimeError(
+                "bar() cannot be called with while other bar still exists."
+            )
+        yield self._bar
+        self._bar.close()
+        self._bar = None
+
     def log(self, msg):
         if self.verbose:
             self.write(msg)
@@ -63,9 +74,8 @@ class FastConsole:
         self.flush()
 
     def flush(self):
-        # simplified implementation of self.bar.write
-        if self.bar:
-            self.bar.write(self.buffer, end="")
+        if self._bar:
+            self._bar.write(self.buffer, end="")
         else:
             print(self.buffer, end="")
         self.buffer = ""

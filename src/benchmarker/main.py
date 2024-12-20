@@ -74,7 +74,8 @@ def main():
     environ.update(config.run.env)
 
     with console.log_to_file(config.run.save_output):
-        execute_section(before_all_commands, "before-all")
+        with console.bar(len(before_all_commands)) as bar:
+            execute_section(before_all_commands, "before-all", bar)
 
         if config.system.modify:
             modify_system_state(config.system)
@@ -84,7 +85,8 @@ def main():
         if config.system.modify:
             restore_system_state()
 
-        execute_section(after_all_commands, "after-all")
+        with console.bar(len(after_all_commands)) as bar:
+            execute_section(after_all_commands, "after-all", bar)
 
     output_results_from_dict(
         results,
