@@ -30,17 +30,16 @@ def interpolate_variables(string: str, variables: dict[str, str | int]) -> str:
 
     def replace_substring(match):
         variable_name = match.group(1)
-        nest = variable_name.split(".")
-        if len(nest) == 2:
-            a, b = nest
+        compound = variable_name.split(".")
+        if len(compound) == 2:
             try:
-                return str(variables[a][b])
+                return str(variables[compound[0]][compound[1]])
             except KeyError:
                 logger.critical(f"'{string}': Variable '{variable_name}' not found")
                 exit(1)
         else:
             try:
-                return str(variables[nest[0]])
+                return str(variables[compound[0]])
             except KeyError:
                 logger.critical(f"'{string}': Variable '{variable_name}' not found")
                 exit(1)

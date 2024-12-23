@@ -444,9 +444,9 @@ def get_combination_filtered_dfs(
     for comb in combinations:
         compound_comb: dict[str, dict] = {}
         for var_name, value in comb.items():
-            nest = str(var_name).split(".")
-            if len(nest) == 2:
-                compound_comb.setdefault(nest[0], {})[nest[1]] = value
+            compound = str(var_name).split(".")
+            if len(compound) == 2:
+                compound_comb.setdefault(compound[0], {})[compound[1]] = value
             else:
                 compound_comb[var_name] = value
         yield compound_comb, df.loc[
