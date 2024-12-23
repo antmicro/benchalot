@@ -161,6 +161,7 @@ class CsvOutput(OutputField):
     """
 
     format: Literal[OutputFormat.CSV]
+    overwrite: bool = False
     model_config = ConfigDict(extra="forbid")
 
 

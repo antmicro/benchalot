@@ -405,8 +405,15 @@ def output_plot(
     return True
 
 
-def output_st_csv(result_df: pd.DataFrame, filename):
-    if Path(filename).is_file():
+def output_st_csv(result_df: pd.DataFrame, filename: str, overwrite: bool) -> None:
+    """Create source of truth csv file.
+
+    Args:
+        result_df: Results stored in DataFrame.
+        filename: Resulting `csv` filename.
+        overwrite: If set to false, will create a backup file in case of an overwrite.
+    """
+    if not overwrite and Path(filename).is_file():
         date_str = datetime.fromtimestamp(os.path.getmtime(filename)).strftime(
             "%y%m%d%H%M%S"
         )
@@ -480,7 +487,7 @@ def _output_results(
             logger.debug("Outputting .csv file.")
             variables_in_filename = findall(VAR_REGEX, output.filename)
             if not variables_in_filename:
-                output_st_csv(results_df, output.filename)
+                output_st_csv(results_df, output.filename, output.overwrite)
                 csv_output_filenames.append(output.filename)
                 console.print(CREATED_FILE_MSG.format(filename=output.filename))
             else:
@@ -488,7 +495,7 @@ def _output_results(
                     results_df, variables_in_filename
                 ):
                     overwrite_filename = interpolate_variables(output.filename, comb)
-                    output_st_csv(combination_df, output.filename)
+                    output_st_csv(combination_df, output.filename, output.overwrite)
                     csv_output_filenames.append(overwrite_filename)
                     console.print(CREATED_FILE_MSG.format(filename=overwrite_filename))
         else:
