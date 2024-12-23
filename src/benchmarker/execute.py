@@ -264,9 +264,18 @@ def perform_benchmarks(
                         for stage, result in measurements.items():
                             results.setdefault(BENCHMARK_ID_COLUMN, []).append(id)
                             for variable in benchmark.matrix:
-                                results.setdefault(variable, []).append(
-                                    benchmark.matrix[variable]
-                                )
+                                stack = [(variable, benchmark.matrix[variable])]
+                                while stack:
+                                    variable_name, value = stack.pop()
+                                    if not isinstance(value, dict):
+                                        results.setdefault(variable_name, []).append(
+                                            value
+                                        )
+                                    else:
+                                        # We reverse it to keep the user defined order
+                                        for k, v in reversed(list(value.items())):
+                                            stack.append((f"{variable_name}.{k}", v))
+
                             results.setdefault(HAS_FAILED_COLUMN, []).append(has_failed)
                             results.setdefault(METRIC_COLUMN, []).append(metric_name)
                             results.setdefault(STAGE_COLUMN, []).append(stage)

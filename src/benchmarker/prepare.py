@@ -88,7 +88,7 @@ def prepare_before_after_all_commands(
             vars = set()
             for command in section:
                 for var_name in findall(VAR_REGEX, command):
-                    vars.add(var_name)
+                    vars.add(var_name.split(".")[0])
             if vars:
                 var_combinations = create_variable_combinations(
                     **{k: v for k, v in matrix.items() if k in vars}
