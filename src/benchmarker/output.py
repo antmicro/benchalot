@@ -46,6 +46,7 @@ from plotnine import (
     geom_violin,
 )
 from benchmarker.log import console
+from pathlib import Path
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -404,6 +405,19 @@ def output_plot(
     return True
 
 
+def output_st_csv(result_df: pd.DataFrame, filename):
+    if Path(filename).is_file():
+        date_str = datetime.fromtimestamp(os.path.getmtime(filename)).strftime(
+            "%y%m%d%H%M%S"
+        )
+        backup_filename = f"{filename}.{date_str}~"
+        os.rename(filename, backup_filename)
+        logger.warning(
+            f"File {filename} already exists! Created backup file {backup_filename}"
+        )
+    result_df.to_csv(filename, encoding="utf-8", index=False)
+
+
 def get_combination_filtered_dfs(
     df: pd.DataFrame, columns: list[str]
 ) -> Generator[tuple[dict, pd.DataFrame]]:
@@ -466,7 +480,7 @@ def _output_results(
             logger.debug("Outputting .csv file.")
             variables_in_filename = findall(VAR_REGEX, output.filename)
             if not variables_in_filename:
-                results_df.to_csv(output.filename, encoding="utf-8", index=False)
+                output_st_csv(results_df, output.filename)
                 csv_output_filenames.append(output.filename)
                 console.print(CREATED_FILE_MSG.format(filename=output.filename))
             else:
@@ -474,9 +488,7 @@ def _output_results(
                     results_df, variables_in_filename
                 ):
                     overwrite_filename = interpolate_variables(output.filename, comb)
-                    combination_df.to_csv(
-                        overwrite_filename, encoding="utf-8", index=False
-                    )
+                    output_st_csv(combination_df, output.filename)
                     csv_output_filenames.append(overwrite_filename)
                     console.print(CREATED_FILE_MSG.format(filename=overwrite_filename))
         else:
