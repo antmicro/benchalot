@@ -1,6 +1,5 @@
 from logging import getLogger
 from re import findall
-from benchmarker.config import RunSection
 from benchmarker.interpolate import (
     VAR_REGEX,
     create_variable_combinations,
@@ -64,8 +63,9 @@ def exclude(
     return False
 
 
-def prepare_before_after_all_commands(
-    run_config: RunSection,
+def prepare_init_cleanup_commands(
+    init: list[str],
+    cleanup: list[str],
     matrix: dict[str, list],
     exclusions: list[dict[str, int | str | float]],
 ) -> tuple[list[str], list[str]]:
@@ -82,7 +82,7 @@ def prepare_before_after_all_commands(
     logger.info("Preparing 'before-all' and 'after-all' commands...")
 
     ret = []
-    for section in [run_config.before_all, run_config.after_all]:
+    for section in [init, cleanup]:
         curr_section_commands = []
         if section:
             vars = set()
@@ -131,7 +131,10 @@ def process_custom_metrics(
 
 
 def prepare_benchmarks(
-    run_config: RunSection,
+    bench: list[dict],
+    pre_bench: list[str],
+    post_bench: list[str],
+    custom_metrics: list[dict],
     matrix: dict[str, list[str]],
     exclusions: list[dict[str, int | str | float]],
     isolate_cpus: bool,
@@ -148,21 +151,21 @@ def prepare_benchmarks(
         list[PreparedBenchmark]: List of unique benchmarks containing their variable combination, modified commands and metrics.
     """
     if isolate_cpus:
-        for name in run_config.benchmark:
-            commands = run_config.benchmark[name]
+        for name in bench:
+            commands = bench[name]
             for i, c in enumerate(commands):
-                run_config.benchmark[name][i] = "cset shield --exec -- " + c
+                bench[name][i] = "cset shield --exec -- " + c
     benchmarks: list[PreparedBenchmark] = []
     logger.info("Preparing benchmarks...")
     if not matrix:
         logger.debug("`matrix` not found in the config.")
-        custom_metrics = process_custom_metrics(run_config.custom_metrics)
+        cm = process_custom_metrics(custom_metrics)
         benchmark = PreparedBenchmark(
             matrix={},
-            before=run_config.before,
-            benchmark=run_config.benchmark,
-            after=run_config.after,
-            custom_metrics=custom_metrics,
+            before=pre_bench,
+            benchmark=bench,
+            after=post_bench,
+            custom_metrics=cm,
         )
         benchmarks.append(benchmark)
     else:
@@ -172,22 +175,22 @@ def prepare_benchmarks(
         for var_combination in var_combinations:
             if exclude(var_combination, exclusions):
                 continue
-            before = interpolate_commands(run_config.before, var_combination)
-            after = interpolate_commands(run_config.after, var_combination)
-            bench = {}
-            for name in run_config.benchmark:
-                bench[name] = interpolate_commands(
-                    run_config.benchmark[name], var_combination
+            before = interpolate_commands(pre_bench, var_combination)
+            after = interpolate_commands(post_bench, var_combination)
+            b = {}
+            for name in bench:
+                b[name] = interpolate_commands(
+                    bench[name], var_combination
                 )
-            custom_metrics = process_custom_metrics(
-                run_config.custom_metrics, var_combination
+            cm = process_custom_metrics(
+                custom_metrics, var_combination
             )
             benchmark = PreparedBenchmark(
                 matrix=var_combination,
                 before=before,
-                benchmark=bench,
+                benchmark=b,
                 after=after,
-                custom_metrics=custom_metrics,
+                custom_metrics=cm,
             )
             benchmarks.append(benchmark)
     logger.debug(f"Prepared benchmarks: {benchmarks}")

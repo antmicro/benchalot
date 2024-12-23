@@ -71,63 +71,6 @@ class BuiltInMetrics(StrEnum):
     MEM = "rss"
 
 
-class RunSection(BaseModel):
-    """Schema for `run` section of the configuration file.
-
-    Attributes:
-        samples: How many times each benchmark should be repeated.
-        save_output: Name of a file where `stdout` and `stderr` of executed commands will be saved.
-        before_all: Commands to be executed before all the benchmarks.
-        before:  Commands to be executed before each benchmark.
-        benchmark: Commands to be benchmarked.
-        after:  Commands to be executed after each benchmark.
-        after-all:  Commands to be executed after all the benchmarks.
-        cwd:  Working directory of the commands.
-        metrics:  Metrics to be gathered during benchmarking.
-        env: Enviromental variables used when running commands.
-    """
-
-    samples: int = 1
-    save_output: str | None = Field(default=None, alias="save-output")
-    before_all: list[str] = Field(default=[], alias="before-all")
-    before: list[str] = []
-    benchmark: dict[str, list]
-    after: list[str] = []
-    after_all: list[str] = Field(default=[], alias="after-all")
-    cwd: str | None = None
-    metrics: set[BuiltInMetrics] = set()
-    custom_metrics: list[dict[str, str]] = Field(default=[], alias="custom-metrics")
-    env: dict[str, str] = {}
-    model_config = ConfigDict(extra="forbid")
-
-    @model_validator(mode="before")
-    def name_stages(self):
-        """Transform list of commands to dictionary of lists of commands."""
-        if type(self["benchmark"]) is list:
-            self["benchmark"] = {DEFAULT_STAGE_NAME: self["benchmark"]}
-            return self
-        return self
-
-    @field_validator("cwd")
-    @classmethod
-    def path_exists(cls, value: str):
-        if value and not isdir(value):
-            raise ValueError(f"directory '{value}' not found")
-        return value
-
-    @field_validator("env", mode="before")
-    @classmethod
-    def env_values_to_str(cls, env_vars: dict[str, Any]) -> dict[str, Any]:
-        for key in env_vars:
-            if isinstance(env_vars[key], (int, float)):
-                env_vars[key] = str(env_vars[key])
-        return env_vars
-
-    @model_validator(mode="after")
-    def set_time_as_default(self):
-        if len(self.metrics) == 0 and len(self.custom_metrics) == 0:
-            self.metrics = {BuiltInMetrics.TIME}
-        return self
 
 
 class OutputFormat(StrEnum):
@@ -271,10 +214,48 @@ class ConfigFile(BaseModel):
     matrix: dict[str, list] = {}
     exclusions: list[dict[str, str | int | float]] = []
     system: SystemSection = SystemSection()
-    run: RunSection
     output: OutputSection | None = None
-
+    samples: int = 1
+    save_output: str | None = Field(default=None, alias="save-output")
+    init: list[str] = []
+    pre_bench: list[str] = Field(default=[], alias="pre-bench")
+    bench: dict[str, list]
+    post_bench: list[str] = Field(default=[], alias="pre-bench")
+    cleanup: list[str] = []
+    cwd: str | None = None
+    metrics: set[BuiltInMetrics] = set()
+    custom_metrics: list[dict[str, str]] = Field(default=[], alias="custom-metrics")
+    env: dict[str, str] = {}
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    def name_stages(self):
+        """Transform list of commands to dictionary of lists of commands."""
+        if type(self["bench"]) is list:
+            self["bench"] = {DEFAULT_STAGE_NAME: self["bench"]}
+            return self
+        return self
+
+    @field_validator("cwd")
+    @classmethod
+    def path_exists(cls, value: str):
+        if value and not isdir(value):
+            raise ValueError(f"directory '{value}' not found")
+        return value
+
+    @field_validator("env", mode="before")
+    @classmethod
+    def env_values_to_str(cls, env_vars: dict[str, Any]) -> dict[str, Any]:
+        for key in env_vars:
+            if isinstance(env_vars[key], (int, float)):
+                env_vars[key] = str(env_vars[key])
+        return env_vars
+
+    @model_validator(mode="after")
+    def set_time_as_default(self):
+        if len(self.metrics) == 0 and len(self.custom_metrics) == 0:
+            self.metrics = {BuiltInMetrics.TIME}
+        return self
 
     @field_validator("matrix")
     @classmethod

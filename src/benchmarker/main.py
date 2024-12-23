@@ -3,7 +3,7 @@ from sys import argv, executable
 from benchmarker.config import validate_config, validate_output_config
 from benchmarker.prepare import (
     prepare_benchmarks,
-    prepare_before_after_all_commands,
+    prepare_init_cleanup_commands,
 )
 from benchmarker.execute import (
     perform_benchmarks,
@@ -62,20 +62,19 @@ def main():
         )
         execvp("sudo", ["sudo", executable] + argv)
 
-    run_config = config.run
     benchmarks = prepare_benchmarks(
-        run_config, config.matrix, config.exclusions, config.system.isolate_cpus
+        config.bench, config.pre_bench, config.post_bench, config.custom_metrics, config.matrix, config.exclusions, config.system.isolate_cpus
     )
-    before_all_commands, after_all_commands = prepare_before_after_all_commands(
-        run_config, config.matrix, config.exclusions
+    before_all_commands, after_all_commands = prepare_init_cleanup_commands(
+        config.init, config.cleanup, config.matrix, config.exclusions
     )
     if args.plan:
         for command in before_all_commands:
             print(command)
         for benchmark in benchmarks:
-            if config.run.samples > 1:
+            if config.samples > 1:
                 print()
-                msg_mul = f"x{config.run.samples}"
+                msg_mul = f"x{config.samples}"
                 pad = 4
                 print(("─" * pad) + msg_mul + ("─" * pad))
             for command in benchmark.before:
@@ -87,17 +86,17 @@ def main():
                 print(command)
             for custom_metric in benchmark.custom_metrics:
                 print(list(custom_metric.items())[0][1])
-        if config.run.samples > 1:
+        if config.samples > 1:
             print()
         for command in before_all_commands:
             print(command)
         exit_benchmarker()
 
-    set_working_directory(config.run.cwd)
-    environ.update(config.run.env)
+    set_working_directory(config.cwd)
+    environ.update(config.env)
 
     logger.info("Performing benchmarks...")
-    with console.log_to_file(config.run.save_output):
+    with console.log_to_file(config.save_output):
 
         def _execute_section(commands):
             with console.bar(len(commands)) as bar:
@@ -113,7 +112,7 @@ def main():
         if config.system.modify:
             modify_system_state(config.system)
 
-        results = perform_benchmarks(benchmarks, config.run.samples, config.run.metrics)
+        results = perform_benchmarks(benchmarks, config.samples, config.metrics)
 
         if config.system.modify:
             restore_system_state()
