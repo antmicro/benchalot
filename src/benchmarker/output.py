@@ -442,7 +442,16 @@ def get_combination_filtered_dfs(
         variables[variable_name] = df[variable_name].unique()
     combinations = create_variable_combinations(**variables)
     for comb in combinations:
-        yield comb, df.loc[(df[list(comb.keys())] == pd.Series(comb)).all(axis=1)]
+        compound_comb: dict[str, dict] = {}
+        for var_name, value in comb.items():
+            nest = str(var_name).split(".")
+            if len(nest) == 2:
+                compound_comb.setdefault(nest[0], {})[nest[1]] = value
+            else:
+                compound_comb[var_name] = value
+        yield compound_comb, df.loc[
+            (df[list(comb.keys())] == pd.Series(comb)).all(axis=1)
+        ]
 
 
 CREATED_FILE_MSG = "Created '{filename}'"

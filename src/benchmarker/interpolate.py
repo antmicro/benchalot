@@ -31,17 +31,19 @@ def interpolate_variables(string: str, variables: dict[str, str | int]) -> str:
     def replace_substring(match):
         variable_name = match.group(1)
         nest = variable_name.split(".")
-        value = variables
-        for i in range(len(nest)):
+        if len(nest) == 2:
+            a, b = nest
             try:
-                value = value[nest[i]]
+                return str(variables[a][b])
             except KeyError:
                 logger.critical(f"'{string}': Variable '{variable_name}' not found")
                 exit(1)
-        if isinstance(value, dict):
-            logger.critical(f"'{string}': Variable '{variable_name}' not found")
-            exit(1)
-        return str(value)
+        else:
+            try:
+                return str(variables[nest[0]])
+            except KeyError:
+                logger.critical(f"'{string}': Variable '{variable_name}' not found")
+                exit(1)
 
     new_string = sub(VAR_REGEX, replace_substring, string)
     return new_string
