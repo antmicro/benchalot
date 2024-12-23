@@ -287,11 +287,7 @@ class ConfigFile(BaseModel):
 
     @model_validator(mode="after")
     def at_least_one_csv(self):
-        """Check if output section contains at least one csv output
-
-        Raises:
-            ValueError: When no csv is found.
-        """
+        """Check if output section contains at least one csv output, if not create a default `result.csv` output config."""
         if not self.output:
             self.output = {}
         for output_key in self.output:
