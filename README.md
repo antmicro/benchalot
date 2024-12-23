@@ -178,6 +178,7 @@ output:
     csv-table:
         format: csv
         filename: example.csv
+        overwrite: false                 # If set to `true` will overwrite any existing file with the same name. If set to false (defualt) will backup the existing file.
 
     # Results in a text file containing a markdown table
     markdown-table:
