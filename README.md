@@ -101,6 +101,8 @@ The above configuration will result in runs:
 in total creating 18 combinations of variable values.
 If there is no `matrix` section, Benchmarker will execute the `run` section once.
 
+Matrix variables can be [further subdivided](Advanced Configuration).
+
 #### Exclusions
 
 To exclude given variable values combination, use `exclusions` section:
@@ -143,7 +145,7 @@ run:
         - stdout            # treat stdout output of the command as the result
         - stderr            # treat stderr output of the command as the result
 
-    custom-metrics:         # specify your own metrics, for more information checkout Custom Metrics section of README
+    custom-metrics:         # specify your own metrics, for more information checkout Advanced Configuration section of README
         - threads: echo {{thread}}
 
     samples: 5              # how many times repeat each benchmark (default=1)
@@ -252,27 +254,38 @@ plot2:
 
 If we add this section to the configuration above, Benchmarker will generate two files: `plot_slow.png` which visualizes benchmarks with `tag == slow`, and `plot_fast.png` which visualizes benchmarks with `tag == fast`.
 
-### Custom Metrics
+### Advanced Configuration
 
-Benchmarker allows usage of custom metrics.
-To use a custom metric, specify the metric name and command in `run.custom-metrics` using the syntax `metric_name: command`.
-`command` will be executed after each run of `benchmark` section.
-`command` should output results by printing them to standard output.
-
-Example: Let's say we want to measure size difference between files compressed by `gzip`, `bzip2` and `xz`.
-We can start by specifying the configuration:
  <!--name="size-config"-->
 ```yaml
 ---
+# This configuration file is used to measure size difference between a file compressed by `gzip`, `bzip2` and `xz`
+# It also measures how much time it takes to compress and decompress the file.
 matrix:
-  compression: ["bzip2", "gzip", "xz"]
+  opt:                          # `opt` is compound variable, its sub-variables can be accessed using `opt.var_name`
+    - compress: "bzip2"
+      decompress: "bunzip2"
+      ext: "bz2"
+    - compress: "gzip"
+      decompress: "gunzip"
+      ext: "gz"
+    - compress: "xz"
+      decompress: "unxz"
+      ext: "xz"
 run:
-  benchmark:
-    - "{{compression}} -c plot.png > {{compression}}.out"
-  custom-metrics: 
-    - "size": "stat -c %s {{compression}}.out"
+  benchmark:                                                        # divide benchmark section into two stages `compress` and `decompress`
+    compress:
+      - "{{opt.compress}} -c plot.png > out.{{opt.ext}}"            # use `{{opt.compress}}` to compress the file
+    decompress:
+      - "{{opt.decompress}} -c out.{{opt.ext}} > {{opt.ext}}.png"   # use `{{opt.decompress}}` to decompress the file
+
+  custom-metrics:                               # specify the metric name and command using the syntax `metric_name: command`.
+    - "size": "stat -c %s out.{{opt.ext}}"      # will be executed after commands in `after` section with stdout treated as the measurement
+  metrics:
+    - "time"
   after-all:
-    - rm {{compression}}.out
+    - rm out.{{opt.ext}}
+    - rm {{opt.ext}}.png
 output:
   csv:
     filename: "file_size.csv"
@@ -280,10 +293,8 @@ output:
   table:
     filename: "file_table.md"
     format: "md"
-    metrics: [size]
+    metrics: [size]             # size measurements are accessible under the `size` name
 ```
-Benchmarker will then execute `stat -c %s {{compression}}.out` after commands in benchmark section and store stdout as the result. 
-The size measurements are accessible under `size` name and can be specified for `md` as `result-colum`.
 
 #### Custom Metrics and Stages
 
@@ -337,7 +348,7 @@ benchmarker config.yml --u result.csv --include-failed
 ```
 
 
-The Benchmarker will try to automatically detect and remove outliers (the `csv` file will still include them) using (modified Z-Score)[http://d-scholarship.pitt.edu/7948/1/Seo.pdf].
+The Benchmarker will try to automatically detect and remove outliers (the `csv` file will still include them) using [modified Z-Score](http://d-scholarship.pitt.edu/7948/1/Seo.pdf).
 To generate outputs with outliers, use `--include-outliers`:
 <!--name="outliers"-->
 ```bash
