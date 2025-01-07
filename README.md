@@ -271,12 +271,19 @@ matrix:
       decompress: "unxz"
       ext: "xz"
 
-benchmark:
-- "{{compression}} -c plot.png > {{compression}}.out"
-custom-metrics: 
-- "size": "stat -c %s {{compression}}.out"
+benchmark:                                                        # divide benchmark section into two stages `compress` and `decompress`
+  compress:
+    - "{{opt.compress}} -c plot.png > out.{{opt.ext}}"            # use `{{opt.compress}}` to compress the file
+  decompress:
+    - "{{opt.decompress}} -c out.{{opt.ext}} > {{opt.ext}}.png"   # use `{{opt.decompress}}` to decompress the file
+
+custom-metrics:                               # specify the metric name and command using the syntax `metric_name: command`.
+  - "size": "stat -c %s out.{{opt.ext}}"      # will be executed after commands in `after` section with stdout treated as the measurement
+metrics:
+  - "time"
 cleanup:
-- rm {{compression}}.out
+  - rm out.{{opt.ext}}
+  - rm {{opt.ext}}.png
 
 results:
   csv:
