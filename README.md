@@ -314,10 +314,10 @@ benchmarker config.yml --plan
 ```
 Please note that the execution plan will not take number of samples into account.
 
-To regenerate the output without re-running benchmarks, use `--update-output`:
-<!--name="update-output"-->
+To generate the output without re-running benchmarks, use `--results-from-csv`:
+<!--name="results-from-csv"-->
 ```bash
-benchmarker config.yml --update-output result.csv
+benchmarker config.yml --results-from-csv result.csv
 ```
 
 To include previous results with the next benchmark, use `--include`:
@@ -336,7 +336,7 @@ In case one of the benchmarks fails (its exit code is not equal 0) Benchmarker w
 To generate outputs with failed benchmarks, use `--include-failed`:
 <!--name="failed"-->
 ```bash
-benchmarker config.yml --u result.csv --include-failed
+benchmarker config.yml -r result.csv --include-failed
 ```
 
 
@@ -344,5 +344,5 @@ The Benchmarker will try to automatically detect and remove outliers (the `csv` 
 To generate outputs with outliers, use `--include-outliers`:
 <!--name="outliers"-->
 ```bash
-benchmarker config.yml --u result.csv --include-outliers
+benchmarker config.yml -r result.csv --include-outliers
 ```

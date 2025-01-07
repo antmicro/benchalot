@@ -32,15 +32,15 @@ def main():
     setup_benchmarker_logging(args.verbose, args.debug)
 
     config_file = load_configuration_file(args.config_filename)
-    if args.update_output:  # Update output and exit
-        for file in args.update_output:
+    if args.results_from_csv:  # Update output and exit
+        for file in args.results_from_csv:
             if not isfile(file):
                 logger.critical(f"File '{file}' not found")
                 exit(1)
         config = validate_output_config(config_file)
         output_results_from_file(
             config.results,
-            args.update_output,
+            args.results_from_csv,
             args.include_failed,
             args.include_outliers,
         )
@@ -182,12 +182,12 @@ def get_argument_parser() -> ArgumentParser:
     )
 
     include_update_group.add_argument(
-        "-u",
-        "--update-output",
-        dest="update_output",
+        "-r",
+        "--results-from-csv",
+        dest="results_from_csv",
         metavar="CSV_FILE",
         default=False,
-        help="regenerate the output without re-running benchmarks",
+        help="generate the output without re-running benchmarks",
         nargs="+",
     )
     mul_input_split_group.add_argument(

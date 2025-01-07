@@ -535,7 +535,7 @@ def _output_results(
             )
             if len(non_csv_outputs) > 0:
                 console.print(
-                    f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-failed"
+                    f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -r {' '.join(csv_output_filenames).strip()} --include-failed"
                 )
             if len(results_df.index) == 0:
                 logger.critical("All benchmarks failed! Bailing out.")
@@ -583,7 +583,7 @@ def _output_results(
             )
             if len(non_csv_outputs) > 0:
                 console.print(
-                    f"To generate output with outliers included run:\n\t{argv[0]} {argv[1]} -u {' '.join(csv_output_filenames).strip()} --include-outliers"
+                    f"To generate output with outliers included run:\n\t{argv[0]} {argv[1]} -r {' '.join(csv_output_filenames).strip()} --include-outliers"
                 )
         results_df = results_df.drop(outlier_column_name, axis=1)
 
