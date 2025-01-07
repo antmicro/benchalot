@@ -16,6 +16,7 @@ from benchmarker.output_constants import (
 from uuid import uuid4
 from benchmarker.log import console
 from benchmarker.config import BuiltInMetrics
+from concurrent import futures
 
 logger = getLogger(f"benchmarker.{__name__}")
 working_directory = getcwd()
@@ -153,6 +154,11 @@ def perform_benchmarks(
                 log_output(process)
                 process.wait()
 
+        def read_pipe(file):
+            output = file.read()
+            file.close()
+            return output
+
         for benchmark in benchmarks:
             try:
                 for _ in range(0, samples):
@@ -185,18 +191,22 @@ def perform_benchmarks(
                         stage_memory = -1
                         for command in benchmark.benchmark[stage]:
                             bar.set_description(command)
+                            process_stdout = b""
+                            process_stderr = b""
                             start = monotonic_ns()
                             process = execute_command(
                                 command, measure_stderr or measure_stdout
                             )
-                            # taking parts of process.communicate implementation, src: https://github.com/python/cpython/blob/main/Lib/subprocess.py
                             if measure_stderr or measure_stdout:
-                                if process.stdout:
-                                    process_stdout = process.stdout.read()
-                                    process.stdout.close()
-                                if process.stderr:
-                                    process_stderr = process.stderr.read()
-                                    process.stderr.close()
+                                with futures.ThreadPoolExecutor() as executor:
+                                    stdout_future = executor.submit(
+                                        read_pipe, process.stdout
+                                    )
+                                    stderr_future = executor.submit(
+                                        read_pipe, process.stderr
+                                    )
+                                    process_stdout = stdout_future.result()
+                                    process_stderr = stderr_future.result()
                             else:
                                 log_output(process)
                             _, exit_status, resources = wait4(process.pid, 0)
