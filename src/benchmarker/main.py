@@ -71,11 +71,11 @@ def main():
         config.exclusions,
         config.system.isolate_cpus,
     )
-    before_all_commands, after_all_commands = prepare_init_cleanup_commands(
+    init_commands, cleanup_commands = prepare_init_cleanup_commands(
         config.init, config.cleanup, config.matrix, config.exclusions
     )
     if args.plan:
-        for command in before_all_commands:
+        for command in init_commands:
             print(command)
         for benchmark in benchmarks:
             if config.samples > 1:
@@ -83,18 +83,18 @@ def main():
                 msg_mul = f"x{config.samples}"
                 pad = 4
                 print(("─" * pad) + msg_mul + ("─" * pad))
-            for command in benchmark.before:
+            for command in benchmark.pre_benchmark:
                 print(command)
             for _, commands in benchmark.benchmark.items():
                 for command in commands:
                     print(command)
-            for command in benchmark.after:
+            for command in benchmark.post_benchmark:
                 print(command)
             for custom_metric in benchmark.custom_metrics:
                 print(list(custom_metric.items())[0][1])
         if config.samples > 1:
             print()
-        for command in before_all_commands:
+        for command in cleanup_commands:
             print(command)
         exit_benchmarker()
 
@@ -113,7 +113,7 @@ def main():
                     process.wait()
                     bar.update(1)
 
-        _execute_section(before_all_commands)
+        _execute_section(init_commands)
 
         if config.system.modify:
             modify_system_state(config.system)
@@ -123,7 +123,7 @@ def main():
         if config.system.modify:
             restore_system_state()
 
-        _execute_section(after_all_commands)
+        _execute_section(cleanup_commands)
 
     output_results_from_dict(
         results,

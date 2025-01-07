@@ -16,16 +16,16 @@ class PreparedBenchmark:
 
     Attributes:
         matrix: Combination of variable values used for this benchmark.
-        before: Commands to be executed before the measurement.
+        pre_benchmark: Commands to be executed before the measurement.
         benchmark: Commands to be measured.
-        after: Commands to be executed after the measurement.
+        post_benchmark: Commands to be executed after the measurement.
         custom_metrics: List of custom_metrics (names and commands) to be gathered during execution.
     """
 
     matrix: dict[str, str]
-    before: list[str]
+    pre_benchmark: list[str]
     benchmark: dict[str, list[str]]
-    after: list[str]
+    post_benchmark: list[str]
     custom_metrics: list[dict[str, str]]
 
 
@@ -69,7 +69,7 @@ def prepare_init_cleanup_commands(
     matrix: dict[str, list],
     exclusions: list[dict[str, int | str | float]],
 ) -> tuple[list[str], list[str]]:
-    """Create command variants for each combination of values of variables present in before-all and after-all sections.
+    """Create command variants for each combination of values of variables present in init and cleanup sections.
 
     Args:
         run_config: Configuration file's `run` section.
@@ -79,7 +79,7 @@ def prepare_init_cleanup_commands(
     Returns:
         tuple[list[str], list[str]]: Two lists with command combinations for each section.
     """
-    logger.info("Preparing 'before-all' and 'after-all' commands...")
+    logger.info("Preparing 'init' and 'cleanup' commands...")
 
     ret = []
     for section in [init, cleanup]:
@@ -139,7 +139,7 @@ def prepare_benchmarks(
     exclusions: list[dict[str, int | str | float]],
     isolate_cpus: bool,
 ) -> list[PreparedBenchmark]:
-    """Prepare `before`, `benchmark` and `after` commands so that they can be executed as part of one benchmark.
+    """Prepare `pre_benchmark`, `benchmark` and `post_benchmark` commands so that they can be executed as part of one benchmark.
 
     Args:
         run_config: Configuration file's `run` section.
@@ -162,9 +162,9 @@ def prepare_benchmarks(
         cm = process_custom_metrics(custom_metrics)
         benchmark = PreparedBenchmark(
             matrix={},
-            before=pre_bench,
+            pre_benchmark=pre_bench,
             benchmark=bench,
-            after=post_bench,
+            post_benchmark=post_bench,
             custom_metrics=cm,
         )
         benchmarks.append(benchmark)
@@ -175,17 +175,17 @@ def prepare_benchmarks(
         for var_combination in var_combinations:
             if exclude(var_combination, exclusions):
                 continue
-            before = interpolate_commands(pre_bench, var_combination)
-            after = interpolate_commands(post_bench, var_combination)
+            pre_benchmark = interpolate_commands(pre_bench, var_combination)
+            post_benchmark = interpolate_commands(post_bench, var_combination)
             b = {}
             for name in bench:
                 b[name] = interpolate_commands(bench[name], var_combination)
             cm = process_custom_metrics(custom_metrics, var_combination)
             benchmark = PreparedBenchmark(
                 matrix=var_combination,
-                before=before,
+                pre_benchmark=pre_benchmark,
                 benchmark=b,
-                after=after,
+                post_benchmark=post_benchmark,
                 custom_metrics=cm,
             )
             benchmarks.append(benchmark)

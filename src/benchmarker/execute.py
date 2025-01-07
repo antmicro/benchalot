@@ -156,7 +156,7 @@ def perform_benchmarks(
                 for _ in range(0, samples):
                     logger.debug(f"Running benchmark: {benchmark}")
 
-                    _execute_section(benchmark.before)
+                    _execute_section(benchmark.pre_benchmark)
 
                     measure_time = BuiltInMetrics.TIME in builtin_metrics
                     measure_utime = BuiltInMetrics.UTIME in builtin_metrics
@@ -232,7 +232,7 @@ def perform_benchmarks(
                             if out_float is None:
                                 has_failed = True
 
-                    _execute_section(benchmark.after)
+                    _execute_section(benchmark.post_benchmark)
 
                     benchmark_results: dict[str, dict[str, float | None]] = {}
 
