@@ -43,18 +43,25 @@ def check_return_code(command: str, code: int) -> bool:
     return True
 
 
-def execute_command(command: str) -> Popen:
+def execute_command(command: str, separate_stderr: bool = False) -> Popen:
     """Execute command in shell, with `stdout` and `stderr` piped.
 
     Args:
         command: Command to be executed.
+        separate_stderr: If set to `True`, will pipe create a separate pipe for stderr.
 
     Returns:
         Popen: Process object.
     """
     global working_directory
     logger.info(command)
-    return Popen(command, shell=True, stdout=PIPE, stderr=STDOUT, cwd=working_directory)
+    if separate_stderr:
+        stderr_stream = PIPE
+    else:
+        stderr_stream = STDOUT
+    return Popen(
+        command, shell=True, stdout=PIPE, stderr=stderr_stream, cwd=working_directory
+    )
 
 
 def log_output(process: Popen) -> None:
@@ -95,7 +102,7 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
     Returns:
         tuple[dict[str, float | None], bool]: Containing single or multi stage result and whether the custom_metric failed.
     """
-    process = execute_command(metric_command)
+    process = execute_command(metric_command, True)
     output, _ = process.communicate()
     output = output.decode("utf-8")
     if len(output.splitlines()) == 1:
@@ -179,7 +186,9 @@ def perform_benchmarks(
                         for command in benchmark.benchmark[stage]:
                             bar.set_description(command)
                             start = monotonic_ns()
-                            process = execute_command(command)
+                            process = execute_command(
+                                command, measure_stderr or measure_stdout
+                            )
                             # taking parts of process.communicate implementation, src: https://github.com/python/cpython/blob/main/Lib/subprocess.py
                             if measure_stderr or measure_stdout:
                                 if process.stdout:
