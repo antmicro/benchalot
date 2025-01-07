@@ -23,7 +23,7 @@ RUN_OUTLIERS=$(tuttest README.md outliers)
 SIZE_CONFIG=$(tuttest README.md size-config)
 EXCLUSION=$(tuttest README.md exclusions)
 MUL=$(tuttest README.md mul)
-OUTPUT=$(tuttest README.md output)
+RESULTS=$(tuttest README.md results)
 RUN_SECTION=$(tuttest README.md run-section)
 RUN_PLAN=$(tuttest README.md plan)
 
@@ -41,7 +41,7 @@ assert_file_exists plot.png
 assert_file_exists table.md
 assert_file_exists result.csv
 
-echo "$OUTPUT" > output_config.yml
+echo "$RESULTS" > output_config.yml
 benchmarker output_config.yml -u result.csv
 
 assert_file_exists example.csv
@@ -53,7 +53,7 @@ assert_file_exists example_violin.png
 assert_file_exists example_bar.png
 
 rm -f run.log
-printf "output:\n    csv:\n        filename: \"run_section.csv\" \n        format: \"csv\"\n" > run_config.yml
+printf "results:\n    csv:\n        filename: \"run_section.csv\" \n        format: \"csv\"\n" > run_config.yml
 printf "matrix:\n    thread: [2, 4, 8]\n    tag: [sleeper-v1.0, sleeper-v1.1]\n    input: [data1, data2, data3]\n" >> run_config.yml
 echo "$RUN_SECTION" >> run_config.yml
 benchmarker run_config.yml

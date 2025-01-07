@@ -43,18 +43,17 @@ matrix:
   thread: [2, 4, 8]
   tag: ["slow", "fast"]
   input: ["data1", "data2", "data3"]
-run:
-  samples: 3
-  save-output: "run.log"
-  before-all:
-    - "git clone . ../{{tag}}"
-    - "cd ../{{tag}} && git checkout {{tag}} && make build"
-  benchmark:
-    - "../{{tag}}/sleeper {{thread}} {{input}}"
-  after-all:
-    - "cd ../{{tag}} && make clean"
-    - "rm -rf ../{{tag}}"
-output:
+samples: 3
+save-output: "run.log"
+init:
+- "git clone . ../{{tag}}"
+- "cd ../{{tag}} && git checkout {{tag}} && make build"
+benchmark:
+- "../{{tag}}/sleeper {{thread}} {{input}}"
+cleanup:
+- "cd ../{{tag}} && make clean"
+- "rm -rf ../{{tag}}"
+results:
   csv:
     filename: "result.csv"
     format: "csv"
@@ -90,7 +89,7 @@ And this `table.md`:
 ### Matrix
 
 Based on that config, Benchmarker will run a benchmark for each value specified in `matrix.*` fields.
-Commands specified as strings in `run` field will be executed with every substring with `{{var_name}}` being substituted to corresponding value.
+Commands will have very substring in format `{{var_name}}` substituted to corresponding value.
 For each combination of variable values, a run will be performed, e.g.:  
 The above configuration will result in runs:  
 `thread = 2; input = "data1"; tag = "slow"`  
@@ -99,7 +98,7 @@ The above configuration will result in runs:
 [...]  
 `thread = 8; input = "data3"; tag = "fast"`
 in total creating 18 combinations of variable values.
-If there is no `matrix` section, Benchmarker will execute the `run` section once.
+If there is no `matrix` section, no variable substitution is performed.
 
 Matrix variables can [contain fields](Advanced Configuration).
 
@@ -117,42 +116,41 @@ exclusions:
 ```
 Benchmarker will not create benchmarks for these value combinations.
 
-### Run
+### Command Execution
 
 <!-- name="run-section" -->
 ```yaml
-run:
-    before-all:                                                 # commands to be executed once before all of the benchmarks
-        - git clone . ../{{tag}}
-    before:                                                     # commands to be executed before each benchmark
-        - cd ../{{tag}} && git checkout {{tag}}
-    benchmark:                                                  # commands to be benchmarked
-        compilation:                                            # benchmark section can be further divided into stages
-            - cd ../{{tag}} && make build -s
-        execution:
-            - ../{{tag}}/sleeper {{thread}} {{input}}
-    after:                                                      # contains the commands to be executed after each benchmark
-        - cd ../{{tag}} && make clean
-    after-all:                                                  # contains the commands to be excetued once after all of the benchmarks
-        - rm -rf ../{{tag}}
+init:                                                   # commands to be executed once before all of the benchmarks
+    - git clone . ../{{tag}}
+pre-benchmark:                                          # commands to be executed before each benchmark
+    - cd ../{{tag}} && git checkout {{tag}}
+benchmark:                                              # commands to be benchmarked
+    compilation:                                        # benchmarks can be divided into stages
+        - cd ../{{tag}} && make build -s
+    execution:
+        - ../{{tag}}/sleeper {{thread}} {{input}}
+post-benchmark:                                         # contains the commands to be executed after each benchmark
+    - cd ../{{tag}} && make clean
+cleanup:                                                # contains the commands to be excetued once after all of the benchmarks
+    - rm -rf ../{{tag}}
 
-    #  built-in metrics
-    metrics:
-        - time              # measure time
-        - utime             # measure user time
-        - stime             # measure system time
-        - rss               # measure resident set size
-        - stdout            # treat stdout output of the command as the result
-        - stderr            # treat stderr output of the command as the result
+#  built-in metrics
+metrics:
+    - time              # measure time
+    - utime             # measure user time
+    - stime             # measure system time
+    - rss               # measure resident set size
+    - stdout            # treat stdout output of the command as the result
+    - stderr            # treat stderr output of the command as the result
 
-    custom-metrics:         # specify your own metrics, for more information checkout Advanced Configuration section of README
-        - threads: echo {{thread}}
+custom-metrics:         # specify your own metrics, for more information checkout Advanced Configuration section of README
+    - threads: echo {{thread}}
 
-    samples: 5              # how many times repeat each benchmark (default=1)
-    save-output: run.log    # log file for command output
-    cwd: ~                  # change working directory of the commands to specified location
-    env:                    # specify additional environment variables to be used when running commands
-        CC: gcc
+samples: 5              # how many times repeat each benchmark (default=1)
+save-output: run.log    # log file for command output
+cwd: ~                  # change working directory of the commands to specified location
+env:                    # specify additional environment variables to be used when running commands
+    CC: gcc
 ```
 
 ### System
@@ -169,13 +167,13 @@ The section is optional; if no options are specified, Benchmarker can be run wit
 * `disable-core-boost`: if set to `True`, will disable CPU boosting.
 * `governor-performance`: if set to `True`, will set frequency governors of all (or isolated) CPUs to `performance`.
 
-### Output
+### Results
 
-<!-- name="output" -->
+<!-- name="results" -->
 ```yaml
 ---
 # Here are examples of available output formats.
-output:
+results:
     # Results in a csv file in format that is compatible with the Benchmarker
     csv-table:
         format: csv
@@ -230,7 +228,7 @@ output:
 Additionally, instead of using variable names you can use one of the following:
 * `benchmark_date` - time stamp (date and hour) of when the benchmarks completed.
 * `stage` - column containing stages' names.
-* `has_failed` - column containing `True` or `False` depending on whether the benchmark failed.
+* `failed` - column containing `True` or `False` depending on whether the benchmark failed.
 
 
 #### Multiplying output
@@ -272,21 +270,15 @@ matrix:
     - compress: "xz"
       decompress: "unxz"
       ext: "xz"
-run:
-  benchmark:                                                        # divide benchmark section into two stages `compress` and `decompress`
-    compress:
-      - "{{opt.compress}} -c plot.png > out.{{opt.ext}}"            # use `{{opt.compress}}` to compress the file
-    decompress:
-      - "{{opt.decompress}} -c out.{{opt.ext}} > {{opt.ext}}.png"   # use `{{opt.decompress}}` to decompress the file
 
-  custom-metrics:                               # specify the metric name and command using the syntax `metric_name: command`.
-    - "size": "stat -c %s out.{{opt.ext}}"      # will be executed after commands in `after` section with stdout treated as the measurement
-  metrics:
-    - "time"
-  after-all:
-    - rm out.{{opt.ext}}
-    - rm {{opt.ext}}.png
-output:
+benchmark:
+- "{{compression}} -c plot.png > {{compression}}.out"
+custom-metrics: 
+- "size": "stat -c %s {{compression}}.out"
+cleanup:
+- rm {{compression}}.out
+
+results:
   csv:
     filename: "file_size.csv"
     format: "csv"
