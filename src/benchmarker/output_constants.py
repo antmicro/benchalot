@@ -1,6 +1,6 @@
 TIME_STAMP_COLUMN = "benchmark_date"
 BENCHMARK_ID_COLUMN = "benchmark"
-HAS_FAILED_COLUMN = "has_failed"
+HAS_FAILED_COLUMN = "failed"
 METRIC_COLUMN = "metric"
 STAGE_COLUMN = "stage"
 RESULT_COLUMN = "result"
