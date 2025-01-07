@@ -1,4 +1,4 @@
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 from logging import getLogger
 from os import getcwd, wait4, waitstatus_to_exitcode
 from time import monotonic_ns
@@ -54,7 +54,7 @@ def execute_command(command: str) -> Popen:
     """
     global working_directory
     logger.info(command)
-    return Popen(command, shell=True, stdout=PIPE, stderr=PIPE, cwd=working_directory)
+    return Popen(command, shell=True, stdout=PIPE, stderr=STDOUT, cwd=working_directory)
 
 
 def log_output(process: Popen) -> None:
@@ -64,11 +64,6 @@ def log_output(process: Popen) -> None:
         process: Process object.
     """
     with process.stdout as output:  # type: ignore
-        for line in output:
-            decoded = line.decode("utf-8")
-            console.log_command_output(decoded)
-    console.flush()
-    with process.stderr as output:  # type: ignore
         for line in output:
             decoded = line.decode("utf-8")
             console.log_command_output(decoded)
