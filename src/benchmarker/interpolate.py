@@ -31,18 +31,14 @@ def interpolate_variables(string: str, variables: dict[str, str | int]) -> str:
     def replace_substring(match):
         variable_name = match.group(1)
         compound = variable_name.split(".")
-        if len(compound) == 2:
+        value = variables
+        for field in compound:
             try:
-                return str(variables[compound[0]][compound[1]])
+                value = value[field]
             except KeyError:
                 logger.critical(f"'{string}': Variable '{variable_name}' not found")
                 exit(1)
-        else:
-            try:
-                return str(variables[compound[0]])
-            except KeyError:
-                logger.critical(f"'{string}': Variable '{variable_name}' not found")
-                exit(1)
+        return str(value)
 
     new_string = sub(VAR_REGEX, replace_substring, string)
     return new_string

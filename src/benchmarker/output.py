@@ -12,7 +12,6 @@ from benchmarker.config import (
     OutputSection,
 )
 from benchmarker.interpolate import (
-    create_variable_combinations,
     VAR_REGEX,
     interpolate_variables,
 )
@@ -437,20 +436,24 @@ def get_combination_filtered_dfs(
     Returns:
         Generator[tuple[dict, pd.DataFrame]]: Generator of tuples, where each tuple contains dictionary containing combination and filtered data.
     """
-    variables = {}
-    for variable_name in columns:
-        variables[variable_name] = df[variable_name].unique()
-    combinations = create_variable_combinations(**variables)
-    for comb in combinations:
-        compound_comb: dict[str, dict] = {}
-        for var_name, value in comb.items():
-            compound = str(var_name).split(".")
-            if len(compound) == 2:
-                compound_comb.setdefault(compound[0], {})[compound[1]] = value
-            else:
-                compound_comb[var_name] = value
-        yield compound_comb, df.loc[
-            (df[list(comb.keys())] == pd.Series(comb)).all(axis=1)
+    local_df = df.copy()
+    while len(local_df.index) > 0:
+        row = local_df.iloc[0]
+        column_comb = dict(row[columns])
+        comb: dict[str, dict] = {}
+        for key, val in column_comb.items():
+            fields = key.split(".")
+            sub = comb
+            for field in fields[:-1]:
+                if field not in sub:
+                    sub[field] = {}
+                sub = sub[field]
+            sub[fields[-1]] = val
+        yield comb, local_df.loc[
+            (df[list(column_comb.keys())] == pd.Series(column_comb)).all(axis=1)
+        ]
+        local_df = local_df.loc[
+            (df[list(column_comb.keys())] != pd.Series(column_comb)).all(axis=1)
         ]
 
 
