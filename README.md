@@ -101,7 +101,7 @@ The above configuration will result in runs:
 in total creating 18 combinations of variable values.
 If there is no `matrix` section, Benchmarker will execute the `run` section once.
 
-Matrix variables can be [further subdivided](Advanced Configuration).
+Matrix variables can [contain fields](Advanced Configuration).
 
 #### Exclusions
 
