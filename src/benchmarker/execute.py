@@ -48,7 +48,7 @@ def execute_command(command: str, separate_stderr: bool = False) -> Popen:
 
     Args:
         command: Command to be executed.
-        separate_stderr: If set to `True`, will pipe create a separate pipe for stderr.
+        separate_stderr: If set to `True`, will create a separate pipe for stderr.
 
     Returns:
         Popen: Process object.
@@ -102,7 +102,7 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
     Returns:
         tuple[dict[str, float | None], bool]: Containing single or multi stage result and whether the custom_metric failed.
     """
-    process = execute_command(metric_command, True)
+    process = execute_command(metric_command)
     output, _ = process.communicate()
     output = output.decode("utf-8")
     if len(output.splitlines()) == 1:
