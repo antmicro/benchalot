@@ -63,7 +63,13 @@ def main():
         execvp("sudo", ["sudo", executable] + argv)
 
     benchmarks = prepare_benchmarks(
-        config.bench, config.pre_bench, config.post_bench, config.custom_metrics, config.matrix, config.exclusions, config.system.isolate_cpus
+        config.benchmark,
+        config.pre_benchmark,
+        config.post_benchmark,
+        config.custom_metrics,
+        config.matrix,
+        config.exclusions,
+        config.system.isolate_cpus,
     )
     before_all_commands, after_all_commands = prepare_init_cleanup_commands(
         config.init, config.cleanup, config.matrix, config.exclusions

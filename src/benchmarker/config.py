@@ -71,8 +71,6 @@ class BuiltInMetrics(StrEnum):
     MEM = "rss"
 
 
-
-
 class OutputFormat(StrEnum):
     CSV = "csv"
     MD = "md"
@@ -218,9 +216,9 @@ class ConfigFile(BaseModel):
     samples: int = 1
     save_output: str | None = Field(default=None, alias="save-output")
     init: list[str] = []
-    pre_bench: list[str] = Field(default=[], alias="pre-bench")
-    bench: dict[str, list]
-    post_bench: list[str] = Field(default=[], alias="pre-bench")
+    pre_benchmark: list[str] = Field(default=[], alias="pre-benchmark")
+    benchmark: dict[str, list]
+    post_benchmark: list[str] = Field(default=[], alias="post-benchmark")
     cleanup: list[str] = []
     cwd: str | None = None
     metrics: set[BuiltInMetrics] = set()
@@ -231,8 +229,8 @@ class ConfigFile(BaseModel):
     @model_validator(mode="before")
     def name_stages(self):
         """Transform list of commands to dictionary of lists of commands."""
-        if type(self["bench"]) is list:
-            self["bench"] = {DEFAULT_STAGE_NAME: self["bench"]}
+        if type(self["benchmark"]) is list:
+            self["benchmark"] = {DEFAULT_STAGE_NAME: self["benchmark"]}
             return self
         return self
 

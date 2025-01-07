@@ -131,7 +131,7 @@ def process_custom_metrics(
 
 
 def prepare_benchmarks(
-    bench: list[dict],
+    bench: dict[str, list[str]],
     pre_bench: list[str],
     post_bench: list[str],
     custom_metrics: list[dict],
@@ -179,12 +179,8 @@ def prepare_benchmarks(
             after = interpolate_commands(post_bench, var_combination)
             b = {}
             for name in bench:
-                b[name] = interpolate_commands(
-                    bench[name], var_combination
-                )
-            cm = process_custom_metrics(
-                custom_metrics, var_combination
-            )
+                b[name] = interpolate_commands(bench[name], var_combination)
+            cm = process_custom_metrics(custom_metrics, var_combination)
             benchmark = PreparedBenchmark(
                 matrix=var_combination,
                 before=before,
