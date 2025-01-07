@@ -9,7 +9,7 @@ from benchmarker.config import (
     TableHTMLOutput,
     BasePlotOutput,
     OutputFormat,
-    OutputSection,
+    ResultsSection,
 )
 from benchmarker.interpolate import (
     VAR_REGEX,
@@ -50,7 +50,7 @@ from pathlib import Path
 logger = getLogger(f"benchmarker.{__name__}")
 
 
-def read_old_outputs(include: list[str]) -> pd.DataFrame:
+def read_old_results(include: list[str]) -> pd.DataFrame:
     """Parse files containing old results and concatenate them into a single dataframe.
 
     Args:
@@ -59,20 +59,20 @@ def read_old_outputs(include: list[str]) -> pd.DataFrame:
     Returns:
         DataFrame: Containing concatenated old results.
     """
-    logger.debug(f"Include list for output: {include}")
+    logger.debug(f"Include list for results: {include}")
     results_df = pd.DataFrame()
     for file in include:
         logger.debug(f"Reading file '{file}'")
-        old_output = pd.read_csv(file)
-        old_output[CONSTANT_COLUMNS] = old_output[CONSTANT_COLUMNS].fillna("")
-        logger.debug(old_output.head())
-        results_df = pd.concat([results_df, old_output], ignore_index=True)
+        old_results = pd.read_csv(file)
+        old_results[CONSTANT_COLUMNS] = old_results[CONSTANT_COLUMNS].fillna("")
+        logger.debug(old_results.head())
+        results_df = pd.concat([results_df, old_results], ignore_index=True)
     return results_df
 
 
 def output_results_from_dict(
     results: dict,
-    output_config: OutputSection,
+    results_config: ResultsSection,
     include: list,
     include_failed: bool,
     include_outliers: bool,
@@ -81,7 +81,7 @@ def output_results_from_dict(
 
     Args:
         results: Dictionary containing columns with results and values of the variables.
-        output_config: Configuration file's output section.
+        results_config: Configuration file's results section.
         include: Lit of previous results file names to be combined with new results.
         include_failed: Whether to filter out failed benchmarks.
         include_outliers: Whether to filter out outliers.
@@ -94,27 +94,27 @@ def output_results_from_dict(
     results_df.insert(
         0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y.%m.%d %H.%M")
     )
-    old_outputs = read_old_outputs(include)
+    old_outputs = read_old_results(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
-    _output_results(results_df, output_config, include_failed, include_outliers)
+    _output_results(results_df, results_config, include_failed, include_outliers)
 
 
 def output_results_from_file(
-    output_config: OutputSection,
+    results_config: ResultsSection,
     include: list,
     include_failed: bool,
     include_outliers: bool,
 ) -> None:
-    """Create output for the results contained in files.
+    """Create results for the results contained in files.
 
     Args:
-        output_config: Configuration file's output section.
+        results_config: Configuration file's results section.
         include: List of file names with old results.
         include_failed: Whether to filter out failed benchmarks.
         include_outliers: Whether to filter out outliers.
     """
-    old_outputs = read_old_outputs(include)
-    _output_results(old_outputs, output_config, include_failed, include_outliers)
+    old_results = read_old_results(include)
+    _output_results(old_results, results_config, include_failed, include_outliers)
 
 
 def get_stat_table(
@@ -462,7 +462,7 @@ CREATED_FILE_MSG = "Created '{filename}'"
 
 def _output_results(
     results_df: pd.DataFrame,
-    output_config: OutputSection,
+    results_config: ResultsSection,
     include_failed: bool,
     include_outliers: bool,
 ) -> None:
@@ -470,7 +470,7 @@ def _output_results(
 
     Args:
         results_df: Dataframe containing benchmark results.
-        output_config: Configuration file's output section.
+        results_config: Configuration file's results section.
         include_failed: Whether to filter out failed benchmarks.
         include_outliers: Whether to filter out outliers.
     """
@@ -494,7 +494,7 @@ def _output_results(
     # Output csv files first, in case that one of the more advanced outputs fails.
     non_csv_outputs = []
     csv_output_filenames = []
-    for output_name, output in output_config.items():
+    for output_name, output in results_config.items():
         if output.format == OutputFormat.CSV:
             logger.debug("Outputting .csv file.")
             variables_in_filename = findall(VAR_REGEX, output.filename)
@@ -589,7 +589,7 @@ def _output_results(
 
     # Output non-csv file formats.
     for output_name in non_csv_outputs:
-        output = output_config[output_name]
+        output = results_config[output_name]
         logger.debug(f"Creating output for {output}")
         variables_in_filename = findall(VAR_REGEX, output.filename)
         multiplied_results: Iterable[tuple[dict, pd.DataFrame]]

@@ -186,7 +186,7 @@ class TableHTMLOutput(TableOutput):
     format: Literal[OutputFormat.HTML]
 
 
-OutputSection = dict[
+ResultsSection = dict[
     str,
     TableHTMLOutput
     | CsvOutput
@@ -212,7 +212,7 @@ class ConfigFile(BaseModel):
     matrix: dict[str, list] = {}
     exclusions: list[dict[str, str | int | float]] = []
     system: SystemSection = SystemSection()
-    results: OutputSection | None = None
+    results: ResultsSection | None = None
     samples: int = 1
     save_output: str | None = Field(default=None, alias="save-output")
     init: list[str] = []
@@ -286,7 +286,7 @@ class OutputConfig(BaseModel):
         output: Section containing desired outputs.
     """
 
-    results: OutputSection
+    results: ResultsSection
 
 
 def validate_config(config) -> ConfigFile:
