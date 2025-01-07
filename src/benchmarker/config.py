@@ -212,7 +212,7 @@ class ConfigFile(BaseModel):
     matrix: dict[str, list] = {}
     exclusions: list[dict[str, str | int | float]] = []
     system: SystemSection = SystemSection()
-    output: OutputSection | None = None
+    results: OutputSection | None = None
     samples: int = 1
     save_output: str | None = Field(default=None, alias="save-output")
     init: list[str] = []
@@ -267,13 +267,13 @@ class ConfigFile(BaseModel):
     @model_validator(mode="after")
     def at_least_one_csv(self):
         """Check if output section contains at least one csv output, if not create a default `result.csv` output config."""
-        if not self.output:
-            self.output = {}
-        for output_key in self.output:
-            output = self.output[output_key]
+        if not self.results:
+            self.results = {}
+        for output_key in self.results:
+            output = self.results[output_key]
             if output.format == OutputFormat.CSV:
                 return self
-        self.output["default-csv"] = CsvOutput(
+        self.results["default-csv"] = CsvOutput(
             format=OutputFormat.CSV, filename="result.csv"
         )
         return self
@@ -286,7 +286,7 @@ class OutputConfig(BaseModel):
         output: Section containing desired outputs.
     """
 
-    output: OutputSection
+    results: OutputSection
 
 
 def validate_config(config) -> ConfigFile:

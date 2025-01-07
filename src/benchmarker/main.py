@@ -39,7 +39,7 @@ def main():
                 exit(1)
         config = validate_output_config(config_file)
         output_results_from_file(
-            config.output,
+            config.results,
             args.update_output,
             args.include_failed,
             args.include_outliers,
@@ -127,7 +127,7 @@ def main():
 
     output_results_from_dict(
         results,
-        config.output,
+        config.results,
         args.include,
         args.include_failed,
         args.include_outliers,
