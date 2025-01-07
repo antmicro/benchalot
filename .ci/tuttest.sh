@@ -15,7 +15,7 @@ CONFIG="$(tuttest README.md config.yml)"
 DEPENDENCIES=$(tuttest README.md dependencies)
 RUN=$(tuttest README.md run)
 HELP_INFORMATION=$(tuttest README.md help-information)
-RUN_UPDATE=$(tuttest README.md update-output)
+RUN_UPDATE=$(tuttest README.md results-from-csv)
 RUN_INCLUDE=$(tuttest README.md include)
 RUN_SPLIT=$(tuttest README.md split)
 RUN_FAILED=$(tuttest README.md failed)
@@ -42,7 +42,7 @@ assert_file_exists table.md
 assert_file_exists result.csv
 
 echo "$RESULTS" > output_config.yml
-benchmarker output_config.yml -u result.csv
+benchmarker output_config.yml -r result.csv
 
 assert_file_exists example.csv
 assert_file_exists example.md
