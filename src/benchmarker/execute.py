@@ -153,6 +153,9 @@ def perform_benchmarks(
                 process = execute_command(c)
                 log_output(process)
                 process.wait()
+                if not check_return_code(c, process.returncode):
+                    return False
+            return True
 
         def read_pipe(file):
             output = file.read()
@@ -164,7 +167,10 @@ def perform_benchmarks(
                 for _ in range(0, samples):
                     logger.debug(f"Running benchmark: {benchmark}")
 
-                    _execute_section(benchmark.pre_benchmark)
+                    has_failed = False
+
+                    if not _execute_section(benchmark.pre_benchmark):
+                        has_failed = True
 
                     measure_time = BuiltInMetrics.TIME in builtin_metrics
                     measure_utime = BuiltInMetrics.UTIME in builtin_metrics
@@ -172,8 +178,6 @@ def perform_benchmarks(
                     measure_memory = BuiltInMetrics.MEM in builtin_metrics
                     measure_stdout = BuiltInMetrics.STDOUT in builtin_metrics
                     measure_stderr = BuiltInMetrics.STDERR in builtin_metrics
-
-                    has_failed = False
 
                     time_measurements: dict[str, float | None] = {}
                     utime_measurements: dict[str, float | None] = {}
@@ -190,6 +194,10 @@ def perform_benchmarks(
                         stage_stime = 0.0
                         stage_memory = -1
                         for command in benchmark.benchmark[stage]:
+                            if has_failed:
+                                stage_stdout = "0"
+                                stage_stderr = "0"
+                                break
                             bar.set_description(command)
                             process_stdout = b""
                             process_stderr = b""
@@ -246,7 +254,10 @@ def perform_benchmarks(
                             if out_float is None:
                                 has_failed = True
 
-                    _execute_section(benchmark.post_benchmark)
+                    if not has_failed and not _execute_section(
+                        benchmark.post_benchmark
+                    ):
+                        has_failed = True
 
                     benchmark_results: dict[str, dict[str, float | None]] = {}
 
@@ -285,8 +296,8 @@ def perform_benchmarks(
                                         results.setdefault(variable_name, []).append(
                                             value
                                         )
-                                    else:
                                         # We reverse it to keep the user defined order
+                                    else:
                                         for k, v in reversed(list(value.items())):
                                             stack.append((f"{variable_name}.{k}", v))
 
