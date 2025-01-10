@@ -192,11 +192,9 @@ def perform_benchmarks(
                         stage_stderr = ""
                         stage_utime = 0.0
                         stage_stime = 0.0
-                        stage_memory = -1
+                        stage_memory = 0
                         for command in benchmark.benchmark[stage]:
                             if has_failed:
-                                stage_stdout = "0"
-                                stage_stderr = "0"
                                 break
                             bar.set_description(command)
                             process_stdout = b""
