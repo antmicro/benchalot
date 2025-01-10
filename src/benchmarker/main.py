@@ -10,6 +10,7 @@ from benchmarker.execute import (
     set_working_directory,
     execute_command,
     log_output,
+    check_return_code,
 )
 from os import geteuid, execvp
 from benchmarker.system import modify_system_state, restore_system_state
@@ -104,16 +105,16 @@ def main():
     logger.info("Performing benchmarks...")
     with console.log_to_file(config.save_output):
 
-        def _execute_section(commands):
-            with console.bar(len(commands)) as bar:
-                for c in commands:
-                    bar.set_description(c)
-                    process = execute_command(c)
-                    log_output(process)
-                    process.wait()
-                    bar.update(1)
-
-        _execute_section(init_commands)
+        with console.bar(len(init_commands)) as bar:
+            for c in init_commands:
+                bar.set_description(c)
+                process = execute_command(c)
+                log_output(process)
+                process.wait()
+                if not check_return_code(c, process.returncode):
+                    logger.critical("Initialization failed.")
+                    exit_benchmarker()
+                bar.update(1)
 
         if config.system.modify:
             modify_system_state(config.system)
@@ -123,7 +124,14 @@ def main():
         if config.system.modify:
             restore_system_state()
 
-        _execute_section(cleanup_commands)
+        with console.bar(len(cleanup_commands)) as bar:
+            for c in cleanup_commands:
+                bar.set_description(c)
+                process = execute_command(c)
+                log_output(process)
+                process.wait()
+                check_return_code(c, process.returncode)
+                bar.update(1)
 
     output_results_from_dict(
         results,
