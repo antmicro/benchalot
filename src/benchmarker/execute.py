@@ -195,18 +195,6 @@ def perform_benchmarks(
                         stage_memory = 0
                         for command in benchmark.benchmark[stage]:
                             if has_failed:
-                                if measure_time:
-                                    time_measurements[stage] = None
-                                if measure_utime:
-                                    utime_measurements[stage] = None
-                                if measure_stime:
-                                    stime_measurements[stage] = None
-                                if measure_memory:
-                                    memory_measurements[stage] = None
-                                if measure_stdout:
-                                    stdout_measurements[stage] = None
-                                if measure_stderr:
-                                    stderr_measurements[stage] = None
                                 break
                             bar.set_description(command)
                             process_stdout = b""
@@ -245,24 +233,38 @@ def perform_benchmarks(
                             )
                             if not success:
                                 has_failed = True
-                        if measure_time:
-                            time_measurements[stage] = stage_elapsed_time / 1e9
-                        if measure_utime:
-                            utime_measurements[stage] = stage_utime
-                        if measure_stime:
-                            stime_measurements[stage] = stage_stime
-                        if measure_memory:
-                            memory_measurements[stage] = stage_memory
-                        if measure_stdout:
-                            out_float = try_convert_to_float(stage_stdout)
-                            stdout_measurements[stage] = out_float
-                            if out_float is None:
-                                has_failed = True
-                        if measure_stderr:
-                            out_float = try_convert_to_float(stage_stderr)
-                            stderr_measurements[stage] = out_float
-                            if out_float is None:
-                                has_failed = True
+                        if not has_failed:
+                            if measure_time:
+                                time_measurements[stage] = stage_elapsed_time / 1e9
+                            if measure_utime:
+                                utime_measurements[stage] = stage_utime
+                            if measure_stime:
+                                stime_measurements[stage] = stage_stime
+                            if measure_memory:
+                                memory_measurements[stage] = stage_memory
+                            if measure_stdout:
+                                out_float = try_convert_to_float(stage_stdout)
+                                stdout_measurements[stage] = out_float
+                                if out_float is None:
+                                    has_failed = True
+                            if measure_stderr:
+                                out_float = try_convert_to_float(stage_stderr)
+                                stderr_measurements[stage] = out_float
+                                if out_float is None:
+                                    has_failed = True
+                        else:
+                            if measure_time:
+                                time_measurements[stage] = None
+                            if measure_utime:
+                                utime_measurements[stage] = None
+                            if measure_stime:
+                                stime_measurements[stage] = None
+                            if measure_memory:
+                                memory_measurements[stage] = None
+                            if measure_stdout:
+                                stdout_measurements[stage] = None
+                            if measure_stderr:
+                                stderr_measurements[stage] = None
 
                     if not has_failed and not _execute_section(
                         benchmark.post_benchmark
@@ -306,8 +308,8 @@ def perform_benchmarks(
                                         results.setdefault(variable_name, []).append(
                                             value
                                         )
-                                        # We reverse it to keep the user defined order
                                     else:
+                                        # We reverse it to keep the user defined order
                                         for k, v in reversed(list(value.items())):
                                             stack.append((f"{variable_name}.{k}", v))
 

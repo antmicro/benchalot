@@ -64,7 +64,6 @@ def read_old_results(include: list[str]) -> pd.DataFrame:
     for file in include:
         logger.debug(f"Reading file '{file}'")
         old_results = pd.read_csv(file)
-        old_results[CONSTANT_COLUMNS] = old_results[CONSTANT_COLUMNS].fillna("")
         logger.debug(old_results.head())
         results_df = pd.concat([results_df, old_results], ignore_index=True)
     return results_df
