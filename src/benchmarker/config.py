@@ -25,7 +25,7 @@ def error_and_exit(error):
     logger.critical("Config validation failed.")
     logger.critical(f"Encountered {error.error_count()} errors")
     for e in error.errors():
-        location = ".".join(e["loc"])
+        location = e["loc"]
         logger.critical(f"{location}: {e['msg']}, input: '{e['input']}'")
     exit(1)
 
@@ -203,15 +203,16 @@ class ConfigFile(BaseModel):
 
     Attributes:
         matrix: Section containing variables and their values.
-        exclude_matrix: Section containing combinations of variable values for which no benchmarks will be created.
+        exclusions: Section containing combinations of variable values for which no benchmarks will be created.
+        inclusions: Section containing combinations of variable values for which benchmarks will be created.
         system: Section containing variance reducing, system modifying options.
         run: Section containing commands.
         output: Section containing desired outputs.
     """
 
     matrix: dict[str, list] = {}
-    exclusions: list[dict[str, str | int]] = []
-    inclusions: list[dict[str, str | int]] = []
+    exclusions: list[dict[str, str | int | float | dict]] = []
+    inclusions: list[dict[str, str | int | float | dict]] = []
     system: SystemSection = SystemSection()
     results: ResultsSection | None = None
     samples: int = 1

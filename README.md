@@ -117,7 +117,7 @@ exclusions:
 
 #### Inclusions
 
-To include given variable value assignment (without creating combinations), use `inclusions` section:
+To run benchmarks with given variable value assignment without creating combinations, use `inclusions` section:
 
 <!-- name="inclusions" -->
 ```yaml

@@ -76,7 +76,8 @@ def prepare_init_cleanup_commands(
     Args:
         run_config: Configuration file's `run` section.
         matrix: Configuration file's `matrix` section.
-        exclusions: Configuration file's `exclusions` section, which excludes given var combinations.
+        exclusions: Configuration file's `exclusions` section, which excludes given value combinations.
+        inclusions: Configuration file's `inclusions` section, which includes given value combinations.
 
     Returns:
         tuple[list[str], list[str]]: Two lists with command combinations for each section.
@@ -153,7 +154,7 @@ def prepare_benchmarks(
         run_config: Configuration file's `run` section.
         matrix: Configuration file's `matrix` section.
         exclusions: Configuration file's `exclusions` section, which excludes given var combinations.
-        inclusions: Configuration file's `inclusions` section, which includes given var combinations.
+        inclusions: Configuration file's `inclusions` section, which includes given value combinations.
         isolate_cpus: Whether to prepend `cset shield --exec -- ` to `benchmark` commands.
 
     Returns:
