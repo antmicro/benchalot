@@ -210,7 +210,8 @@ class ConfigFile(BaseModel):
     """
 
     matrix: dict[str, list] = {}
-    exclusions: list[dict[str, str | int | float]] = []
+    exclusions: list[dict[str, str | int]] = []
+    inclusions: list[dict[str, str | int]] = []
     system: SystemSection = SystemSection()
     results: ResultsSection | None = None
     samples: int = 1

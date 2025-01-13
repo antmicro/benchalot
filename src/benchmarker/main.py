@@ -70,10 +70,11 @@ def main():
         config.custom_metrics,
         config.matrix,
         config.exclusions,
+        config.inclusions,
         config.system.isolate_cpus,
     )
     init_commands, cleanup_commands = prepare_init_cleanup_commands(
-        config.init, config.cleanup, config.matrix, config.exclusions
+        config.init, config.cleanup, config.matrix, config.exclusions, config.inclusions
     )
     if args.plan:
         for command in init_commands:

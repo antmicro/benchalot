@@ -6,6 +6,7 @@ from benchmarker.interpolate import (
     interpolate_variables,
 )
 from dataclasses import dataclass
+from itertools import chain
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -45,8 +46,8 @@ def interpolate_commands(commands: list, variables: dict[str, str | int]) -> lis
 
 
 def exclude(
-    var_value_assignments: dict[str, int | float | str],
-    exclusions: list[dict[str, int | str | float]],
+    var_value_assignments: dict[str, int | str],
+    exclusions: list[dict[str, int | str]],
 ) -> bool:
     """Check if given set of value assignments should be excluded based on exclusions list.
 
@@ -67,7 +68,8 @@ def prepare_init_cleanup_commands(
     init: list[str],
     cleanup: list[str],
     matrix: dict[str, list],
-    exclusions: list[dict[str, int | str | float]],
+    exclusions: list[dict[str, int | str]],
+    inclusions: list[dict[str, int | str]],
 ) -> tuple[list[str], list[str]]:
     """Create command variants for each combination of values of variables present in init and cleanup sections.
 
@@ -93,7 +95,12 @@ def prepare_init_cleanup_commands(
                 var_combinations = create_variable_combinations(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
-                for var_combination in var_combinations:
+                relevant_inclusions = []
+                for var_combination in inclusions:
+                    for var in var_combination:
+                        if var in vars:
+                            relevant_inclusions.append(var_combination)
+                for var_combination in chain(var_combinations, relevant_inclusions):
                     if exclude(var_combination, exclusions):
                         continue
                     curr_section_commands += interpolate_commands(
@@ -136,7 +143,8 @@ def prepare_benchmarks(
     post_bench: list[str],
     custom_metrics: list[dict],
     matrix: dict[str, list[str]],
-    exclusions: list[dict[str, int | str | float]],
+    exclusions: list[dict[str, int | str]],
+    inclusions: list[dict[str, int | str]],
     isolate_cpus: bool,
 ) -> list[PreparedBenchmark]:
     """Prepare `pre_benchmark`, `benchmark` and `post_benchmark` commands so that they can be executed as part of one benchmark.
@@ -145,6 +153,7 @@ def prepare_benchmarks(
         run_config: Configuration file's `run` section.
         matrix: Configuration file's `matrix` section.
         exclusions: Configuration file's `exclusions` section, which excludes given var combinations.
+        inclusions: Configuration file's `inclusions` section, which includes given var combinations.
         isolate_cpus: Whether to prepend `cset shield --exec -- ` to `benchmark` commands.
 
     Returns:
@@ -170,9 +179,8 @@ def prepare_benchmarks(
         benchmarks.append(benchmark)
     else:
         logger.debug("Creating variable combinations...")
-        var_combinations = list(create_variable_combinations(**matrix))
-        logger.debug(f"Variable combinations {var_combinations}")
-        for var_combination in var_combinations:
+        var_combinations = create_variable_combinations(**matrix)
+        for var_combination in chain(var_combinations, inclusions):
             if exclude(var_combination, exclusions):
                 continue
             pre_benchmark = interpolate_commands(pre_bench, var_combination)
