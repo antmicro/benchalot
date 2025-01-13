@@ -35,7 +35,7 @@ def interpolate_variables(string: str, variables: dict[str, str | int]) -> str:
         for field in compound:
             try:
                 value = value[field]
-            except KeyError:
+            except (KeyError, TypeError):
                 logger.critical(f"'{string}': Variable '{variable_name}' not found")
                 exit(1)
         return str(value)
