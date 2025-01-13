@@ -1,11 +1,11 @@
 stages:
-  - linting
-  - formatting 
+  - lint_and_style
+  - tests
 
 
 black:
   image: "debian:bookworm"
-  stage: formatting
+  stage: lint_and_style
   before_script:
     - apt update -y && apt install python3 python3-pip python3-venv make git -y
     - python3 -m venv .venv
@@ -17,7 +17,7 @@ black:
 
 flake8:
   image: "debian:bookworm"
-  stage: linting
+  stage: lint_and_style
   before_script:
     - apt update -y && apt install python3 python3-pip python3-venv make git -y
     - python3 -m venv .venv
@@ -30,7 +30,7 @@ flake8:
 
 tuttest:
   image: "debian:bookworm"
-  stage: formatting
+  stage: tests
   before_script:
     - apt update -y && apt install python3 python3-venv make sudo git gcc gzip bzip2 xz-utils -y
     - python3 -m venv .venv
@@ -39,3 +39,15 @@ tuttest:
   script:
     - source .venv/bin/activate
     - make tuttest
+
+unittest:
+  image: "debian:bookworm"
+  stage: tests
+  before_script:
+    - apt update -y && apt install python3 python3-venv make sudo -y
+    - python3 -m venv .venv
+    - source .venv/bin/activate
+    - pip install .[dev]
+  script:
+    - source .venv/bin/activate
+    - make unittest
