@@ -117,7 +117,7 @@ exclusions:
 
 #### Inclusions
 
-To included given variable values combination (without creating combinations with remaining values), use `inclusions` section:
+To include given variable value assignment (without creating combinations), use `inclusions` section:
 
 <!-- name="inclusions" -->
 ```yaml
@@ -126,8 +126,6 @@ inclusions:
     input: data1
     thread: 32
 ```
-
-Benchmarker will not create benchmarks for these value combinations.
 
 ### Command Execution
 
