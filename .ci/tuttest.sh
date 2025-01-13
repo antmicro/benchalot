@@ -22,6 +22,7 @@ RUN_FAILED=$(tuttest README.md failed)
 RUN_OUTLIERS=$(tuttest README.md outliers)
 SIZE_CONFIG=$(tuttest README.md size-config)
 EXCLUSION=$(tuttest README.md exclusions)
+INCLUSION=$(tuttest README.md inclusions)
 MUL=$(tuttest README.md mul)
 RESULTS=$(tuttest README.md results)
 RUN_SECTION=$(tuttest README.md run-section)
@@ -94,6 +95,10 @@ if [ $ret -eq 0 ]; then
     exit 1
 fi
 set -e
+
+echo "$CONFIG" > config.yml
+printf "\n%s" "$INCLUSION" >> config.yml
+eval "$RUN"
 
 echo "$SIZE_CONFIG" > config.yml
 benchmarker config.yml
