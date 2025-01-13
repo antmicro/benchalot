@@ -509,7 +509,7 @@ def _output_results(
                     results_df, variables_in_filename
                 ):
                     overwrite_filename = interpolate_variables(output.filename, comb)
-                    output_st_csv(combination_df, output.filename, output.overwrite)
+                    output_st_csv(combination_df, overwrite_filename, output.overwrite)
                     csv_output_filenames.append(overwrite_filename)
                     console.print(CREATED_FILE_MSG.format(filename=overwrite_filename))
         else:
