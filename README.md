@@ -104,7 +104,7 @@ Matrix variables can [contain fields](Advanced Configuration).
 
 #### Exclude
 
-To exclude given variable values combination, use `exclusions` section:
+To exclude given variable values combination, use `exclude` section:
 
 <!-- name="exclusions" -->
 ```yaml
@@ -117,7 +117,7 @@ exclude:
 
 #### Include
 
-To run benchmarks with given variable value assignment without creating combinations, use `inclusions` section:
+To run benchmarks with given variable value assignment without creating combinations, use `include` section:
 
 <!-- name="inclusions" -->
 ```yaml

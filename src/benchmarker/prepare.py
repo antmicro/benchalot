@@ -141,6 +141,10 @@ def prepare_benchmarks(
     """Prepare benchmark commands.
 
     Args:
+        benchmark: Configuration file's `benchmark` section.
+        prepare: Configuration file's `prepare` section.
+        conclude: Configuration file's `conclude` section.
+        cusom_metrics: Configuration file's `custom-metrics` section.
         matrix: Configuration file's `matrix` section.
         exclude: Configuration file's `exclude` section, which excludes given var combinations.
         include: Configuration file's `include` section, which includes given value combinations.
