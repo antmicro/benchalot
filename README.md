@@ -102,27 +102,27 @@ If there is no `matrix` section, no variable substitution is performed.
 
 Matrix variables can [contain fields](Advanced Configuration).
 
-#### Exclusions
+#### Exclude
 
 To exclude given variable values combination, use `exclusions` section:
 
 <!-- name="exclusions" -->
 ```yaml
-exclusions:
+exclude:
   - tag: slow
     input: data1
   - tag: fast
     thread: 2
 ```
 
-#### Inclusions
+#### Include
 
 To run benchmarks with given variable value assignment without creating combinations, use `inclusions` section:
 
 <!-- name="inclusions" -->
 ```yaml
-inclusions:
-  - tag: slow
+include:
+  - tag: sleeper-v1.0
     input: data1
     thread: 32
 ```
