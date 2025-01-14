@@ -120,7 +120,7 @@ def main():
                 process.wait()
                 if not check_return_code(c, process.returncode):
                     logger.critical("Initialization failed.")
-                    exit_benchmarker()
+                    exit(1)
                 bar.update(1)
 
         if config.system.modify:
