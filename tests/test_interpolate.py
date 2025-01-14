@@ -1,5 +1,5 @@
 import unittest
-from benchmarker.interpolate import interpolate_variables
+from benchmarker.interpolate import interpolate_variables, create_variable_combinations
 
 
 def format_name(var_name: str):
@@ -52,3 +52,40 @@ class TestInterpolation(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             interpolate_variables("command {{test.field.v}}", {"test": {"field": "v"}})
         self.assertEqual(cm.exception.code, 1)
+
+
+class TestCombinations(unittest.TestCase):
+
+    def test_combination_simple(self):
+        matrix = {"a": [1, 2, 3], "b": [1, 2, 3]}
+        comb = list(create_variable_combinations(**matrix))
+        self.assertEqual(len(comb), 9)
+        man_comb = [
+            {"a": 1, "b": 1},
+            {"a": 1, "b": 2},
+            {"a": 1, "b": 3},
+            {"a": 2, "b": 1},
+            {"a": 2, "b": 2},
+            {"a": 2, "b": 3},
+            {"a": 3, "b": 1},
+            {"a": 3, "b": 2},
+            {"a": 3, "b": 3},
+        ]
+        for mc in man_comb:
+            self.assertTrue(any(mc == c for c in comb))
+
+    def test_combination_compound(self):
+        matrix = {
+            "v1": [{"a": 1, "b": 2}, {"a": 3, "b": 4}],
+            "v2": [{"c": 1, "d": 2}, {"c": 3, "d": 4}],
+        }
+        comb = list(create_variable_combinations(**matrix))
+        self.assertEqual(len(comb), 4)
+        man_comb = [
+            {"v1": {"a": 1, "b": 2}, "v2": {"c": 1, "d": 2}},
+            {"v1": {"a": 1, "b": 2}, "v2": {"c": 3, "d": 4}},
+            {"v1": {"a": 3, "b": 4}, "v2": {"c": 1, "d": 2}},
+            {"v1": {"a": 3, "b": 4}, "v2": {"c": 3, "d": 4}},
+        ]
+        for mc in man_comb:
+            self.assertTrue(any(mc == c for c in comb))
