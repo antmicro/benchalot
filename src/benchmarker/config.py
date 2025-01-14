@@ -217,10 +217,10 @@ class ConfigFile(BaseModel):
     results: ResultsSection | None = None
     samples: int = 1
     save_output: str | None = Field(default=None, alias="save-output")
-    init: list[str] = []
-    pre_benchmark: list[str] = Field(default=[], alias="pre-benchmark")
+    setup: list[str] = []
+    prepare: list[str] = []
     benchmark: dict[str, list]
-    post_benchmark: list[str] = Field(default=[], alias="post-benchmark")
+    conclude: list[str] = []
     cleanup: list[str] = []
     cwd: str | None = None
     metrics: set[BuiltInMetrics] = set()

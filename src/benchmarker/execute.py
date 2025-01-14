@@ -169,7 +169,7 @@ def perform_benchmarks(
 
                     has_failed = False
 
-                    if not _execute_section(benchmark.pre_benchmark):
+                    if not _execute_section(benchmark.prepare):
                         has_failed = True
 
                     measure_time = BuiltInMetrics.TIME in builtin_metrics
@@ -266,9 +266,7 @@ def perform_benchmarks(
                             if measure_stderr:
                                 stderr_measurements[stage] = None
 
-                    if not has_failed and not _execute_section(
-                        benchmark.post_benchmark
-                    ):
+                    if not has_failed and not _execute_section(benchmark.conclude):
                         has_failed = True
 
                     benchmark_results: dict[str, dict[str, float | None]] = {}

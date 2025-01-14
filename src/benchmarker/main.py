@@ -3,7 +3,7 @@ from sys import argv, executable
 from benchmarker.config import validate_config, validate_output_config
 from benchmarker.prepare import (
     prepare_benchmarks,
-    prepare_init_cleanup_commands,
+    prepare_setup_cleanup_commands,
 )
 from benchmarker.execute import (
     perform_benchmarks,
@@ -65,19 +65,23 @@ def main():
 
     benchmarks = prepare_benchmarks(
         config.benchmark,
-        config.pre_benchmark,
-        config.post_benchmark,
+        config.prepare,
+        config.conclude,
         config.custom_metrics,
         config.matrix,
         config.exclusions,
         config.inclusions,
         config.system.isolate_cpus,
     )
-    init_commands, cleanup_commands = prepare_init_cleanup_commands(
-        config.init, config.cleanup, config.matrix, config.exclusions, config.inclusions
+    setup_commands, cleanup_commands = prepare_setup_cleanup_commands(
+        config.setup,
+        config.cleanup,
+        config.matrix,
+        config.exclusions,
+        config.inclusions,
     )
     if args.plan:
-        for command in init_commands:
+        for command in setup_commands:
             print(command)
         for benchmark in benchmarks:
             if config.samples > 1:
@@ -85,12 +89,12 @@ def main():
                 msg_mul = f"x{config.samples}"
                 pad = 4
                 print(("─" * pad) + msg_mul + ("─" * pad))
-            for command in benchmark.pre_benchmark:
+            for command in benchmark.prepare:
                 print(command)
             for _, commands in benchmark.benchmark.items():
                 for command in commands:
                     print(command)
-            for command in benchmark.post_benchmark:
+            for command in benchmark.conclude:
                 print(command)
             for custom_metric in benchmark.custom_metrics:
                 print(list(custom_metric.items())[0][1])
@@ -106,8 +110,8 @@ def main():
     logger.info("Performing benchmarks...")
     with console.log_to_file(config.save_output):
 
-        with console.bar(len(init_commands)) as bar:
-            for c in init_commands:
+        with console.bar(len(setup_commands)) as bar:
+            for c in setup_commands:
                 bar.set_description(c)
                 process = execute_command(c)
                 log_output(process)

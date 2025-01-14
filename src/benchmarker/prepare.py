@@ -17,16 +17,16 @@ class PreparedBenchmark:
 
     Attributes:
         matrix: Combination of variable values used for this benchmark.
-        pre_benchmark: Commands to be executed before the measurement.
+        prepare: Commands to be executed before the measurement.
         benchmark: Commands to be measured.
-        post_benchmark: Commands to be executed after the measurement.
+        conclude: Commands to be executed after the measurement.
         custom_metrics: List of custom_metrics (names and commands) to be gathered during execution.
     """
 
     matrix: dict[str, str]
-    pre_benchmark: list[str]
+    prepare: list[str]
     benchmark: dict[str, list[str]]
-    post_benchmark: list[str]
+    conclude: list[str]
     custom_metrics: list[dict[str, str]]
 
 
@@ -64,14 +64,14 @@ def exclude(
     return False
 
 
-def prepare_init_cleanup_commands(
-    init: list[str],
+def prepare_setup_cleanup_commands(
+    setup: list[str],
     cleanup: list[str],
     matrix: dict[str, list],
     exclusions: list[dict[str, int | str]],
     inclusions: list[dict[str, int | str]],
 ) -> tuple[list[str], list[str]]:
-    """Create command variants for each combination of values of variables present in init and cleanup sections.
+    """Create command variants for each combination of values of variables present in setup and cleanup sections.
 
     Args:
         run_config: Configuration file's `run` section.
@@ -82,10 +82,10 @@ def prepare_init_cleanup_commands(
     Returns:
         tuple[list[str], list[str]]: Two lists with command combinations for each section.
     """
-    logger.info("Preparing 'init' and 'cleanup' commands...")
+    logger.info("Preparing 'setup' and 'cleanup' commands...")
 
     ret = []
-    for section in [init, cleanup]:
+    for section in [setup, cleanup]:
         curr_section_commands = []
         if section:
             vars = set()
@@ -139,19 +139,18 @@ def process_custom_metrics(
 
 
 def prepare_benchmarks(
-    bench: dict[str, list[str]],
-    pre_bench: list[str],
-    post_bench: list[str],
+    benchmark: dict[str, list[str]],
+    prepare: list[str],
+    conclude: list[str],
     custom_metrics: list[dict],
     matrix: dict[str, list[str]],
     exclusions: list[dict[str, int | str]],
     inclusions: list[dict[str, int | str]],
     isolate_cpus: bool,
 ) -> list[PreparedBenchmark]:
-    """Prepare `pre_benchmark`, `benchmark` and `post_benchmark` commands so that they can be executed as part of one benchmark.
+    """Prepare benchmark commands.
 
     Args:
-        run_config: Configuration file's `run` section.
         matrix: Configuration file's `matrix` section.
         exclusions: Configuration file's `exclusions` section, which excludes given var combinations.
         inclusions: Configuration file's `inclusions` section, which includes given value combinations.
@@ -161,42 +160,42 @@ def prepare_benchmarks(
         list[PreparedBenchmark]: List of unique benchmarks containing their variable combination, modified commands and metrics.
     """
     if isolate_cpus:
-        for name in bench:
-            commands = bench[name]
+        for name in benchmark:
+            commands = benchmark[name]
             for i, c in enumerate(commands):
-                bench[name][i] = "cset shield --exec -- " + c
+                benchmark[name][i] = "cset shield --exec -- " + c
     benchmarks: list[PreparedBenchmark] = []
     logger.info("Preparing benchmarks...")
     if not matrix:
         logger.debug("`matrix` not found in the config.")
         cm = process_custom_metrics(custom_metrics)
-        benchmark = PreparedBenchmark(
+        prepared_benchmark = PreparedBenchmark(
             matrix={},
-            pre_benchmark=pre_bench,
-            benchmark=bench,
-            post_benchmark=post_bench,
+            prepare=prepare,
+            benchmark=benchmark,
+            conclude=conclude,
             custom_metrics=cm,
         )
-        benchmarks.append(benchmark)
+        benchmarks.append(prepared_benchmark)
     else:
         logger.debug("Creating variable combinations...")
         var_combinations = create_variable_combinations(**matrix)
         for var_combination in chain(var_combinations, inclusions):
             if exclude(var_combination, exclusions):
                 continue
-            pre_benchmark = interpolate_commands(pre_bench, var_combination)
-            post_benchmark = interpolate_commands(post_bench, var_combination)
-            b = {}
-            for name in bench:
-                b[name] = interpolate_commands(bench[name], var_combination)
+            pre_bench = interpolate_commands(prepare, var_combination)
+            conc_bench = interpolate_commands(conclude, var_combination)
+            bench = {}
+            for name in benchmark:
+                bench[name] = interpolate_commands(benchmark[name], var_combination)
             cm = process_custom_metrics(custom_metrics, var_combination)
-            benchmark = PreparedBenchmark(
+            prepared_benchmark = PreparedBenchmark(
                 matrix=var_combination,
-                pre_benchmark=pre_benchmark,
-                benchmark=b,
-                post_benchmark=post_benchmark,
+                prepare=pre_bench,
+                benchmark=bench,
+                conclude=conc_bench,
                 custom_metrics=cm,
             )
-            benchmarks.append(benchmark)
+            benchmarks.append(prepared_benchmark)
     logger.debug(f"Prepared benchmarks: {benchmarks}")
     return benchmarks
