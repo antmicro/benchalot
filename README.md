@@ -45,7 +45,7 @@ matrix:
   input: ["data1", "data2", "data3"]
 samples: 3
 save-output: "run.log"
-init:
+setup:
 - "git clone . ../{{tag}}"
 - "cd ../{{tag}} && git checkout {{tag}} && make build"
 benchmark:
@@ -131,16 +131,16 @@ inclusions:
 
 <!-- name="run-section" -->
 ```yaml
-init:                                                   # commands to be executed once before all of the benchmarks
+setup:                                                   # commands to be executed once before all of the benchmarks
     - git clone . ../{{tag}}
-pre-benchmark:                                          # commands to be executed before each benchmark
+prepare:                                          # commands to be executed before each benchmark
     - cd ../{{tag}} && git checkout {{tag}}
 benchmark:                                              # commands to be benchmarked
     compilation:                                        # benchmarks can be divided into stages
         - cd ../{{tag}} && make build -s
     execution:
         - ../{{tag}}/sleeper {{thread}} {{input}}
-post-benchmark:                                         # contains the commands to be executed after each benchmark
+conclude:                                         # contains the commands to be executed after each benchmark
     - cd ../{{tag}} && make clean
 cleanup:                                                # contains the commands to be excetued once after all of the benchmarks
     - rm -rf ../{{tag}}
