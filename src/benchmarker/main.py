@@ -249,8 +249,12 @@ def load_configuration_file(filename):
         logger.critical(f"File '{filename}' not found.")
         exit(1)
     else:
-        with config_file:
-            config = yaml.safe_load(config_file)
+        try:
+            with config_file:
+                config = yaml.safe_load(config_file)
+        except yaml.YAMLError as e:
+            logger.critical(e)
+            exit(1)
 
     return config
 
