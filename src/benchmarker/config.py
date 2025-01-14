@@ -203,16 +203,16 @@ class ConfigFile(BaseModel):
 
     Attributes:
         matrix: Section containing variables and their values.
-        exclusions: Section containing combinations of variable values for which no benchmarks will be created.
-        inclusions: Section containing combinations of variable values for which benchmarks will be created.
+        exclude: Section containing combinations of variable values for which no benchmarks will be created.
+        include: Section containing combinations of variable values for which benchmarks will be created.
         system: Section containing variance reducing, system modifying options.
         run: Section containing commands.
         output: Section containing desired outputs.
     """
 
     matrix: dict[str, list] = {}
-    exclusions: list[dict[str, str | int | float | dict]] = []
-    inclusions: list[dict[str, str | int | float | dict]] = []
+    exclude: list[dict[str, str | int | float | dict]] = []
+    include: list[dict[str, str | int | float | dict]] = []
     system: SystemSection = SystemSection()
     results: ResultsSection | None = None
     samples: int = 1

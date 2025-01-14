@@ -69,16 +69,16 @@ def main():
         config.conclude,
         config.custom_metrics,
         config.matrix,
-        config.exclusions,
-        config.inclusions,
+        config.exclude,
+        config.include,
         config.system.isolate_cpus,
     )
     setup_commands, cleanup_commands = prepare_setup_cleanup_commands(
         config.setup,
         config.cleanup,
         config.matrix,
-        config.exclusions,
-        config.inclusions,
+        config.exclude,
+        config.include,
     )
     if args.plan:
         for command in setup_commands:

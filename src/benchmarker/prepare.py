@@ -45,20 +45,20 @@ def interpolate_commands(commands: list, variables: dict[str, str | int]) -> lis
     return prepared_commands
 
 
-def exclude(
+def exclude_combination(
     var_value_assignments: dict[str, int | str],
-    exclusions: list[dict[str, int | str]],
+    exclude: list[dict[str, int | str]],
 ) -> bool:
-    """Check if given set of value assignments should be excluded based on exclusions list.
+    """Check if given set of value assignments should be excluded based on exclude list.
 
     Args:
         var_value_assignments:  Assignment of variable values.
-        exclusions: List of exclusions.
+        exclude: List of exclude.
 
     Returns:
         bool: `True` if assignment should be excluded, otherwiese `False`.
     """
-    for exclusion in exclusions:
+    for exclusion in exclude:
         if exclusion.items() <= var_value_assignments.items():
             return True
     return False
@@ -68,16 +68,16 @@ def prepare_setup_cleanup_commands(
     setup: list[str],
     cleanup: list[str],
     matrix: dict[str, list],
-    exclusions: list[dict[str, int | str]],
-    inclusions: list[dict[str, int | str]],
+    exclude: list[dict[str, int | str]],
+    include: list[dict[str, int | str]],
 ) -> tuple[list[str], list[str]]:
     """Create command variants for each combination of values of variables present in setup and cleanup sections.
 
     Args:
         run_config: Configuration file's `run` section.
         matrix: Configuration file's `matrix` section.
-        exclusions: Configuration file's `exclusions` section, which excludes given value combinations.
-        inclusions: Configuration file's `inclusions` section, which includes given value combinations.
+        exclude: Configuration file's `exclude` section, which excludes given value combinations.
+        include: Configuration file's `include` section, which includes given value combinations.
 
     Returns:
         tuple[list[str], list[str]]: Two lists with command combinations for each section.
@@ -96,13 +96,13 @@ def prepare_setup_cleanup_commands(
                 var_combinations = create_variable_combinations(
                     **{k: v for k, v in matrix.items() if k in vars}
                 )
-                relevant_inclusions = []
-                for var_combination in inclusions:
+                relevant_include = []
+                for var_combination in include:
                     for var in var_combination:
                         if var in vars:
-                            relevant_inclusions.append(var_combination)
-                for var_combination in chain(var_combinations, relevant_inclusions):
-                    if exclude(var_combination, exclusions):
+                            relevant_include.append(var_combination)
+                for var_combination in chain(var_combinations, relevant_include):
+                    if exclude_combination(var_combination, exclude):
                         continue
                     curr_section_commands += interpolate_commands(
                         section, var_combination
@@ -144,16 +144,16 @@ def prepare_benchmarks(
     conclude: list[str],
     custom_metrics: list[dict],
     matrix: dict[str, list[str]],
-    exclusions: list[dict[str, int | str]],
-    inclusions: list[dict[str, int | str]],
+    exclude: list[dict[str, int | str]],
+    include: list[dict[str, int | str]],
     isolate_cpus: bool,
 ) -> list[PreparedBenchmark]:
     """Prepare benchmark commands.
 
     Args:
         matrix: Configuration file's `matrix` section.
-        exclusions: Configuration file's `exclusions` section, which excludes given var combinations.
-        inclusions: Configuration file's `inclusions` section, which includes given value combinations.
+        exclude: Configuration file's `exclude` section, which excludes given var combinations.
+        include: Configuration file's `include` section, which includes given value combinations.
         isolate_cpus: Whether to prepend `cset shield --exec -- ` to `benchmark` commands.
 
     Returns:
@@ -180,8 +180,8 @@ def prepare_benchmarks(
     else:
         logger.debug("Creating variable combinations...")
         var_combinations = create_variable_combinations(**matrix)
-        for var_combination in chain(var_combinations, inclusions):
-            if exclude(var_combination, exclusions):
+        for var_combination in chain(var_combinations, include):
+            if exclude_combination(var_combination, exclude):
                 continue
             pre_bench = interpolate_commands(prepare, var_combination)
             conc_bench = interpolate_commands(conclude, var_combination)
