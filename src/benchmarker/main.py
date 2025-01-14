@@ -15,7 +15,6 @@ from logging import getLogger
 from atexit import unregister
 from os import environ
 from pathlib import Path
-from benchmarker.config import ConfigFile
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -41,7 +40,7 @@ def main():
         exit_benchmarker()
     config = validate_config(config_file)
     if args.split:  # Split configuration file and exit
-        generate_config_files(config, args.config_filename, args.split)
+        generate_config_files(config_file, args.config_filename, args.split)
         exit_benchmarker()
 
     for file in args.include:
@@ -229,9 +228,7 @@ def load_configuration_file(filename):
     return config
 
 
-def generate_config_files(
-    config: ConfigFile, config_filename: str, split: list[str]
-) -> None:
+def generate_config_files(config: dict, config_filename: str, split: list[str]) -> None:
     """Create multiple configuration files.
 
     Args:
@@ -256,21 +253,19 @@ def generate_config_files(
         return ret
 
     for var in split:
-        if var not in config.matrix:
+        if var not in config["matrix"]:
             logger.critical(f"Variable '{var}' not found.")
             exit(1)
     logger.info("Spliting configuration file...")
-    config_dict = config.model_dump(by_alias=True)
-    config_dict["system"].pop("modify")  # remove calculated field from config file
-    matrices = split_matrix(config_dict["matrix"], split)
-    command = "benchmarker " + config_filename + " -u"
+    matrices = split_matrix(config["matrix"], split)
+    command = "benchmarker " + config_filename + " -r"
     directory = "out"
     for i, matrix in enumerate(matrices):
-        new_config = {k: v for k, v in config_dict.items() if k != "matrix"}
+        new_config = {k: v for k, v in config.items() if k != "matrix"}
         new_config["matrix"] = matrix
         unique_name = f"{config_filename}.part{i}"
         output_file_name = f"{unique_name}.csv"
-        new_config["output"] = {
+        new_config["results"] = {
             "partial_output": {"format": "csv", "filename": output_file_name}
         }
 
