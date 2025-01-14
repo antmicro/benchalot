@@ -3,7 +3,7 @@ from sys import argv, executable
 from benchmarker.config import validate_config, validate_output_config
 from benchmarker.prepare import (
     prepare_benchmarks,
-    prepare_setup_cleanup_commands,
+    prepare_command_combinations,
 )
 from benchmarker.execute import (
     perform_benchmarks,
@@ -73,13 +73,15 @@ def main():
         config.include,
         config.system.isolate_cpus,
     )
-    setup_commands, cleanup_commands = prepare_setup_cleanup_commands(
-        config.setup,
-        config.cleanup,
-        config.matrix,
-        config.exclude,
-        config.include,
+    logger.info("Preparing 'setup' and 'cleanup' commands...")
+
+    setup_commands = prepare_command_combinations(
+        config.setup, config.matrix, config.exclude, config.include
     )
+    cleanup_commands = prepare_command_combinations(
+        config.setup, config.matrix, config.exclude, config.include
+    )
+
     if args.plan:
         for command in setup_commands:
             print(command)

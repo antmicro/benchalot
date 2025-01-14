@@ -64,55 +64,45 @@ def exclude_combination(
     return False
 
 
-def prepare_setup_cleanup_commands(
-    setup: list[str],
-    cleanup: list[str],
+def prepare_command_combinations(
+    commands: list[str],
     matrix: dict[str, list],
     exclude: list[dict[str, int | str]],
     include: list[dict[str, int | str]],
-) -> tuple[list[str], list[str]]:
-    """Create command variants for each combination of values of variables present in setup and cleanup sections.
+) -> list[str]:
+    """Create command variants for each variable present.
 
     Args:
-        run_config: Configuration file's `run` section.
+        commands: List of commands.
         matrix: Configuration file's `matrix` section.
         exclude: Configuration file's `exclude` section, which excludes given value combinations.
         include: Configuration file's `include` section, which includes given value combinations.
 
     Returns:
-        tuple[list[str], list[str]]: Two lists with command combinations for each section.
+        tuple[list[str], list[str]]: List of command combinations.
     """
-    logger.info("Preparing 'setup' and 'cleanup' commands...")
-
-    ret = []
-    for section in [setup, cleanup]:
-        curr_section_commands = []
-        if section:
-            vars = set()
-            for command in section:
-                for var_name in findall(VAR_REGEX, command):
-                    vars.add(var_name.split(".")[0])
-            if vars:
-                var_combinations = create_variable_combinations(
-                    **{k: v for k, v in matrix.items() if k in vars}
-                )
-                relevant_include = []
-                for var_combination in include:
-                    for var in var_combination:
-                        if var in vars:
-                            relevant_include.append(var_combination)
-                for var_combination in chain(var_combinations, relevant_include):
-                    if exclude_combination(var_combination, exclude):
-                        continue
-                    curr_section_commands += interpolate_commands(
-                        section, var_combination
-                    )
-            else:
-                curr_section_commands += section
-        ret.append(curr_section_commands)
-
-    logger.debug(ret)
-    return (ret[0], ret[1])
+    commmand_combinations = []
+    if commands:
+        vars = set()
+        for command in commands:
+            for var_name in findall(VAR_REGEX, command):
+                vars.add(var_name.split(".")[0])
+        if vars:
+            var_combinations = create_variable_combinations(
+                **{k: v for k, v in matrix.items() if k in vars}
+            )
+            relevant_include = []
+            for var_combination in include:
+                for var in var_combination:
+                    if var in vars:
+                        relevant_include.append(var_combination)
+            for var_combination in chain(var_combinations, relevant_include):
+                if exclude_combination(var_combination, exclude):
+                    continue
+                commmand_combinations += interpolate_commands(commands, var_combination)
+        else:
+            commmand_combinations += commands
+    return commmand_combinations
 
 
 def process_custom_metrics(
