@@ -79,7 +79,7 @@ def main():
         config.setup, config.matrix, config.exclude, config.include
     )
     cleanup_commands = prepare_command_combinations(
-        config.setup, config.matrix, config.exclude, config.include
+        config.cleanup, config.matrix, config.exclude, config.include
     )
 
     if args.plan:
