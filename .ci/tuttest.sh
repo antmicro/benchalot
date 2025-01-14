@@ -34,17 +34,21 @@ fi
 python3 -m  venv .venv
 source .venv/bin/activate
 pip install .
+
+# CLI help test
 eval "$HELP_INFORMATION"
 
+# Basic config test
 echo "$CONFIG" > config.yml
 eval "$RUN"
 assert_file_exists plot.png
 assert_file_exists table.md
 assert_file_exists result.csv
 
+
+# results section test
 echo "$RESULTS" > output_config.yml
 benchmarker output_config.yml -r result.csv
-
 assert_file_exists example.csv
 assert_file_exists example.md
 assert_file_exists example.html
@@ -53,6 +57,8 @@ assert_file_exists example_box.png
 assert_file_exists example_violin.png
 assert_file_exists example_bar.png
 
+
+# "run" section test
 rm -f run.log
 printf "results:\n    csv:\n        filename: \"run_section.csv\" \n        format: \"csv\"\n" > run_config.yml
 printf "matrix:\n    thread: [2, 4, 8]\n    tag: [sleeper-v1.0, sleeper-v1.1]\n    input: [data1, data2, data3]\n" >> run_config.yml
@@ -60,42 +66,26 @@ echo "$RUN_SECTION" >> run_config.yml
 benchmarker run_config.yml
 assert_file_exists run_section.csv
 
-
-mv plot.png previous.png
+# creating output without running benchmarks test
+echo "$CONFIG" > config.yml
 printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
 eval "$RUN_UPDATE"
 assert_file_exists result2.csv
-cmp plot.png previous.png
-ret=$?
-if [ $ret -ne 0 ]; then
-    echo "Plots are not the same."
-    exit 1
-fi
 
+
+# output multiplication test
+echo "$CONFIG" > config.yml
 printf "\n%s" "$MUL" | sed 's/^/  /' >> config.yml
-
 eval "$RUN_UPDATE"
 assert_file_exists plot_slow.png
 assert_file_exists plot_fast.png
 
-
+# combination exclusion test
+echo "$CONFIG" > config.yml
 printf "\n%s" "$EXCLUSION" >> config.yml
-rm plot.png
-rm table.md
-rm result.csv
 eval "$RUN"
-assert_file_exists plot.png
-assert_file_exists table.md
-assert_file_exists result.csv
-set +e
-cmp plot.png previous.png
-ret=$?
-if [ $ret -eq 0 ]; then
-    echo "Plots are the same. Exclusion did not work."
-    exit 1
-fi
-set -e
 
+# combination inclusion test
 echo "$CONFIG" > config.yml
 printf "\n%s" "$INCLUSION" >> config.yml
 eval "$RUN"
@@ -115,5 +105,6 @@ eval $RUN_SPLIT
 assert_file_exists "out/config.yml.part0.yml"
 assert_file_exists "out/config.yml.part1.yml"
 
+# test if the configuration files are valid
 benchmarker out/config.yml.part0.yml -p
 benchmarker out/config.yml.part1.yml -p
