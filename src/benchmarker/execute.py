@@ -316,8 +316,8 @@ def perform_benchmarks(
                             results.setdefault(STAGE_COLUMN, []).append(stage)
                             results.setdefault(RESULT_COLUMN, []).append(result)
 
-                if not has_failed and not _execute_section(benchmark.cleanup):
-                    has_failed = True
+                if not has_failed:
+                    _execute_section(benchmark.cleanup)
 
             except KeyboardInterrupt:
                 logger.warning("Stopped benchmarks.")
