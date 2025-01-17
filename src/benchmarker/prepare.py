@@ -19,16 +19,16 @@ class PreparedBenchmark:
         prepare: Commands to be executed before the measurement.
         benchmark: Commands to be measured.
         conclude: Commands to be executed after the measurement.
-        cleanup: Commands to be executed after the measurement, not multiplied by number of samples.
         custom_metrics: List of custom_metrics (names and commands) to be gathered during execution.
+        cleanup: Commands to be executed after the measurement, not multiplied by number of samples.
     """
 
     matrix: dict[str, str]
     setup: list[str]
     prepare: list[str]
     benchmark: dict[str, list[str]]
-    custom_metrics: list[dict[str, str]]
     conclude: list[str]
+    custom_metrics: list[dict[str, str]]
     cleanup: list[str]
 
 
@@ -94,8 +94,8 @@ def prepare_benchmarks(
     prepare: list[str],
     benchmark: dict[str, list[str]],
     conclude: list[str],
-    cleanup: list[str],
     custom_metrics: list[dict],
+    cleanup: list[str],
     matrix: dict[str, list[str]],
     exclude: list[dict[str, int | str]],
     include: list[dict[str, int | str]],
@@ -108,8 +108,8 @@ def prepare_benchmarks(
         prepare: Configuration file's `prepare` section.
         benchmark: Configuration file's `benchmark` section.
         conclude: Configuration file's `conclude` section.
-        cleanup: Configuration file's `cleanup` section.
         cusom_metrics: Configuration file's `custom-metrics` section.
+        cleanup: Configuration file's `cleanup` section.
         matrix: Configuration file's `matrix` section.
         exclude: Configuration file's `exclude` section, which excludes given var combinations.
         include: Configuration file's `include` section, which includes given value combinations.
@@ -133,8 +133,8 @@ def prepare_benchmarks(
             setup=setup,
             prepare=prepare,
             benchmark=benchmark,
-            custom_metrics=cm,
             conclude=conclude,
+            custom_metrics=cm,
             cleanup=cleanup,
         )
         benchmarks.append(prepared_benchmark)
@@ -158,8 +158,8 @@ def prepare_benchmarks(
                 setup=stp,
                 prepare=pre_bench,
                 benchmark=bench,
-                custom_metrics=cm,
                 conclude=conc_bench,
+                custom_metrics=cm,
                 cleanup=clean,
             )
             benchmarks.append(prepared_benchmark)
