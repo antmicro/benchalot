@@ -15,8 +15,9 @@ from benchmarker.output_constants import (
 )
 from uuid import uuid4
 from benchmarker.log import console
-from benchmarker.config import BuiltInMetrics
+from benchmarker.config import BuiltInMetrics, SystemSection
 from concurrent import futures
+from benchmarker.system import modify_system_state, restore_system_state
 
 logger = getLogger(f"benchmarker.{__name__}")
 working_directory = getcwd()
@@ -134,12 +135,15 @@ def perform_benchmarks(
     benchmarks: list[PreparedBenchmark],
     samples: int,
     builtin_metrics: set[BuiltInMetrics],
+    system: SystemSection,
 ) -> dict[str, list]:
     """Perform benchmarks and return their results.
 
     Args:
         benchmarks: List of benchmarks, each containing variable values, preprocessed commands and callable metrics.
         samples: How many times each benchmark needs to be repeated.
+        builtin_metrics: What benchmarker's builtint metrics need to be measured
+        system: Configuration defining variance reducing system measures
 
     Returns:
         dict[str, list]: Dictionary containing results.
@@ -185,6 +189,9 @@ def perform_benchmarks(
                     memory_measurements: dict[str, float | None] = {}
                     stdout_measurements: dict[str, float | None] = {}
                     stderr_measurements: dict[str, float | None] = {}
+
+                    if system.modify:
+                        modify_system_state(system)
 
                     for stage in benchmark.benchmark:
                         stage_elapsed_time = 0.0
@@ -265,6 +272,9 @@ def perform_benchmarks(
                                 stdout_measurements[stage] = None
                             if measure_stderr:
                                 stderr_measurements[stage] = None
+
+                    if system.modify:
+                        restore_system_state()
 
                     if not has_failed and not _execute_section(benchmark.conclude):
                         has_failed = True

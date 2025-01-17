@@ -144,7 +144,7 @@ def prepare_benchmarks(
         for var_combination in chain(var_combinations, include):
             if exclude_combination(var_combination, exclude):
                 continue
-            set = interpolate_commands(setup, var_combination)
+            stp = interpolate_commands(setup, var_combination)
             pre_bench = interpolate_commands(prepare, var_combination)
             bench = {}
             for name in benchmark:
@@ -155,7 +155,7 @@ def prepare_benchmarks(
             clean = interpolate_commands(cleanup, var_combination)
             prepared_benchmark = PreparedBenchmark(
                 matrix=var_combination,
-                setup=set,
+                setup=stp,
                 prepare=pre_bench,
                 benchmark=bench,
                 custom_metrics=cm,

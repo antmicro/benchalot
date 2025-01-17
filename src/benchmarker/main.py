@@ -7,7 +7,6 @@ from benchmarker.execute import (
     set_working_directory,
 )
 from os import geteuid, execvp
-from benchmarker.system import modify_system_state, restore_system_state
 from benchmarker.output import output_results_from_dict, output_results_from_file
 from argparse import ArgumentParser
 from os.path import isfile
@@ -101,13 +100,9 @@ def main():
 
     logger.info("Performing benchmarks...")
     with console.log_to_file(config.save_output):
-        if config.system.modify:
-            modify_system_state(config.system)
-
-        results = perform_benchmarks(benchmarks, config.samples, config.metrics)
-
-        if config.system.modify:
-            restore_system_state()
+        results = perform_benchmarks(
+            benchmarks, config.samples, config.metrics, config.system
+        )
 
     output_results_from_dict(
         results,
