@@ -1,7 +1,5 @@
 from logging import getLogger
-from re import findall
 from benchmarker.interpolate import (
-    VAR_REGEX,
     create_variable_combinations,
     interpolate_variables,
 )
@@ -17,17 +15,21 @@ class PreparedBenchmark:
 
     Attributes:
         matrix: Combination of variable values used for this benchmark.
+        setup: Commands to be executed before the measurement, not multiplied by number of samples.
         prepare: Commands to be executed before the measurement.
         benchmark: Commands to be measured.
         conclude: Commands to be executed after the measurement.
+        cleanup: Commands to be executed after the measurement, not multiplied by number of samples.
         custom_metrics: List of custom_metrics (names and commands) to be gathered during execution.
     """
 
     matrix: dict[str, str]
+    setup: list[str]
     prepare: list[str]
     benchmark: dict[str, list[str]]
-    conclude: list[str]
     custom_metrics: list[dict[str, str]]
+    conclude: list[str]
+    cleanup: list[str]
 
 
 def interpolate_commands(commands: list, variables: dict[str, str | int]) -> list[str]:
@@ -64,47 +66,6 @@ def exclude_combination(
     return False
 
 
-def prepare_command_combinations(
-    commands: list[str],
-    matrix: dict[str, list],
-    exclude: list[dict[str, int | str]],
-    include: list[dict[str, int | str]],
-) -> list[str]:
-    """Create command variants for each variable present.
-
-    Args:
-        commands: List of commands.
-        matrix: Configuration file's `matrix` section.
-        exclude: Configuration file's `exclude` section, which excludes given value combinations.
-        include: Configuration file's `include` section, which includes given value combinations.
-
-    Returns:
-        tuple[list[str], list[str]]: List of command combinations.
-    """
-    commmand_combinations = []
-    if commands:
-        vars = set()
-        for command in commands:
-            for var_name in findall(VAR_REGEX, command):
-                vars.add(var_name.split(".")[0])
-        if vars:
-            var_combinations = create_variable_combinations(
-                **{k: v for k, v in matrix.items() if k in vars}
-            )
-            relevant_include = []
-            for var_combination in include:
-                for var in var_combination:
-                    if var in vars:
-                        relevant_include.append(var_combination)
-            for var_combination in chain(var_combinations, relevant_include):
-                if exclude_combination(var_combination, exclude):
-                    continue
-                commmand_combinations += interpolate_commands(commands, var_combination)
-        else:
-            commmand_combinations += commands
-    return commmand_combinations
-
-
 def process_custom_metrics(
     metrics: list[dict[str, str]],
     variables: dict[str, str | int] | None = None,
@@ -129,9 +90,11 @@ def process_custom_metrics(
 
 
 def prepare_benchmarks(
-    benchmark: dict[str, list[str]],
+    setup: list[str],
     prepare: list[str],
+    benchmark: dict[str, list[str]],
     conclude: list[str],
+    cleanup: list[str],
     custom_metrics: list[dict],
     matrix: dict[str, list[str]],
     exclude: list[dict[str, int | str]],
@@ -141,9 +104,11 @@ def prepare_benchmarks(
     """Prepare benchmark commands.
 
     Args:
-        benchmark: Configuration file's `benchmark` section.
+        setup: Configuration file's `setup` section.
         prepare: Configuration file's `prepare` section.
+        benchmark: Configuration file's `benchmark` section.
         conclude: Configuration file's `conclude` section.
+        cleanup: Configuration file's `cleanup` section.
         cusom_metrics: Configuration file's `custom-metrics` section.
         matrix: Configuration file's `matrix` section.
         exclude: Configuration file's `exclude` section, which excludes given var combinations.
@@ -165,10 +130,12 @@ def prepare_benchmarks(
         cm = process_custom_metrics(custom_metrics)
         prepared_benchmark = PreparedBenchmark(
             matrix={},
+            setup=setup,
             prepare=prepare,
             benchmark=benchmark,
-            conclude=conclude,
             custom_metrics=cm,
+            conclude=conclude,
+            cleanup=cleanup,
         )
         benchmarks.append(prepared_benchmark)
     else:
@@ -177,18 +144,23 @@ def prepare_benchmarks(
         for var_combination in chain(var_combinations, include):
             if exclude_combination(var_combination, exclude):
                 continue
+            set = interpolate_commands(setup, var_combination)
             pre_bench = interpolate_commands(prepare, var_combination)
-            conc_bench = interpolate_commands(conclude, var_combination)
             bench = {}
             for name in benchmark:
                 bench[name] = interpolate_commands(benchmark[name], var_combination)
             cm = process_custom_metrics(custom_metrics, var_combination)
+
+            conc_bench = interpolate_commands(conclude, var_combination)
+            clean = interpolate_commands(cleanup, var_combination)
             prepared_benchmark = PreparedBenchmark(
                 matrix=var_combination,
+                setup=set,
                 prepare=pre_bench,
                 benchmark=bench,
-                conclude=conc_bench,
                 custom_metrics=cm,
+                conclude=conc_bench,
+                cleanup=clean,
             )
             benchmarks.append(prepared_benchmark)
     logger.debug(f"Prepared benchmarks: {benchmarks}")

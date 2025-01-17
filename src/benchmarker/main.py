@@ -1,16 +1,10 @@
 import yaml
 from sys import argv, executable
 from benchmarker.config import validate_config, validate_output_config
-from benchmarker.prepare import (
-    prepare_benchmarks,
-    prepare_command_combinations,
-)
+from benchmarker.prepare import prepare_benchmarks
 from benchmarker.execute import (
     perform_benchmarks,
     set_working_directory,
-    execute_command,
-    log_output,
-    check_return_code,
 )
 from os import geteuid, execvp
 from benchmarker.system import modify_system_state, restore_system_state
@@ -64,9 +58,11 @@ def main():
         execvp("sudo", ["sudo", executable] + argv)
 
     benchmarks = prepare_benchmarks(
-        config.benchmark,
+        config.setup,
         config.prepare,
+        config.benchmark,
         config.conclude,
+        config.cleanup,
         config.custom_metrics,
         config.matrix,
         config.exclude,
@@ -75,17 +71,10 @@ def main():
     )
     logger.info("Preparing 'setup' and 'cleanup' commands...")
 
-    setup_commands = prepare_command_combinations(
-        config.setup, config.matrix, config.exclude, config.include
-    )
-    cleanup_commands = prepare_command_combinations(
-        config.cleanup, config.matrix, config.exclude, config.include
-    )
-
     if args.plan:
-        for command in setup_commands:
-            print(command)
         for benchmark in benchmarks:
+            for command in benchmark.setup:
+                print(command)
             if config.samples > 1:
                 print()
                 msg_mul = f"x{config.samples}"
@@ -100,10 +89,10 @@ def main():
                 print(command)
             for custom_metric in benchmark.custom_metrics:
                 print(list(custom_metric.items())[0][1])
-        if config.samples > 1:
-            print()
-        for command in cleanup_commands:
-            print(command)
+            if config.samples > 1:
+                print()
+            for command in benchmark.cleanup:
+                print(command)
         exit_benchmarker()
 
     set_working_directory(config.cwd)
@@ -111,18 +100,6 @@ def main():
 
     logger.info("Performing benchmarks...")
     with console.log_to_file(config.save_output):
-
-        with console.bar(len(setup_commands)) as bar:
-            for c in setup_commands:
-                bar.set_description(c)
-                process = execute_command(c)
-                log_output(process)
-                process.wait()
-                if not check_return_code(c, process.returncode):
-                    logger.critical("Initialization failed.")
-                    exit(1)
-                bar.update(1)
-
         if config.system.modify:
             modify_system_state(config.system)
 
@@ -130,15 +107,6 @@ def main():
 
         if config.system.modify:
             restore_system_state()
-
-        with console.bar(len(cleanup_commands)) as bar:
-            for c in cleanup_commands:
-                bar.set_description(c)
-                process = execute_command(c)
-                log_output(process)
-                process.wait()
-                check_return_code(c, process.returncode)
-                bar.update(1)
 
     output_results_from_dict(
         results,

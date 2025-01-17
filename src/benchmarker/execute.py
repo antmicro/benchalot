@@ -164,12 +164,12 @@ def perform_benchmarks(
 
         for benchmark in benchmarks:
             try:
+                logger.debug(f"Running benchmark: {benchmark}")
+                has_failed = False
+                if not _execute_section(benchmark.setup):
+                    has_failed = True
                 for _ in range(0, samples):
-                    logger.debug(f"Running benchmark: {benchmark}")
-
-                    has_failed = False
-
-                    if not _execute_section(benchmark.prepare):
+                    if not has_failed and not _execute_section(benchmark.prepare):
                         has_failed = True
 
                     measure_time = BuiltInMetrics.TIME in builtin_metrics
@@ -315,6 +315,9 @@ def perform_benchmarks(
                             results.setdefault(METRIC_COLUMN, []).append(metric_name)
                             results.setdefault(STAGE_COLUMN, []).append(stage)
                             results.setdefault(RESULT_COLUMN, []).append(result)
+
+                if not has_failed and not _execute_section(benchmark.cleanup):
+                    has_failed = True
 
             except KeyboardInterrupt:
                 logger.warning("Stopped benchmarks.")
