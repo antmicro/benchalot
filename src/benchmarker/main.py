@@ -72,13 +72,12 @@ def main():
     logger.info("Preparing 'setup' and 'cleanup' commands...")
 
     if args.plan:
+        msg_mul = f"x{config.samples}"
+        pad = 4
         for benchmark in benchmarks:
             for command in benchmark.setup:
                 print(command)
             if config.samples > 1:
-                print()
-                msg_mul = f"x{config.samples}"
-                pad = 4
                 print(("─" * pad) + msg_mul + ("─" * pad))
             for command in benchmark.prepare:
                 print(command)
@@ -90,9 +89,11 @@ def main():
             for custom_metric in benchmark.custom_metrics:
                 print(list(custom_metric.items())[0][1])
             if config.samples > 1:
-                print()
+                print(("─" * (2 * pad + len(msg_mul))))
             for command in benchmark.cleanup:
                 print(command)
+            print()
+            print()
         exit_benchmarker()
 
     set_working_directory(config.cwd)
