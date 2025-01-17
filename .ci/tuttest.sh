@@ -112,4 +112,7 @@ eval "$RUN_PLAN"
 echo "$CONFIG" > config.yml
 eval $RUN_SPLIT
 assert_file_exists "out/config.yml.part0.yml"
-assert_file_exists "out/config.yml.part1.yml"
+assert_file_exists "out/config.yml.part0.yml"
+
+benchmarker "out/config.yml.part0.yml" -p
+benchmarker "out/config.yml.part1.yml" -p
