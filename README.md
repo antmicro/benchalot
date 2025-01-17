@@ -131,18 +131,18 @@ include:
 
 <!-- name="run-section" -->
 ```yaml
-setup:                                                   # commands to be executed once before all of the benchmarks
+setup:                                                  # commands to be executed once, before 'prepare', for each combination of variable values
     - git clone . ../{{tag}}
-prepare:                                          # commands to be executed before each benchmark
+prepare:                                                # commands to be executed for each sample before 'benchmark'
     - cd ../{{tag}} && git checkout {{tag}}
 benchmark:                                              # commands to be benchmarked
     compilation:                                        # benchmarks can be divided into stages
         - cd ../{{tag}} && make build -s
     execution:
         - ../{{tag}}/sleeper {{thread}} {{input}}
-conclude:                                         # contains the commands to be executed after each benchmark
+conclude:                                               # contains the commands to be executed for each sample after 'benchmark'
     - cd ../{{tag}} && make clean
-cleanup:                                                # contains the commands to be excetued once after all of the benchmarks
+cleanup:                                                # contains the commands to be excetued once, after 'conclude/custom-metrics', for each combination of variable values
     - rm -rf ../{{tag}}
 
 #  built-in metrics
@@ -162,6 +162,11 @@ save-output: run.log    # log file for command output
 cwd: ~                  # change working directory of the commands to specified location
 env:                    # specify additional environment variables to be used when running commands
     CC: gcc
+```
+
+The order of execution is:
+```
+setup -> (prepare -> benchmark -> conclude -> custom-metrics) * samples -> cleanup
 ```
 
 ### System
