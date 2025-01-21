@@ -5,6 +5,7 @@ from benchmarker.interpolate import (
 )
 from dataclasses import dataclass
 from itertools import chain
+from benchmarker.config import ConfigFile
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -49,7 +50,7 @@ def interpolate_commands(commands: list, variables: dict[str, str | int]) -> lis
 
 def exclude_combination(
     var_value_assignments: dict[str, int | str],
-    exclude: list[dict[str, int | str]],
+    exclude: list[dict[str, str | int | float | dict]],
 ) -> bool:
     """Check if given set of value assignments should be excluded based on exclude list.
 
@@ -89,70 +90,51 @@ def process_custom_metrics(
     return custom_metrics
 
 
-def prepare_benchmarks(
-    setup: list[str],
-    prepare: list[str],
-    benchmark: dict[str, list[str]],
-    conclude: list[str],
-    custom_metrics: list[dict],
-    cleanup: list[str],
-    matrix: dict[str, list[str]],
-    exclude: list[dict[str, int | str]],
-    include: list[dict[str, int | str]],
-    isolate_cpus: bool,
-) -> list[PreparedBenchmark]:
+def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
     """Prepare benchmark commands.
 
     Args:
-        setup: Configuration file's `setup` section.
-        prepare: Configuration file's `prepare` section.
-        benchmark: Configuration file's `benchmark` section.
-        conclude: Configuration file's `conclude` section.
-        cusom_metrics: Configuration file's `custom-metrics` section.
-        cleanup: Configuration file's `cleanup` section.
-        matrix: Configuration file's `matrix` section.
-        exclude: Configuration file's `exclude` section, which excludes given var combinations.
-        include: Configuration file's `include` section, which includes given value combinations.
-        isolate_cpus: Whether to prepend `cset shield --exec -- ` to `benchmark` commands.
 
     Returns:
         list[PreparedBenchmark]: List of unique benchmarks containing their variable combination, modified commands and metrics.
     """
-    if isolate_cpus:
-        for name in benchmark:
-            commands = benchmark[name]
+    if config.system.isolate_cpus:
+        for name in config.benchmark:
+            commands = config.benchmark[name]
             for i, c in enumerate(commands):
-                benchmark[name][i] = "cset shield --exec -- " + c
+                config.benchmark[name][i] = "cset shield --exec -- " + c
     benchmarks: list[PreparedBenchmark] = []
     logger.info("Preparing benchmarks...")
-    if not matrix:
+    if not config.matrix:
         logger.debug("`matrix` not found in the config.")
-        cm = process_custom_metrics(custom_metrics)
+        cm = process_custom_metrics(config.custom_metrics)
         prepared_benchmark = PreparedBenchmark(
             matrix={},
-            setup=setup,
-            prepare=prepare,
-            benchmark=benchmark,
-            conclude=conclude,
+            setup=config.setup,
+            prepare=config.prepare,
+            benchmark=config.benchmark,
+            conclude=config.conclude,
             custom_metrics=cm,
-            cleanup=cleanup,
+            cleanup=config.cleanup,
         )
         benchmarks.append(prepared_benchmark)
     else:
         logger.debug("Creating variable combinations...")
-        var_combinations = create_variable_combinations(**matrix)
-        for var_combination in chain(var_combinations, include):
-            if exclude_combination(var_combination, exclude):
+        var_combinations = create_variable_combinations(**config.matrix)
+        for var_combination in chain(var_combinations, config.include):
+            if exclude_combination(var_combination, config.exclude):
                 continue
-            stp = interpolate_commands(setup, var_combination)
-            pre_bench = interpolate_commands(prepare, var_combination)
+            stp = interpolate_commands(config.setup, var_combination)
+            pre_bench = interpolate_commands(config.prepare, var_combination)
             bench = {}
-            for name in benchmark:
-                bench[name] = interpolate_commands(benchmark[name], var_combination)
-            cm = process_custom_metrics(custom_metrics, var_combination)
+            for name in config.benchmark:
+                bench[name] = interpolate_commands(
+                    config.benchmark[name], var_combination
+                )
+            cm = process_custom_metrics(config.custom_metrics, var_combination)
 
-            conc_bench = interpolate_commands(conclude, var_combination)
-            clean = interpolate_commands(cleanup, var_combination)
+            conc_bench = interpolate_commands(config.conclude, var_combination)
+            clean = interpolate_commands(config.cleanup, var_combination)
             prepared_benchmark = PreparedBenchmark(
                 matrix=var_combination,
                 setup=stp,

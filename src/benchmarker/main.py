@@ -55,18 +55,7 @@ def main():
         )
         execvp("sudo", ["sudo", executable] + argv)
 
-    benchmarks = prepare_benchmarks(
-        config.setup,
-        config.prepare,
-        config.benchmark,
-        config.conclude,
-        config.custom_metrics,
-        config.cleanup,
-        config.matrix,
-        config.exclude,
-        config.include,
-        config.system.isolate_cpus,
-    )
+    benchmarks = prepare_benchmarks(config)
     logger.info("Preparing 'setup' and 'cleanup' commands...")
 
     if args.plan:
