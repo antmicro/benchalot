@@ -1,6 +1,6 @@
 from subprocess import Popen, PIPE, STDOUT
 from logging import getLogger
-from os import getcwd, wait4, waitstatus_to_exitcode
+from os import getcwd, wait4, waitstatus_to_exitcode, environ
 from time import monotonic_ns
 from io import StringIO
 from csv import DictReader
@@ -18,7 +18,7 @@ from benchmarker.log import console
 from benchmarker.config import BuiltInMetrics, SystemSection
 from concurrent import futures
 from benchmarker.system import modify_system_state, restore_system_state
-from os import environ
+from os.path import isdir
 
 logger = getLogger(f"benchmarker.{__name__}")
 working_directory = getcwd()
@@ -27,6 +27,9 @@ working_directory = getcwd()
 def set_working_directory(cwd: str) -> None:
     """Set working directory of executed commands"""
     global working_directory
+    if not isdir(cwd):
+        logger.critical(f"Directory '{cwd}' not found")
+        exit(1)
     working_directory = cwd
 
 
