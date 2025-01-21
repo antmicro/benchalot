@@ -4,7 +4,6 @@ from benchmarker.interpolate import (
     interpolate_variables,
 )
 from dataclasses import dataclass
-from itertools import chain
 from benchmarker.config import ConfigFile
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -108,66 +107,52 @@ def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
                 config.benchmark[name][i] = "cset shield --exec -- " + c
     benchmarks: list[PreparedBenchmark] = []
     logger.info("Preparing benchmarks...")
-    if not config.matrix:
-        logger.debug("`matrix` not found in the config.")
-        cm = process_custom_metrics(config.custom_metrics)
+    logger.debug("Creating variable combinations...")
+    var_combinations = list(create_variable_combinations(**config.matrix))
+    var_combinations += config.include
+    for var_combination in var_combinations:
+        if not var_combination and len(var_combinations) > 1:
+            continue
+        if exclude_combination(var_combination, config.exclude):
+            continue
+
+        setup = interpolate_commands(config.setup, var_combination)
+        prepare = interpolate_commands(config.prepare, var_combination)
+        benchmark = {}
+        for name in config.benchmark:
+            benchmark[name] = interpolate_commands(
+                config.benchmark[name], var_combination
+            )
+        conclude = interpolate_commands(config.conclude, var_combination)
+        custom_metrics = process_custom_metrics(config.custom_metrics, var_combination)
+        cleanup = interpolate_commands(config.cleanup, var_combination)
+
+        env = config.env.copy()
+        for var in env:
+            env[var] = interpolate_variables(env[var], var_combination)
+        cwd: str | None
+        if config.cwd:
+            cwd = interpolate_variables(config.cwd, var_combination)
+        else:
+            cwd = config.cwd
+        save_output: str | None
+        if config.save_output:
+            save_output = interpolate_variables(config.save_output, var_combination)
+        else:
+            save_output = config.save_output
+
         prepared_benchmark = PreparedBenchmark(
-            matrix={},
-            setup=config.setup,
-            prepare=config.prepare,
-            benchmark=config.benchmark,
-            conclude=config.conclude,
-            custom_metrics=cm,
-            cleanup=config.cleanup,
-            env=config.env,
-            cwd=config.cwd,
-            save_output=config.save_output,
+            matrix=var_combination,
+            setup=setup,
+            prepare=prepare,
+            benchmark=benchmark,
+            conclude=conclude,
+            custom_metrics=custom_metrics,
+            cleanup=cleanup,
+            env=env,
+            cwd=cwd,
+            save_output=save_output,
         )
         benchmarks.append(prepared_benchmark)
-    else:
-        logger.debug("Creating variable combinations...")
-        var_combinations = create_variable_combinations(**config.matrix)
-        for var_combination in chain(var_combinations, config.include):
-            if exclude_combination(var_combination, config.exclude):
-                continue
-            setup = interpolate_commands(config.setup, var_combination)
-            prepare = interpolate_commands(config.prepare, var_combination)
-            benchmark = {}
-            for name in config.benchmark:
-                benchmark[name] = interpolate_commands(
-                    config.benchmark[name], var_combination
-                )
-            custom_metrics = process_custom_metrics(
-                config.custom_metrics, var_combination
-            )
-
-            conclude = interpolate_commands(config.conclude, var_combination)
-            cleanup = interpolate_commands(config.cleanup, var_combination)
-
-            env = config.env.copy()
-            for var in env:
-                env[var] = interpolate_variables(env[var], var_combination)
-            cwd: str | None
-            if config.cwd:
-                cwd = interpolate_variables(config.cwd, var_combination)
-            else:
-                cwd = config.cwd
-            if config.save_output:
-                save_output = interpolate_variables(config.save_output, var_combination)
-            else:
-                save_output = config.save_output
-            prepared_benchmark = PreparedBenchmark(
-                matrix=var_combination,
-                setup=setup,
-                prepare=prepare,
-                benchmark=benchmark,
-                conclude=conclude,
-                custom_metrics=custom_metrics,
-                cleanup=cleanup,
-                env=env,
-                cwd=cwd,
-                save_output=save_output,
-            )
-            benchmarks.append(prepared_benchmark)
     logger.debug(f"Prepared benchmarks: {benchmarks}")
     return benchmarks
