@@ -157,11 +157,12 @@ metrics:
 custom-metrics:         # specify your own metrics, for more information checkout Advanced Configuration section of README
     - threads: echo {{thread}}
 
-samples: 5              # how many times repeat each benchmark (default=1)
-save-output: run.log    # log file for command output
-cwd: ~                  # change working directory of the commands to specified location
-env:                    # specify additional environment variables to be used when running commands
+samples: 5                      # how many times repeat each benchmark (default=1)
+save-output: "{{datetime}}.log" # log file for command output, 'datetime' is special matrix variable defined by Benchmarker
+cwd: "./"                       # change working directory of the commands to specified location, you can also use matrix variable in here
+env:                            # specify additional environment variables to be used when running commands
     CC: gcc
+    VAR_NAME: "{{input}}"       # use matrix variables to change the enviromnent for each benchmark
 ```
 
 The order of execution is:
@@ -242,7 +243,6 @@ results:
 ```
 
 Additionally, instead of using variable names you can use one of the following:
-* `benchmark_date` - time stamp (date and hour) of when the benchmarks completed.
 * `stage` - column containing stages' names.
 * `failed` - column containing `True` or `False` depending on whether the benchmark failed.
 
