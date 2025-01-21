@@ -21,6 +21,9 @@ class PreparedBenchmark:
         conclude: Commands to be executed after the measurement.
         custom_metrics: List of custom_metrics (names and commands) to be gathered during execution.
         cleanup: Commands to be executed after the measurement, not multiplied by number of samples.
+        env: Evironment variable values set for the benchmark.
+        cwd: Working directory of the benchmark commands.
+        save_output: Filename of a log file which will be used to save command output.
     """
 
     matrix: dict[str, str]
@@ -96,7 +99,7 @@ def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
     """Prepare benchmark commands.
 
     Args:
-
+        config: Object representing configuration file.
     Returns:
         list[PreparedBenchmark]: List of unique benchmarks containing their variable combination, modified commands and metrics.
     """
