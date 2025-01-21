@@ -31,6 +31,9 @@ class PreparedBenchmark:
     conclude: list[str]
     custom_metrics: list[dict[str, str]]
     cleanup: list[str]
+    env: dict[str, str]
+    cwd: str | None
+    save_output: str | None
 
 
 def interpolate_commands(commands: list, variables: dict[str, str | int]) -> list[str]:
@@ -116,6 +119,9 @@ def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
             conclude=config.conclude,
             custom_metrics=cm,
             cleanup=config.cleanup,
+            env=config.env,
+            cwd=config.cwd,
+            save_output=config.save_output,
         )
         benchmarks.append(prepared_benchmark)
     else:
@@ -124,25 +130,43 @@ def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
         for var_combination in chain(var_combinations, config.include):
             if exclude_combination(var_combination, config.exclude):
                 continue
-            stp = interpolate_commands(config.setup, var_combination)
-            pre_bench = interpolate_commands(config.prepare, var_combination)
-            bench = {}
+            setup = interpolate_commands(config.setup, var_combination)
+            prepare = interpolate_commands(config.prepare, var_combination)
+            benchmark = {}
             for name in config.benchmark:
-                bench[name] = interpolate_commands(
+                benchmark[name] = interpolate_commands(
                     config.benchmark[name], var_combination
                 )
-            cm = process_custom_metrics(config.custom_metrics, var_combination)
+            custom_metrics = process_custom_metrics(
+                config.custom_metrics, var_combination
+            )
 
-            conc_bench = interpolate_commands(config.conclude, var_combination)
-            clean = interpolate_commands(config.cleanup, var_combination)
+            conclude = interpolate_commands(config.conclude, var_combination)
+            cleanup = interpolate_commands(config.cleanup, var_combination)
+
+            env = config.env.copy()
+            for var in env:
+                env[var] = interpolate_variables(env[var], var_combination)
+            cwd: str | None
+            if config.cwd:
+                cwd = interpolate_variables(config.cwd, var_combination)
+            else:
+                cwd = config.cwd
+            if config.save_output:
+                save_output = interpolate_variables(config.save_output, var_combination)
+            else:
+                save_output = config.save_output
             prepared_benchmark = PreparedBenchmark(
                 matrix=var_combination,
-                setup=stp,
-                prepare=pre_bench,
-                benchmark=bench,
-                conclude=conc_bench,
-                custom_metrics=cm,
-                cleanup=clean,
+                setup=setup,
+                prepare=prepare,
+                benchmark=benchmark,
+                conclude=conclude,
+                custom_metrics=custom_metrics,
+                cleanup=cleanup,
+                env=env,
+                cwd=cwd,
+                save_output=save_output,
             )
             benchmarks.append(prepared_benchmark)
     logger.debug(f"Prepared benchmarks: {benchmarks}")

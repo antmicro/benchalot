@@ -9,7 +9,6 @@ from pydantic import (
 )
 from typing import Any, Literal
 from logging import getLogger
-from os.path import isdir
 from benchmarker.output_constants import (
     DEFAULT_STAGE_NAME,
     METRIC_COLUMN,
@@ -235,13 +234,6 @@ class ConfigFile(BaseModel):
             self["benchmark"] = {DEFAULT_STAGE_NAME: self["benchmark"]}
             return self
         return self
-
-    @field_validator("cwd")
-    @classmethod
-    def path_exists(cls, value: str):
-        if value and not isdir(value):
-            raise ValueError(f"directory '{value}' not found")
-        return value
 
     @field_validator("env", mode="before")
     @classmethod

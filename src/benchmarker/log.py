@@ -51,7 +51,7 @@ class FastConsole:
             log_file_desc = "/dev/null"
         else:
             log_file_desc = filename
-        with open(log_file_desc, "w") as log_file:
+        with open(log_file_desc, "a") as log_file:
             self.file = log_file
             yield
         self.file = None

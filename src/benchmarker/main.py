@@ -2,18 +2,14 @@ import yaml
 from sys import argv, executable
 from benchmarker.config import validate_config, validate_output_config
 from benchmarker.prepare import prepare_benchmarks
-from benchmarker.execute import (
-    perform_benchmarks,
-    set_working_directory,
-)
+from benchmarker.execute import perform_benchmarks
 from os import geteuid, execvp
 from benchmarker.output import output_results_from_dict, output_results_from_file
 from argparse import ArgumentParser
 from os.path import isfile
-from benchmarker.log import setup_benchmarker_logging, crash_msg_log_file, console
+from benchmarker.log import setup_benchmarker_logging, crash_msg_log_file
 from logging import getLogger
 from atexit import unregister
-from os import environ
 from pathlib import Path
 
 logger = getLogger(f"benchmarker.{__name__}")
@@ -83,14 +79,10 @@ def main():
             print()
         exit_benchmarker()
 
-    set_working_directory(config.cwd)
-    environ.update(config.env)
-
     logger.info("Performing benchmarks...")
-    with console.log_to_file(config.save_output):
-        results = perform_benchmarks(
-            benchmarks, config.samples, config.metrics, config.system
-        )
+    results = perform_benchmarks(
+        benchmarks, config.samples, config.metrics, config.system
+    )
 
     output_results_from_dict(
         results,
