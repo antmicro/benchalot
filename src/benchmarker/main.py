@@ -58,6 +58,12 @@ def main():
         msg_mul = f"x{config.samples}"
         pad = 4
         for benchmark in benchmarks:
+            if benchmark.save_output:
+                print(f"[save output={benchmark.save_output}]")
+            if benchmark.cwd:
+                print(f"[cwd={benchmark.cwd}]")
+            for var_name, value in benchmark.env.items():
+                print(f"[{var_name}={value}]")
             for command in benchmark.setup:
                 print(command)
             if config.samples > 1:
@@ -75,8 +81,9 @@ def main():
                 print(("─" * (2 * pad + len(msg_mul))))
             for command in benchmark.cleanup:
                 print(command)
-            print()
-            print()
+            if config.samples > 2:
+                print()
+                print()
         exit_benchmarker()
 
     logger.info("Performing benchmarks...")
