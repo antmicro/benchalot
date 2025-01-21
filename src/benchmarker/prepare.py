@@ -5,6 +5,7 @@ from benchmarker.interpolate import (
 )
 from dataclasses import dataclass
 from benchmarker.config import ConfigFile
+from benchmarker.output_constants import TIME_STAMP_COLUMN, TIME_STAMP
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -118,6 +119,10 @@ def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
             continue
         if exclude_combination(var_combination, config.exclude):
             continue
+
+        tmp = {TIME_STAMP_COLUMN: TIME_STAMP}
+        tmp.update(var_combination)
+        var_combination = tmp
 
         setup = interpolate_commands(config.setup, var_combination)
         prepare = interpolate_commands(config.prepare, var_combination)

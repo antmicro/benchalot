@@ -1,4 +1,7 @@
-TIME_STAMP_COLUMN = "benchmark_date"
+import datetime
+
+TIME_STAMP_COLUMN = "datetime"
+TIME_STAMP = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
 BENCHMARK_ID_COLUMN = "benchmark"
 HAS_FAILED_COLUMN = "failed"
 METRIC_COLUMN = "metric"

@@ -1,6 +1,6 @@
 import pandas as pd
 from logging import getLogger
-from datetime import timezone, datetime
+from datetime import datetime
 import numpy as np
 import os
 from uuid import uuid4
@@ -93,9 +93,6 @@ def output_results_from_dict(
     except ValueError as e:
         logger.critical(e)
         exit(1)
-    results_df.insert(
-        0, TIME_STAMP_COLUMN, datetime.now(timezone.utc).strftime("%y.%m.%d %H.%M")
-    )
     old_outputs = read_old_results(include)
     results_df = pd.concat([old_outputs, results_df], ignore_index=True)
     _output_results(results_df, results_config, include_failed, include_outliers)
