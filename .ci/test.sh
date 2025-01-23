@@ -5,22 +5,29 @@ python -m unittest
 # TMP_DIR=$(mktemp -d)
 # cd $TMP_DIR
 
-
+n_failed=0
+n_passed=0
 
 test() {
-  echo "$1" > config.yml
+  echo "RUNNING  $1..."
+  echo "$2" > config.yml
   benchmarker config.yml
   rm result.csv
-  echo "$2" > order
+  echo "$3" > order
   if ! cmp order output; then
     set +e
     diff order output -y
+    set -e
     echo "TEST FAILED"
-    exit 1
+    n_failed=$((n_failed + 1))
   else
-    rm output
-    echo "TEST PASSED"
+    echo "TEST SUCCESS"
+    n_passed=$((n_passed + 1))
   fi
+  rm output
+  rm config.yml
+  rm order
+  echo ""
 }
 
 
@@ -45,7 +52,7 @@ custom-metrics
 cleanup
 EOF
 )
-test "$test_order_simple" "$expected_order_simple"
+test "TEST ORDER SIMPLE" "$test_order_simple" "$expected_order_simple"
 
 test_order_mul=$(cat <<'EOF'
 ---
@@ -76,7 +83,7 @@ cleanup
 EOF
 )
 
-test "$test_order_mul" "$expected_order_mul"
+test "TEST ORDER SAMPLES" "$test_order_mul" "$expected_order_mul"
 
 
 test_order_cwd=$(cat <<'EOF'
@@ -88,7 +95,7 @@ setup: [echo $PWD/setup]
 prepare: [echo $PWD/prepare]
 benchmark: [echo $PWD/benchmark]
 conclude: [echo $PWD/conclude]
-custom-metrics: [ test: echo $PWD/custom-metrics&& echo 0]
+custom-metrics: [ test: echo $PWD/custom-metrics && echo 0]
 cleanup: [echo $PWD/cleanup]
 save-output: output
 EOF
@@ -116,5 +123,11 @@ EOF
 )
 
 mkdir dir1 dir2 dir3
-test "$test_order_cwd" "$expected_order_cwd"
+test "TEST ORDER CWD" "$test_order_cwd" "$expected_order_cwd"
 rmdir dir1 dir2 dir3
+
+
+echo "PASSED $n_passed/$((n_failed+n_passed)) TESTS"
+if [ "$n_failed" -gt 0 ]; then
+  exit 1
+fi
