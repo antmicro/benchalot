@@ -7,27 +7,42 @@ python -m unittest
 
 n_failed=0
 n_passed=0
+prev_failed=0
 
-test() {
-  echo "RUNNING  $1..."
-  echo "$2" > config.yml
-  benchmarker config.yml
+function benchmarker_run() {
+  echo "$1" > config.yml
+  benchmarker config.yml > /dev/null
   rm result.csv
-  echo "$3" > order
-  if ! cmp order output; then
+  rm config.yml
+}
+
+function compare_order() {
+  echo "$1" > order
+  if ! cmp order $2; then
     set +e
-    diff order output -y
+    diff order $2 -y
     set -e
     echo "TEST FAILED"
     n_failed=$((n_failed + 1))
+    echo ""
+    rm order
+    rm $2
+    return 1
   else
+    rm order
+    rm $2
+    return 0
+  fi
+}
+
+
+function test() {
+  echo "RUNNING  $1..."
+  benchmarker_run "$2"
+  if compare_order "$3" output; then
     echo "TEST SUCCESS"
     n_passed=$((n_passed + 1))
   fi
-  rm output
-  rm config.yml
-  rm order
-  echo ""
 }
 
 
@@ -126,6 +141,107 @@ mkdir dir1 dir2 dir3
 test "TEST ORDER CWD" "$test_order_cwd" "$expected_order_cwd"
 rmdir dir1 dir2 dir3
 
+
+test_order_env=$(cat <<'EOF'
+---
+matrix:
+  var: ["A", "B", "C"]
+setup: [echo "setup $VAR" >> output]
+prepare: [echo "prepare $VAR" >> output]
+benchmark: [echo "benchmark $VAR" >> output]
+conclude: [echo "conclude $VAR" >> output]
+custom-metrics: [ test: echo "custom-metrics $VAR" >> output && echo 0]
+cleanup: [echo "cleanup $VAR" >> output]
+env:
+  VAR: "{{var}}"
+EOF
+)
+
+expected_order_env=$(cat << 'EOF'
+setup A
+prepare A
+benchmark A
+conclude A
+custom-metrics A
+cleanup A
+setup B
+prepare B
+benchmark B
+conclude B
+custom-metrics B
+cleanup B
+setup C
+prepare C
+benchmark C
+conclude C
+custom-metrics C
+cleanup C
+EOF
+)
+
+
+test "TEST ORDER ENV" "$test_order_env" "$expected_order_env"
+
+
+test_order_save_output=$(cat <<'EOF'
+---
+matrix:
+  var: ["A", "B", "C"]
+setup: ["echo setup {{var}}"]
+prepare: ["echo prepare {{var}}"]
+benchmark: ["echo benchmark {{var}}"]
+conclude: ["echo conclude {{var}}"]
+custom-metrics: [ test: "echo custom-metrics {{var}} && echo 0"]
+cleanup: ["echo cleanup {{var}}"]
+save-output: output{{var}}
+EOF
+)
+expected_order_save_output_A=$(cat << 'EOF'
+setup A
+prepare A
+benchmark A
+conclude A
+custom-metrics A
+cleanup A
+EOF
+)
+
+expected_order_save_output_B=$(cat << 'EOF'
+setup B
+prepare B
+benchmark B
+conclude B
+custom-metrics B
+cleanup B
+EOF
+)
+
+expected_order_save_output_C=$(cat << 'EOF'
+setup C
+prepare C
+benchmark C
+conclude C
+custom-metrics C
+cleanup C
+EOF
+)
+
+echo "RUNNING TEST ORDER SAVE-OUTPUT..."
+benchmarker_run "$test_order_save_output"
+if compare_order "$expected_order_save_output_A" outputA; then
+  if compare_order "$expected_order_save_output_B" outputB; then
+    if compare_order "$expected_order_save_output_C" outputC; then
+      echo "TEST SUCCESS"
+      n_passed=$((n_passed + 1))
+    fi
+  else
+    rm OutputC
+  fi
+  else
+    rm outputB
+    rm outputC
+fi
+rm bench_log
 
 echo "PASSED $n_passed/$((n_failed+n_passed)) TESTS"
 if [ "$n_failed" -gt 0 ]; then
