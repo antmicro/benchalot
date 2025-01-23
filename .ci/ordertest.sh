@@ -1,9 +1,7 @@
 #!/bin/bash
 set -e
-python -m unittest
-
-# TMP_DIR=$(mktemp -d)
-# cd $TMP_DIR
+TMP_DIR=$(mktemp -d)
+cd $TMP_DIR
 
 n_failed=0
 n_passed=0
@@ -241,7 +239,6 @@ if compare_order "$expected_order_save_output_A" outputA; then
     rm outputB
     rm outputC
 fi
-rm bench_log
 
 echo "PASSED $n_passed/$((n_failed+n_passed)) TESTS"
 if [ "$n_failed" -gt 0 ]; then

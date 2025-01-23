@@ -51,3 +51,17 @@ unittest:
   script:
     - source .venv/bin/activate
     - make unittest
+
+
+ordertest:
+  image: "debian:bookworm"
+  stage: tests
+  before_script:
+    - apt update -y && apt install python3 python3-venv make sudo -y
+    - python3 -m venv .venv
+    - source .venv/bin/activate
+    - pip install .[dev]
+  script:
+    - source .venv/bin/activate
+    - make ordertest
+

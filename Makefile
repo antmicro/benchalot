@@ -22,4 +22,7 @@ tuttest:
 	./.ci/tuttest.sh
 
 unittest:
-	python -m unittest discover tests
+	python -m unittest
+
+ordertest:
+	./.ci/ordertest.sh
