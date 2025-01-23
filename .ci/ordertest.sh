@@ -9,7 +9,7 @@ prev_failed=0
 
 function benchmarker_run() {
   echo "$1" > config.yml
-  benchmarker config.yml > /dev/null
+  benchmarker config.yml &> bench_log
   rm result.csv
   rm config.yml
 }
@@ -20,6 +20,7 @@ function compare_order() {
     set +e
     diff order $2 -y
     set -e
+    cat bench_log
     echo "TEST FAILED"
     n_failed=$((n_failed + 1))
     echo ""
@@ -41,6 +42,7 @@ function test() {
     echo "TEST SUCCESS"
     n_passed=$((n_passed + 1))
   fi
+  rm bench_log
 }
 
 
@@ -239,6 +241,7 @@ if compare_order "$expected_order_save_output_A" outputA; then
     rm outputB
     rm outputC
 fi
+rm bench_log
 
 echo "PASSED $n_passed/$((n_failed+n_passed)) TESTS"
 if [ "$n_failed" -gt 0 ]; then
