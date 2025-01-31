@@ -111,6 +111,8 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
     process = execute_command(metric_command)
     output, _ = process.communicate()
     output = output.decode("utf-8")
+    console.log_command_output(output)
+    console.flush()
     if len(output.splitlines()) == 1:
         out = try_convert_to_float(output)
         return ({DEFAULT_STAGE_NAME: out}, out is None)
