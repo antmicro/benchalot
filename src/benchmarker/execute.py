@@ -196,7 +196,7 @@ def perform_benchmarks(
                         time_measurements: dict[str, float | None] = {}
                         utime_measurements: dict[str, float | None] = {}
                         stime_measurements: dict[str, float | None] = {}
-                        memory_measurements: dict[str, float | None] = {}
+                        memory_measurements: dict[str, float | int | None] = {}
                         stdout_measurements: dict[str, float | None] = {}
                         stderr_measurements: dict[str, float | None] = {}
 
@@ -291,7 +291,7 @@ def perform_benchmarks(
                         if not has_failed and not _execute_section(benchmark.conclude):
                             has_failed = True
 
-                        benchmark_results: dict[str, dict[str, float | None]] = {}
+                        benchmark_results: dict[str, dict[str, float | int | None]] = {}
 
                         for custom_metric in benchmark.custom_metrics:
                             metric_name, command = list(custom_metric.items())[0]

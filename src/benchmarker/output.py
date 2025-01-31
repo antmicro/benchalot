@@ -8,6 +8,8 @@ from benchmarker.config import (
     TableMdOutput,
     TableHTMLOutput,
     BasePlotOutput,
+    CsvOutput,
+    OutputField,
     OutputFormat,
     ResultsSection,
 )
@@ -24,9 +26,7 @@ from benchmarker.output_constants import (
     METRIC_COLUMN,
     CONSTANT_COLUMNS,
 )
-from sys import argv
 from re import findall, sub
-from atexit import register, unregister
 from collections.abc import Generator, Iterable
 from typing import Literal
 from copy import deepcopy
@@ -403,7 +403,7 @@ def output_plot(
     return True
 
 
-def output_st_csv(result_df: pd.DataFrame, filename: str, overwrite: bool) -> None:
+def output_st_csv(result_df: pd.DataFrame, filename: str, overwrite: bool) -> bool:
     """Create source of truth csv file.
 
     Args:
@@ -421,6 +421,7 @@ def output_st_csv(result_df: pd.DataFrame, filename: str, overwrite: bool) -> No
             f"File {filename} already exists! Created backup file {backup_filename}"
         )
     result_df.to_csv(filename, encoding="utf-8", index=False)
+    return True
 
 
 def get_combination_filtered_dfs(
@@ -456,7 +457,42 @@ def get_combination_filtered_dfs(
         ]
 
 
-CREATED_FILE_MSG = "Created '{filename}'"
+def create_output(output: OutputField, results_df: pd.DataFrame):
+    logger.debug(f"Creating output for {output}")
+    variables_in_filename = findall(VAR_REGEX, output.filename)
+    multiplied_results: Iterable[tuple[dict, pd.DataFrame]]
+    if not variables_in_filename:
+        multiplied_results = [({}, results_df)]
+    else:
+        multiplied_results = get_combination_filtered_dfs(
+            results_df, variables_in_filename
+        )
+
+    for comb, df in multiplied_results:
+        overwrite_filename = interpolate_variables(output.filename, comb)
+        success: bool
+        match output.format:
+            case OutputFormat.MD:
+                table_md_output: TableMdOutput = output  # type: ignore
+                success = output_md(df, table_md_output, overwrite_filename)
+            case (
+                OutputFormat.BAR
+                | OutputFormat.BOX
+                | OutputFormat.SCATTER
+                | OutputFormat.VIOLIN
+            ):
+                plot_output: BasePlotOutput = output  # type: ignore
+                success = output_plot(df, overwrite_filename, plot_output)
+            case OutputFormat.HTML:
+                table_html_output: TableHTMLOutput = output  # type: ignore
+                success = output_html(df, table_html_output, overwrite_filename)
+            case OutputFormat.CSV:
+                csv_output: CsvOutput = output  # type: ignore
+                success = output_st_csv(df, overwrite_filename, csv_output.overwrite)
+        if success:
+            console.print(f"Created '{overwrite_filename}'")
+        else:
+            logger.error(f"Failed to create {overwrite_filename}.")
 
 
 def _output_results(
@@ -492,33 +528,11 @@ def _output_results(
 
     # Output csv files first, in case that one of the more advanced outputs fails.
     non_csv_outputs = []
-    csv_output_filenames = []
     for output_name, output in results_config.items():
         if output.format == OutputFormat.CSV:
-            logger.debug("Outputting .csv file.")
-            variables_in_filename = findall(VAR_REGEX, output.filename)
-            if not variables_in_filename:
-                output_st_csv(results_df, output.filename, output.overwrite)
-                csv_output_filenames.append(output.filename)
-                console.print(CREATED_FILE_MSG.format(filename=output.filename))
-            else:
-                for comb, combination_df in get_combination_filtered_dfs(
-                    results_df, variables_in_filename
-                ):
-                    overwrite_filename = interpolate_variables(output.filename, comb)
-                    output_st_csv(combination_df, overwrite_filename, output.overwrite)
-                    csv_output_filenames.append(overwrite_filename)
-                    console.print(CREATED_FILE_MSG.format(filename=overwrite_filename))
+            create_output(output, results_df)
         else:
             non_csv_outputs.append(output_name)
-
-    def notify_about_csv(filenames: list[str]):
-        logger.critical("Benchmarker crashed while creating output.")
-        logger.warning(
-            f"Benchmark results were saved in: {' '.join(filenames).strip()}"
-        )
-
-    register(notify_about_csv, csv_output_filenames)
 
     # Filter out failed output.
     if not include_failed:
@@ -534,7 +548,7 @@ def _output_results(
             )
             if len(non_csv_outputs) > 0:
                 console.print(
-                    f"To generate output with failed benchmarks included run:\n\t{argv[0]} {argv[1]} -r {' '.join(csv_output_filenames).strip()} --include-failed"
+                    "To generate output with failed benchmarks included run run benchmarker with '--include-failed' flag"
                 )
             if len(results_df.index) == 0:
                 logger.critical("All benchmarks failed! Bailing out.")
@@ -582,48 +596,17 @@ def _output_results(
             )
             if len(non_csv_outputs) > 0:
                 console.print(
-                    f"To generate output with outliers included run:\n\t{argv[0]} {argv[1]} -r {' '.join(csv_output_filenames).strip()} --include-outliers"
+                    "To generate output with outliers included run benchmarker with '--include-outliers' flag"
                 )
         results_df = results_df.drop(outlier_column_name, axis=1)
 
     # Output non-csv file formats.
     for output_name in non_csv_outputs:
         output = results_config[output_name]
-        logger.debug(f"Creating output for {output}")
-        variables_in_filename = findall(VAR_REGEX, output.filename)
-        multiplied_results: Iterable[tuple[dict, pd.DataFrame]]
-        if not variables_in_filename:
-            multiplied_results = [({}, results_df)]
-        else:
-            multiplied_results = get_combination_filtered_dfs(
-                results_df, variables_in_filename
-            )
-        for comb, df in multiplied_results:
-            overwrite_filename = interpolate_variables(output.filename, comb)
-            success: bool
-            match output.format:
-                case OutputFormat.MD:
-                    table_md_output: TableMdOutput = output  # type: ignore
-                    success = output_md(df, table_md_output, overwrite_filename)
-                case (
-                    OutputFormat.BAR
-                    | OutputFormat.BOX
-                    | OutputFormat.SCATTER
-                    | OutputFormat.VIOLIN
-                ):
-                    plot_output: BasePlotOutput = output  # type: ignore
-                    success = output_plot(df, overwrite_filename, plot_output)
-                case OutputFormat.HTML:
-                    table_html_output: TableHTMLOutput = output  # type: ignore
-                    success = output_html(df, table_html_output, overwrite_filename)
-            if success:
-                console.print(CREATED_FILE_MSG.format(filename=overwrite_filename))
-            else:
-                logger.error(f"Failed to create {overwrite_filename}.")
+        create_output(output, results_df)
 
     if os.getuid() == 0:
         os.umask(prev_umask)
-    unregister(notify_about_csv)
     console.print()
     console.print(("─" * 7) + "SUMMARY" + ("─" * 7))
     for metric in results_df[METRIC_COLUMN].unique():
