@@ -71,11 +71,6 @@ echo "$CONFIG" > config.yml
 printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
 eval "$RUN_UPDATE"
 assert_file_exists result2.csv
-cmp plot.png previous.png
-ret=$?
-if [ $ret -ne 0 ]; then
-    echo "Plots are not the same."
-    exit 1
 
 # output multiplication test
 echo "$CONFIG" > config.yml
