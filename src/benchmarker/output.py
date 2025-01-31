@@ -116,6 +116,25 @@ def output_results_from_file(
     _output_results(old_results, results_config, include_failed, include_outliers)
 
 
+def columns_exist(columns, df):
+    for column in columns:
+        if column not in df.columns:
+            logger.error(
+                f"'{column}' is not a column (columns: [{', '.join(df.columns)}]).",
+            )
+            return False
+    return True
+
+
+def metrics_exist(metrics, df):
+    metrics_in_table = df[METRIC_COLUMN].unique()
+    for m in metrics:
+        if m not in metrics_in_table:
+            logger.error(f"'{m}' is not a metric (metrics: [{', '.join(metrics)}]).")
+            return False
+    return True
+
+
 def get_stat_table(
     input_df: pd.DataFrame,
     stats: list[Literal["min", "median", "mean", "relative", "std", "max"]],
@@ -134,35 +153,20 @@ def get_stat_table(
 
     """
     results_df = input_df.copy()
-
-    def valid(columns):
-        for column in columns:
-            if column not in results_df.columns:
-                logger.error(
-                    f"'{column}' is not a column (columns: [{', '.join(results_df.columns)}]).",
-                )
-                return False
-        return True
-
     if show_columns is None:
         show_columns = [
             col for col in results_df.columns if col not in CONSTANT_COLUMNS
         ]
     else:
         show_columns = show_columns.copy()
-        if not valid(show_columns):
+        if not columns_exist(show_columns, results_df):
             return None
     if pivot:
-        if not valid(findall(VAR_REGEX, pivot)):
+        if not columns_exist(findall(VAR_REGEX, pivot), results_df):
             return None
     if metrics:
-        metrics_in_table = results_df[METRIC_COLUMN].unique()
-        for m in metrics:
-            if m not in metrics_in_table:
-                logger.error(
-                    f"'{m}' is not a metric (metrics: [{', '.join(metrics)}])."
-                )
-                return None
+        if not metrics_exist(metrics, results_df):
+            return None
 
     if metrics:
         results_df = results_df[results_df[METRIC_COLUMN].isin(metrics)]
@@ -308,22 +312,16 @@ def output_plot(
         plot_config: Configuration regarding the plot.
     """
 
-    def column_exists(option, df) -> bool:
-        if option:
-            if option not in df.columns:
-                logger.error(
-                    f"'{option}' is not a column (columns: [{', '.join(df.columns)}])."
-                )
-                return False
-        return True
-
     def validate_columns(config: BasePlotOutput, df):
         plot_config = deepcopy(config)
-        if not column_exists(plot_config.x_axis, df):
-            return None
-        if not column_exists(plot_config.color, df):
-            return None
-        if not column_exists(plot_config.facet, df):
+        columns = []
+        if plot_config.x_axis:
+            columns.append(plot_config.x_axis)
+        if plot_config.color:
+            columns.append(plot_config.color)
+        if plot_config.facet:
+            columns.append(plot_config.facet)
+        if not columns_exist(columns, df):
             return None
         if plot_config.y_axis is None:
             if df[METRIC_COLUMN].nunique() > 1:
@@ -331,10 +329,7 @@ def output_plot(
                 return None
             else:
                 plot_config.y_axis = df[METRIC_COLUMN].iloc[0]
-        elif plot_config.y_axis not in df[METRIC_COLUMN].unique():
-            logger.error(
-                f"'{plot_config.y_axis}' is not a metric (metrics: [{', '.join(df[METRIC_COLUMN].unique())}])."
-            )
+        elif not metrics_exist([plot_config.y_axis], df):
             return None
         return plot_config
 
