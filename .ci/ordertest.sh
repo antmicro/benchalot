@@ -241,7 +241,7 @@ if compare_order "$expected_order_save_output_A" outputA; then
       n_passed=$((n_passed + 1))
     fi
   else
-    rm OutputC
+    rm outputC
   fi
   else
     rm outputB
