@@ -96,6 +96,13 @@ def process_custom_metrics(
     return custom_metrics
 
 
+def convert_to_list(commands) -> list[str]:
+    if isinstance(commands, str):
+        return [c for c in commands.split("\n") if len(c) > 0]
+    else:
+        return commands
+
+
 def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
     """Prepare benchmark commands.
 
@@ -104,6 +111,14 @@ def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
     Returns:
         list[PreparedBenchmark]: List of unique benchmarks containing their variable combination, modified commands and metrics.
     """
+    config.setup = convert_to_list(config.setup)
+    config.prepare = convert_to_list(config.prepare)
+    for stage in config.benchmark:
+        config.benchmark[stage] = convert_to_list(config.benchmark[stage])
+    config.conclude = convert_to_list(config.conclude)
+    config.cleanup = convert_to_list(config.cleanup)
+    print(config)
+    exit()
     if config.system.isolate_cpus:
         for name in config.benchmark:
             commands = config.benchmark[name]

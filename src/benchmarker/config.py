@@ -216,11 +216,11 @@ class ConfigFile(BaseModel):
     results: ResultsSection | None = None
     samples: int = 1
     save_output: str | None = Field(default=None, alias="save-output")
-    setup: list[str] = []
-    prepare: list[str] = []
-    benchmark: dict[str, list]
-    conclude: list[str] = []
-    cleanup: list[str] = []
+    setup: list[str] | str = []
+    prepare: list[str] | str = []
+    benchmark: dict[str, list | str]
+    conclude: list[str] | str = []
+    cleanup: list[str] | str = []
     cwd: str | None = None
     metrics: set[BuiltInMetrics] = set()
     custom_metrics: list[dict[str, str]] = Field(default=[], alias="custom-metrics")
@@ -230,7 +230,7 @@ class ConfigFile(BaseModel):
     @model_validator(mode="before")
     def name_stages(self):
         """Transform list of commands to dictionary of lists of commands."""
-        if type(self["benchmark"]) is list:
+        if isinstance(self["benchmark"], list) or isinstance(self["benchmark"], str):
             self["benchmark"] = {DEFAULT_STAGE_NAME: self["benchmark"]}
             return self
         return self
