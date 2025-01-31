@@ -121,18 +121,21 @@ $PWD/dir1/prepare
 $PWD/dir1/benchmark
 $PWD/dir1/conclude
 $PWD/dir1/custom-metrics
+0
 $PWD/dir1/cleanup
 $PWD/dir2/setup
 $PWD/dir2/prepare
 $PWD/dir2/benchmark
 $PWD/dir2/conclude
 $PWD/dir2/custom-metrics
+0
 $PWD/dir2/cleanup
 $PWD/dir3/setup
 $PWD/dir3/prepare
 $PWD/dir3/benchmark
 $PWD/dir3/conclude
 $PWD/dir3/custom-metrics
+0
 $PWD/dir3/cleanup
 EOF
 )
@@ -202,6 +205,7 @@ prepare A
 benchmark A
 conclude A
 custom-metrics A
+0
 cleanup A
 EOF
 )
@@ -212,6 +216,7 @@ prepare B
 benchmark B
 conclude B
 custom-metrics B
+0
 cleanup B
 EOF
 )
@@ -222,6 +227,7 @@ prepare C
 benchmark C
 conclude C
 custom-metrics C
+0
 cleanup C
 EOF
 )
