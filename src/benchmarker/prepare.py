@@ -95,9 +95,10 @@ def process_custom_metrics(
         custom_metrics.append({metric_name: metric_command})
     return custom_metrics
 
+
 def convert_to_list(commands) -> list[str]:
     if isinstance(commands, str):
-        return [c for c in commands.split("\n") if len(c) > 0] 
+        return [c for c in commands.split("\n") if len(c) > 0]
     else:
         return commands
 
@@ -110,17 +111,18 @@ def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
     Returns:
         list[PreparedBenchmark]: List of unique benchmarks containing their variable combination, modified commands and metrics.
     """
-    config.setup = convert_to_list(config.setup)
-    config.prepare = convert_to_list(config.prepare)
+    base_setup = convert_to_list(config.setup)
+    base_prepare = convert_to_list(config.prepare)
+    base_benchmark = {}
     for stage in config.benchmark:
-        config.benchmark[stage] = convert_to_list(config.benchmark[stage])
-    config.conclude = convert_to_list(config.conclude)
-    config.cleanup = convert_to_list(config.cleanup)
+        base_benchmark[stage] = convert_to_list(config.benchmark[stage])
+    base_conclude = convert_to_list(config.conclude)
+    base_cleanup = convert_to_list(config.cleanup)
     if config.system.isolate_cpus:
-        for name in config.benchmark:
-            commands = config.benchmark[name]
+        for name in base_benchmark:
+            commands = base_benchmark[name]
             for i, c in enumerate(commands):
-                config.benchmark[name][i] = "cset shield --exec -- " + c
+                base_benchmark[name][i] = "cset shield --exec -- " + c
     benchmarks: list[PreparedBenchmark] = []
     logger.info("Preparing benchmarks...")
     logger.debug("Creating variable combinations...")
@@ -136,16 +138,16 @@ def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
         tmp.update(var_combination)
         var_combination = tmp
 
-        setup = interpolate_commands(config.setup, var_combination)
-        prepare = interpolate_commands(config.prepare, var_combination)
+        setup = interpolate_commands(base_setup, var_combination)
+        prepare = interpolate_commands(base_prepare, var_combination)
         benchmark = {}
-        for name in config.benchmark:
+        for name in base_benchmark:
             benchmark[name] = interpolate_commands(
-                config.benchmark[name], var_combination
+                base_benchmark[name], var_combination
             )
-        conclude = interpolate_commands(config.conclude, var_combination)
+        conclude = interpolate_commands(base_conclude, var_combination)
         custom_metrics = process_custom_metrics(config.custom_metrics, var_combination)
-        cleanup = interpolate_commands(config.cleanup, var_combination)
+        cleanup = interpolate_commands(base_cleanup, var_combination)
 
         env = config.env.copy()
         for var in env:
