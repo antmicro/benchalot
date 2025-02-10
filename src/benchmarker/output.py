@@ -275,7 +275,7 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
         metrics=output.metrics,
     )
     if table is not None:
-        table.to_markdown(output_filename, index=False)
+        table.to_markdown(output_filename, index=False, intfmt=",", floatfmt=".0f")
         return True
     else:
         return False
@@ -293,7 +293,9 @@ def output_html(
         metrics=output.metrics,
     )
     if table is not None:
-        table.to_html(output_filename, index=False)
+        table.to_markdown(
+            output_filename, index=False, tablefmt="html", intfmt=",", floatfmt=".0f"
+        )
         return True
     else:
         return False
@@ -462,7 +464,6 @@ def create_output(output: OutputField, results_df: pd.DataFrame):
         multiplied_results = get_combination_filtered_dfs(
             results_df, variables_in_filename
         )
-
     for comb, df in multiplied_results:
         overwrite_filename = interpolate_variables(output.filename, comb)
         success: bool
@@ -623,4 +624,6 @@ def _output_results(
             "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
         )
         if print_table is not None:
-            console.print(print_table.to_markdown(index=False))
+            console.print(
+                print_table.to_markdown(index=False, intfmt=",", floatfmt=".0f")
+            )
