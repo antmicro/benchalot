@@ -275,7 +275,7 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
         metrics=output.metrics,
     )
     if table is not None:
-        table.to_markdown(output_filename, index=False, intfmt=",", floatfmt=".0f")
+        table.to_markdown(output_filename, index=False, intfmt=",", floatfmt=",.3f")
         return True
     else:
         return False
@@ -294,7 +294,7 @@ def output_html(
     )
     if table is not None:
         table.to_markdown(
-            output_filename, index=False, tablefmt="html", intfmt=",", floatfmt=".0f"
+            output_filename, index=False, tablefmt="html", intfmt=",", floatfmt=",.3f"
         )
         return True
     else:
@@ -625,5 +625,5 @@ def _output_results(
         )
         if print_table is not None:
             console.print(
-                print_table.to_markdown(index=False, intfmt=",", floatfmt=".0f")
+                print_table.to_markdown(index=False, intfmt=",", floatfmt=",.3f")
             )
