@@ -6,6 +6,7 @@ from benchmarker.interpolate import (
 from dataclasses import dataclass
 from benchmarker.config import ConfigFile
 from benchmarker.output_constants import TIME_STAMP_COLUMN, TIME_STAMP
+from os.path import expandvars, expanduser
 
 logger = getLogger(f"benchmarker.{__name__}")
 
@@ -152,6 +153,8 @@ def prepare_benchmarks(config: ConfigFile) -> list[PreparedBenchmark]:
         env = config.env.copy()
         for var in env:
             env[var] = interpolate_variables(env[var], var_combination)
+            env[var] = expandvars(env[var])
+            env[var] = expanduser(env[var])
         cwd: str | None
         if config.cwd:
             cwd = interpolate_variables(config.cwd, var_combination)
