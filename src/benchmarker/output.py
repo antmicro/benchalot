@@ -275,7 +275,7 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
         metrics=output.metrics,
     )
     if table is not None:
-        table.to_markdown(output_filename, index=False, intfmt=",", floatfmt=",.3f")
+        table.to_markdown(output_filename, index=False, intfmt=",", floatfmt=",")
         return True
     else:
         return False
@@ -294,7 +294,7 @@ def output_html(
     )
     if table is not None:
         table.to_markdown(
-            output_filename, index=False, tablefmt="html", intfmt=",", floatfmt=",.3f"
+            output_filename, index=False, tablefmt="html", intfmt=",", floatfmt=","
         )
         return True
     else:
@@ -624,6 +624,7 @@ def _output_results(
             "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
         )
         if print_table is not None:
+            print(print_table.dtypes)
             console.print(
-                print_table.to_markdown(index=False, intfmt=",", floatfmt=",.3f")
+                print_table.to_markdown(index=False, intfmt=",", floatfmt=",")
             )
