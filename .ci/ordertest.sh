@@ -249,6 +249,64 @@ if compare_order "$expected_order_save_output_A" outputA; then
 fi
 rm bench_log
 
+
+test_order_multiline_config=$(cat << 'EOF'
+---
+matrix:
+  var: ["A", "B", "C"]
+setup: |
+  echo "setup line 1 {{var}}" >> output
+  echo "setup line 2 {{var}}" >> output
+prepare: |
+  echo "prepare line 1 {{var}}" >> output
+  echo "prepare line 2 {{var}}" >> output
+benchmark: |
+  echo "benchmark line 1 {{var}}" >> output
+  echo "benchmark line 2 {{var}}" >> output
+conclude: |
+  echo "conclude line 1 {{var}}" >> output
+  echo "conclude line 2 {{var}}" >> output
+cleanup: |
+  echo "cleanup line 1 {{var}}" >> output
+  echo "cleanup line 2 {{var}}" >> output
+EOF
+)
+
+expected_order_multiline=$(cat << 'EOF'
+setup line 1 A
+setup line 2 A
+prepare line 1 A
+prepare line 2 A
+benchmark line 1 A
+benchmark line 2 A
+conclude line 1 A
+conclude line 2 A
+cleanup line 1 A
+cleanup line 2 A
+setup line 1 B
+setup line 2 B
+prepare line 1 B
+prepare line 2 B
+benchmark line 1 B
+benchmark line 2 B
+conclude line 1 B
+conclude line 2 B
+cleanup line 1 B
+cleanup line 2 B
+setup line 1 C
+setup line 2 C
+prepare line 1 C
+prepare line 2 C
+benchmark line 1 C
+benchmark line 2 C
+conclude line 1 C
+conclude line 2 C
+cleanup line 1 C
+cleanup line 2 C
+EOF
+)
+test "TEST ORDER MULTILINE" "$test_order_multiline_config" "$expected_order_multiline"
+
 echo "PASSED $n_passed/$((n_failed+n_passed)) TESTS"
 if [ "$n_failed" -gt 0 ]; then
   exit 1
