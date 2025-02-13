@@ -256,6 +256,8 @@ def get_stat_table(
                         statistic_column = grouped[col].std()
                 case "":
                     statistic_column = grouped[col].take([0])
+                    if not show_columns:
+                        statistic_column = statistic_column.iloc[0]
             if show_columns:
                 statistic_column = statistic_column.reset_index()[col]
             else:
