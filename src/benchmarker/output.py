@@ -255,7 +255,7 @@ def get_stat_table(
                     else:
                         statistic_column = grouped[col].std()
                 case "":
-                    statistic_column = grouped[col].mean()
+                    statistic_column = grouped[col].take([0])
             if show_columns:
                 statistic_column = statistic_column.reset_index()[col]
             else:
@@ -275,6 +275,7 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
         metrics=output.metrics,
     )
     if table is not None:
+        # NOTE: to_markdown messes with column dtypes
         table.to_markdown(output_filename, index=False, intfmt=",", floatfmt=",")
         return True
     else:
@@ -293,6 +294,7 @@ def output_html(
         metrics=output.metrics,
     )
     if table is not None:
+        # NOTE: to_markdown messes with column dtypes
         table.to_markdown(
             output_filename, index=False, tablefmt="html", intfmt=",", floatfmt=","
         )
@@ -624,7 +626,6 @@ def _output_results(
             "{{" + STAGE_COLUMN + "}} {{" + METRIC_COLUMN + "}}",
         )
         if print_table is not None:
-            print(print_table.dtypes)
             console.print(
                 print_table.to_markdown(index=False, intfmt=",", floatfmt=",")
             )

@@ -196,6 +196,7 @@ def perform_benchmarks(
                         time_measurements: dict[str, float | None] = {}
                         utime_measurements: dict[str, float | None] = {}
                         stime_measurements: dict[str, float | None] = {}
+                        # NOTE: float here is needed for mypy
                         memory_measurements: dict[str, float | int | None] = {}
                         stdout_measurements: dict[str, float | None] = {}
                         stderr_measurements: dict[str, float | None] = {}
