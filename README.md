@@ -18,6 +18,7 @@ If you plan on using [isolate-cpus](System) option, install `cpuset`.
 To use Benchmarker first create [YAML configuration file](Configuration). 
 Then pass configuration file's name as an argument.
 For example, start the benchmark by typing this command:
+
 <!--name="run"-->
 ```bash
 benchmarker config.yml
@@ -28,28 +29,31 @@ benchmarker config.yml
 
 Benchmarker is configured using a YAML file.
 For example:
+
+<!--name="example-basic"-->
 ```yaml
 matrix:
     program: [gzip, bzip2, xz]
-benchmarker:
-    - {{program}} plot.png -c > output
+benchmark:
+    - "{{program}} plot.png -c > output"
 samples: 5
 ```
 
-Benchmarker will measure execution time of these three commands:
+Benchmarker will use this configuration to run these three commands:
 
 ```
 gzip plot.png -c > output
 bzip2 plot.png -c > output
 xz plot.png -c > output
 ```
-Each command will be executed three times.
-The summary will be then printed to the terminal and results saved in `result.csv` file.
+Each command will be executed five times.
+The summary containing min, median, and max execution will be then printed to the terminal.
+Detailed results will be saved to `result.csv`.
 
 Benchmarker is much more capable. 
 For example look at the following configuration file:
 
-<!-- name="config.yml" -->
+<!-- name="example-intermediate" -->
 ```yaml
 ---
 system:
@@ -107,25 +111,37 @@ And `table.md` like this:
 
 ### Matrix
 
-Based on that configuration file, Benchmarker will run a benchmark for each value specified in `matrix.*` fields.
+Benchmarker will run a benchmark for each combination of variable values specified in `matrix.*` fields.
+
+<!-- name="section-matrix" -->
+```yaml
+matrix:
+    thread: [2, 4, 8]
+    tag: [sleeper-v1.0, sleeper-v1.1] 
+    input: [data1, data2, data3]
+```
+
 Commands will have very substring in format `{{var_name}}` substituted to corresponding value.
 For each combination of variable values, a run will be performed, e.g.:  
 The above configuration will result in runs:  
-`thread = 2; input = "data1"; tag = "slow"`  
-`thread = 4; input = "data1"; tag = "slow"`  
-`thread = 8; input = "data1"; tag = "slow"`  
+
+```
+thread = 2; input = "data1"; tag = "sleeper-v1.0"
+thread = 4; input = "data1"; tag = "sleeper-v1.0"
+thread = 8; input = "data1"; tag = "sleeper-v1.0"
 [...]  
-`thread = 8; input = "data3"; tag = "fast"`
+thread = 8; input = "data3"; tag = "sleeper-v1.1"
+```
+
 in total creating 18 combinations of variable values.
-If there is no `matrix` section, no variable substitution is performed.
 
 Matrix variables can [contain fields](Advanced Configuration).
 
 #### Exclude
 
-To exclude given variable values combination, use `exclude` section:
+To exclude given variable combination, use `exclude` section:
 
-<!-- name="exclusions" -->
+<!-- name="section-exclude" -->
 ```yaml
 exclude:
   - tag: slow
@@ -138,7 +154,7 @@ exclude:
 
 To run benchmarks with given variable value assignment without creating combinations, use `include` section:
 
-<!-- name="inclusions" -->
+<!-- name="section-include" -->
 ```yaml
 include:
   - tag: sleeper-v1.0
@@ -148,7 +164,16 @@ include:
 
 ### Command Execution
 
-<!-- name="run-section" -->
+Benchmarker has predefined execution order:
+
+```
+setup -> (prepare -> benchmark -> conclude -> custom-metrics) * samples -> cleanup
+```
+
+By default, only commands inside `benchmark` section are measured.
+However, you can modify this behavior by using `custom-metrics`.
+
+<!-- name="section-run" -->
 ```yaml
 setup:                                                  # commands to be executed once, before 'prepare', for each combination of variable values
     - git clone . ../{{tag}}
@@ -184,11 +209,6 @@ env:                            # specify additional environment variables to be
     VAR_NAME: "{{input}}"       # use matrix variables to change the enviromnent for each benchmark
 ```
 
-The order of execution is:
-```
-setup -> (prepare -> benchmark -> conclude -> custom-metrics) * samples -> cleanup
-```
-
 ### System
 
 The `system` section allows the user to apply variance reduction measures.
@@ -197,15 +217,19 @@ Options in this section aim to minimize some of the external factors.
 Using these options require Benchmarker to be run with root privileges.
 The section is optional; if no options are specified, Benchmarker can be run without root.
 
-* `isolate-cpus`: contains a list of CPUs which will be shielded from running processes other than benchmarks.
-* `disable-aslr`: if set to `True`, will disable address space layout randomization. 
-* `disable-smt`: if set to `True`, will disable simultaneous multithreading (called hyper-threading on Intel CPUs).
-* `disable-core-boost`: if set to `True`, will disable CPU boosting.
-* `governor-performance`: if set to `True`, will set frequency governors of all (or isolated) CPUs to `performance`.
+<!-- name="section-system" -->
+```yaml
+system:
+    isolate-cpus: [0, 1]        # contains a list of CPUs which will be shielded from running processes other than benchmarks
+    disable-aslr: True          # disable address space layout randomization
+    disable-smt: True           # disable simultaneous multithreading (called hyper-threading on Intel CPUs
+    disable-core-boost: True    # disable CPU boosting
+    governor-performance: True  # set CPU frequency governor to `performance`
+```
 
 ### Results
 
-<!-- name="results" -->
+<!-- name="section-results" -->
 ```yaml
 ---
 # Here are examples of available output formats.
@@ -247,11 +271,13 @@ results:
     box-plot:
         format: box 
         filename: example_box.png
+        y-axis: time
 
     # Results in an image of a violin plot.
     violin-plot:
         format: violin 
         filename: example_violin.png
+        y-axis: time
 
     # Results in an image of a bar chart.
     bar-chart:
@@ -259,6 +285,7 @@ results:
         filename: example_bar.png
         # Option bar chart specific
         stat: median # Function which will determine bar height. Available are: `min`, `mean`, `median` and `max`.
+        y-axis: time
 ```
 
 Additionally, instead of using variable names you can use one of the following:
@@ -272,12 +299,13 @@ To create multiple outputs from one rule, you can use variables in filenames.
 
 For example, to create a separate bar chart for each value of variable `tag`, your configuration should look like this:
 
-<!-- name="mul" -->
+<!-- name=special-option-mul" -->
 ```
-plot2:
+mul-plot:
   filename: "plot_{{tag}}.png"
   format: "bar"
   x-axis: input
+  y-axis: time
   facet: tag
   color: thread
   width: 10
@@ -289,11 +317,12 @@ If we add this section to the configuration above, Benchmarker will generate two
 
 ### Advanced Configuration
 
- <!--name="size-config"-->
+ <!--name="example-advanced"-->
+This configuration file is used to measure size difference between a file compressed by `gzip`, `bzip2` and `xz`
+It also measures how much time it takes to compress and decompress a file.
+
 ```yaml
 ---
-# This configuration file is used to measure size difference between a file compressed by `gzip`, `bzip2` and `xz`
-# It also measures how much time it takes to compress and decompress the file.
 matrix:
   opt:                          # `opt` is compound variable, its sub-variables can be accessed using `opt.var_name`
     - compress: "bzip2"
@@ -344,39 +373,39 @@ Benchmarker will store `19.3` as the measurement for `stage1` and `30.12` as the
 ## CLI
 
 To see available command line arguments type:
-<!--name="help-information"-->
+<!--name="cli-help"-->
 ```
 benchmarker --help
 ```
 
 To print command execution plan without running benchmarks, use `--plan`:
-<!--name="plan"-->
+<!--name="cli-plan"-->
 ```bash
 benchmarker config.yml --plan
 ```
 Please note that the execution plan will not take number of samples into account.
 
 To generate the output without re-running benchmarks, use `--results-from-csv`:
-<!--name="results-from-csv"-->
+<!--name="cli-results-from-csv"-->
 ```bash
 benchmarker config.yml --results-from-csv result.csv
 ```
 
 To include previous results with the next benchmark, use `--include`:
-<!--name="include"-->
+<!--name="cli-include"-->
 ```bash
 benchmarker config.yml --include result.csv
 ```
 
 To split configuration file into many smaller ones, use `--split`:
-<!--name="split"-->
+<!--name="cli-split"-->
 ```bash
 benchmarker config.yml --split tag
 ```
 
 In case one of the benchmarks fails (its exit code is not equal 0) Benchmarker will filter out the failed results when creating outputs (the `csv` file will still include the failed benchmarks).
 To generate outputs with failed benchmarks, use `--include-failed`:
-<!--name="failed"-->
+<!--name="cli-include-failed"-->
 ```bash
 benchmarker config.yml -r result.csv --include-failed
 ```
@@ -384,7 +413,7 @@ benchmarker config.yml -r result.csv --include-failed
 
 The Benchmarker will try to automatically detect and remove outliers (the `csv` file will still include them) using [modified Z-Score](http://d-scholarship.pitt.edu/7948/1/Seo.pdf).
 To generate outputs with outliers, use `--include-outliers`:
-<!--name="outliers"-->
+<!--name="cli-include-outliers"-->
 ```bash
 benchmarker config.yml -r result.csv --include-outliers
 ```

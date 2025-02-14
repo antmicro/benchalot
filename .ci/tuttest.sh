@@ -8,47 +8,69 @@ assert_file_exists() {
 }
 set -e
 
+RUN=$(tuttest README.md run)
+
+EXAMPLE_BASIC=$(tuttest README.md example-basic)
+EXAMPLE_INTERMEDIATE="$(tuttest README.md example-intermediate)"
+EXAMPLE_ADVANCED=$(tuttest README.md example-advanced)
+
+SECTION_MATRIX=$(tuttest README.md section-matrix)
+SECTION_EXCLUDE=$(tuttest README.md section-exclude)
+SECTION_INCLUDE=$(tuttest  README.md section-include)
+SECTION_RUN=$(tuttest README.md section-run)
+SECTION_SYSTEM=$(tuttest README.md section-system)
+SECTION_RESULTS=$(tuttest README.md section-results)
+
+SPECIAL_OPTION_MUL=$(tuttest README.md special-option-mul)
+
+CLI_HELP=$(tuttest README.md cli-help)
+CLI_PLAN=$(tuttest README.md cli-plan)
+CLI_RESULTS_FROM_CSV=$(tuttest README.md cli-results-from-csv)
+CLI_INCLUDE=$(tuttest README.md cli-include)
+CLI_SPLIT=$(tuttest README.md cli-split)
+CLI_INCLUDE_FAILED=$(tuttest README.md cli-include-failed)
+CLI_INCLUDE_OUTLIERS=$(tuttest README.md cli-include-outliers)
+
 TMP_DIR=$(mktemp -d)
 git clone . $TMP_DIR
 cd $TMP_DIR
-CONFIG="$(tuttest README.md config.yml)"
-DEPENDENCIES=$(tuttest README.md dependencies)
-RUN=$(tuttest README.md run)
-HELP_INFORMATION=$(tuttest README.md help-information)
-RUN_UPDATE=$(tuttest README.md results-from-csv)
-RUN_INCLUDE=$(tuttest README.md include)
-RUN_SPLIT=$(tuttest README.md split)
-RUN_FAILED=$(tuttest README.md failed)
-RUN_OUTLIERS=$(tuttest README.md outliers)
-SIZE_CONFIG=$(tuttest README.md size-config)
-EXCLUSION=$(tuttest README.md exclusions)
-INCLUSION=$(tuttest README.md inclusions)
-MUL=$(tuttest README.md mul)
-RESULTS=$(tuttest README.md results)
-RUN_SECTION=$(tuttest README.md run-section)
-RUN_PLAN=$(tuttest README.md plan)
 
-if [ "$CI" == 'true' ]; then
-    eval "$DEPENDENCIES"
-fi
 python3 -m  venv .venv
 source .venv/bin/activate
 pip install .
 
-# CLI help test
-eval "$HELP_INFORMATION"
+echo "$EXAMPLE_BASIC" > config.yml
+eval "$RUN"
+assert_file_exists result.csv
+mv result.csv basic_result.csv
+rm output
 
-# Basic config test
-echo "$CONFIG" > config.yml
+
+echo "$EXAMPLE_INTERMEDIATE" > config.yml
 eval "$RUN"
 assert_file_exists plot.png
 assert_file_exists table.md
 assert_file_exists result.csv
+rm plot.png
+rm table.md
+rm result.csv
 
+echo "$EXAMPLE_ADVANCED" > config.yml
+eval "$RUN"
+assert_file_exists file_size.csv
+assert_file_exists file_size.md
+rm file_size.csv
+rm file_size.md
 
-# results section test
-echo "$RESULTS" > output_config.yml
-benchmarker output_config.yml -r result.csv
+rm config.yml
+echo "$SECTION_MATRIX" >> config.yml
+echo "$SECTION_EXCLUDE" >> config.yml
+echo "$SECTION_INCLUDE" >> config.yml
+echo "$SECTION_RUN" >> config.yml
+echo "$SECTION_SYSTEM" >> config.yml
+echo "$SECTION_RESULTS" >> config.yml
+printf "\n%s" "$MUL" | sed 's/^/  /' >> config.yml
+eval "$RUN"
 assert_file_exists example.csv
 assert_file_exists example.md
 assert_file_exists example.html
@@ -56,51 +78,45 @@ assert_file_exists example_scatter.png
 assert_file_exists example_box.png
 assert_file_exists example_violin.png
 assert_file_exists example_bar.png
-
-
-# "run" section test
-rm -f run.log
-printf "results:\n    csv:\n        filename: \"run_section.csv\" \n        format: \"csv\"\n" > run_config.yml
-printf "matrix:\n    thread: [2, 4, 8]\n    tag: [sleeper-v1.0, sleeper-v1.1]\n    input: [data1, data2, data3]\n" >> run_config.yml
-echo "$RUN_SECTION" >> run_config.yml
-benchmarker run_config.yml
-assert_file_exists run_section.csv
-
-# creating output without running benchmarks test
-echo "$CONFIG" > config.yml
-printf "  cs2:\n    filename: \"result2.csv\" \n    format: \"csv\"" >> config.yml
-eval "$RUN_UPDATE"
-assert_file_exists result2.csv
-
-# output multiplication test
-echo "$CONFIG" > config.yml
-printf "\n%s" "$MUL" | sed 's/^/  /' >> config.yml
-eval "$RUN_UPDATE"
 assert_file_exists plot_slow.png
 assert_file_exists plot_fast.png
+rm example.csv
+rm example.md
+rm example.html
+rm example_scatter.png
+rm example_box.png
+rm example_violin.png
+rm example_bar.png
+rm plot_slow.png
+rm plot_fast.png
 
-# combination exclusion test
-echo "$CONFIG" > config.yml
-printf "\n%s" "$EXCLUSION" >> config.yml
-eval "$RUN"
+# Create test environment
+cp basic_result.csv result.csv
+echo "$EXAMPLE_BASIC" > config.yml
+printf "  cs2:\n    filename: \"test_result.csv\" \n    format: \"csv\"" >> config.yml
 
-# combination inclusion test
-echo "$CONFIG" > config.yml
-printf "\n%s" "$INCLUSION" >> config.yml
-eval "$RUN"
+eval "$CLI_HELP"
+eval "$CLI_PLAN"
 
-echo "$SIZE_CONFIG" > config.yml
-benchmarker config.yml
-assert_file_exists file_size.csv
-rm result.csv
-mv file_size.csv result.csv
-eval $RUN_INCLUDE
-eval $RUN_FAILED
-eval $RUN_OUTLIERS
-eval "$RUN_PLAN"
+eval "$CLI_RESULTS_FROM_CSV"
+assert_file_exists result2.csv
+rm test_result.csv
 
-echo "$CONFIG" > config.yml
-eval $RUN_SPLIT
+eval $CLI_INCLUDE
+assert_file_exists result2.csv
+rm test_result.csv
+
+eval $CLI_INCLUDE_FAILED
+assert_file_exists result2.csv
+rm test_result.csv
+
+eval $CLI_INCLUDE_OUTLIERS
+assert_file_exists result2.csv
+rm test_result.csv
+
+
+echo "$EXAMPLE_INTERMEDIATE" > config.yml
+eval "$CLI_SPLIT"
 assert_file_exists "out/config.yml.part0.yml"
 assert_file_exists "out/config.yml.part1.yml"
 
