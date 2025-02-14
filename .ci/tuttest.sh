@@ -51,16 +51,17 @@ eval "$RUN"
 assert_file_exists plot.png
 assert_file_exists table.md
 assert_file_exists result.csv
-rm plot.png
 rm table.md
 rm result.csv
 
 echo "$EXAMPLE_ADVANCED" > config.yml
+cat config.yml
 eval "$RUN"
 assert_file_exists file_size.csv
-assert_file_exists file_size.md
+assert_file_exists file_table.md
 rm file_size.csv
-rm file_size.md
+rm file_table.md
+rm plot.png # remove plot from EXAMPLE_INTERMEDIATE, needed here for compression
 
 rm config.yml
 echo "$SECTION_MATRIX" >> config.yml
@@ -69,7 +70,7 @@ echo "$SECTION_INCLUDE" >> config.yml
 echo "$SECTION_RUN" >> config.yml
 echo "$SECTION_SYSTEM" >> config.yml
 echo "$SECTION_RESULTS" >> config.yml
-printf "\n%s" "$MUL" | sed 's/^/  /' >> config.yml
+printf "\n%s" "$SPECIAL_OPTION_MUL" | sed 's/^/    /' >> config.yml
 eval "$RUN"
 assert_file_exists example.csv
 assert_file_exists example.md
@@ -78,8 +79,9 @@ assert_file_exists example_scatter.png
 assert_file_exists example_box.png
 assert_file_exists example_violin.png
 assert_file_exists example_bar.png
-assert_file_exists plot_slow.png
-assert_file_exists plot_fast.png
+assert_file_exists plot_data1.png
+assert_file_exists plot_data2.png
+assert_file_exists plot_data3.png
 rm example.csv
 rm example.md
 rm example.html
@@ -87,31 +89,32 @@ rm example_scatter.png
 rm example_box.png
 rm example_violin.png
 rm example_bar.png
-rm plot_slow.png
-rm plot_fast.png
+rm plot_data1.png
+rm plot_data2.png
+rm plot_data3.png
 
 # Create test environment
 cp basic_result.csv result.csv
 echo "$EXAMPLE_BASIC" > config.yml
-printf "  cs2:\n    filename: \"test_result.csv\" \n    format: \"csv\"" >> config.yml
+printf "results:\n    cs2:\n        filename: \"test_result.csv\" \n        format: \"csv\"" >> config.yml
 
 eval "$CLI_HELP"
 eval "$CLI_PLAN"
 
 eval "$CLI_RESULTS_FROM_CSV"
-assert_file_exists result2.csv
+assert_file_exists test_result.csv
 rm test_result.csv
 
 eval $CLI_INCLUDE
-assert_file_exists result2.csv
+assert_file_exists test_result.csv
 rm test_result.csv
 
 eval $CLI_INCLUDE_FAILED
-assert_file_exists result2.csv
+assert_file_exists test_result.csv
 rm test_result.csv
 
 eval $CLI_INCLUDE_OUTLIERS
-assert_file_exists result2.csv
+assert_file_exists test_result.csv
 rm test_result.csv
 
 

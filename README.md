@@ -144,10 +144,8 @@ To exclude given variable combination, use `exclude` section:
 <!-- name="section-exclude" -->
 ```yaml
 exclude:
-  - tag: slow
+  - tag: sleeper-v1.0
     input: data1
-  - tag: fast
-    thread: 2
 ```
 
 #### Include
@@ -231,7 +229,6 @@ system:
 
 <!-- name="section-results" -->
 ```yaml
----
 # Here are examples of available output formats.
 results:
     # Results in a csv file in format that is compatible with the Benchmarker
@@ -302,7 +299,7 @@ For example, to create a separate bar chart for each value of variable `tag`, yo
 <!-- name=special-option-mul" -->
 ```
 mul-plot:
-  filename: "plot_{{tag}}.png"
+  filename: "plot_{{input}}.png"
   format: "bar"
   x-axis: input
   y-axis: time
@@ -317,10 +314,10 @@ If we add this section to the configuration above, Benchmarker will generate two
 
 ### Advanced Configuration
 
- <!--name="example-advanced"-->
 This configuration file is used to measure size difference between a file compressed by `gzip`, `bzip2` and `xz`
 It also measures how much time it takes to compress and decompress a file.
 
+ <!--name="example-advanced"-->
 ```yaml
 ---
 matrix:
