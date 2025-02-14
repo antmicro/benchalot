@@ -116,7 +116,6 @@ def output_results_from_file(
     _output_results(old_results, results_config, include_failed, include_outliers)
 
 
-<<<<<<< HEAD
 def columns_exist(columns, df):
     for column in columns:
         if column not in df.columns:

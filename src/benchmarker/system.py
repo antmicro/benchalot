@@ -97,7 +97,7 @@ def modify_system_state(system_options: SystemSection) -> None:
                 "performance",
             )
         system_state["governor-performance"] = "yes"
-        logger.debug(f"Set CPU governor for CPUs {cpu_str}.")
+        logger.debug(f"Set CPU governor for CPUs {cpus}.")
     if system_options.disable_smt:
         cpus = (
             system_options.isolate_cpus
