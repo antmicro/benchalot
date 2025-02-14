@@ -134,6 +134,17 @@ def metrics_exist(metrics, df):
             return False
     return True
 
+def filter_by_metrics(df: pd.DataFrame, metrics) -> pd.DataFrame:
+    """Filter dataframe, leaving rows with results with given metrics. Also reset categories for categorical columns"""
+    output_df = df[df[METRIC_COLUMN].isin(metrics)].copy()
+    for column in output_df.columns:
+        if column != RESULT_COLUMN:
+            series = output_df[column]
+            output_df[column] = pd.Categorical(
+                series, categories=series.unique().remove_unused_categories()  # type: ignore
+            )
+    return output_df
+
 
 def get_stat_table(
     input_df: pd.DataFrame,
@@ -169,7 +180,7 @@ def get_stat_table(
             return None
 
     if metrics:
-        results_df = results_df[results_df[METRIC_COLUMN].isin(metrics)]
+        results_df = filter_by_metrics(results_df, metrics)
     if pivot:
         pivot_columns = findall(VAR_REGEX, pivot)
     else:
@@ -343,7 +354,7 @@ def output_plot(
     if not valid_config:
         return False
     output_df = input_df.copy()
-    output_df = output_df.loc[output_df[METRIC_COLUMN] == valid_config.y_axis]
+    output_df = filter_by_metrics(output_df, [plot_config.y_axis])
 
     plot = ggplot(output_df, aes(y=RESULT_COLUMN))
     if valid_config.x_axis:
