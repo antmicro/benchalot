@@ -32,7 +32,7 @@ tuttest:
   image: "debian:bookworm"
   stage: tests
   before_script:
-    - apt update -y && apt install python3 python3-venv make sudo git gcc gzip bzip2 xz-utils -y
+    - apt update -y && apt install python3 python3-venv cpuset make sudo git gcc gzip bzip2 xz-utils -y
     - python3 -m venv .venv
     - source .venv/bin/activate
     - pip install git+https://github.com/antmicro/tuttest
