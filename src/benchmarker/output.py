@@ -134,8 +134,9 @@ def metrics_exist(metrics, df):
             return False
     return True
 
+
 def filter_by_metrics(df: pd.DataFrame, metrics) -> pd.DataFrame:
-    """Filter dataframe, leaving rows with results with given metrics. Also reset categories for categorical columns"""
+    """Filter dataframe, leaving rows with given metrics. Also reset categories for categorical columns"""
     output_df = df[df[METRIC_COLUMN].isin(metrics)].copy()
     for column in output_df.columns:
         if column != RESULT_COLUMN:
@@ -353,8 +354,7 @@ def output_plot(
     valid_config = validate_columns(plot_config, input_df)
     if not valid_config:
         return False
-    output_df = input_df.copy()
-    output_df = filter_by_metrics(output_df, [plot_config.y_axis])
+    output_df = filter_by_metrics(input_df, [valid_config.y_axis])
 
     plot = ggplot(output_df, aes(y=RESULT_COLUMN))
     if valid_config.x_axis:
