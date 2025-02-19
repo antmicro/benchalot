@@ -57,14 +57,13 @@ For example look at the following configuration file:
 ```yaml
 ---
 system:
-  isolate-cpus: [0,1]
   disable-aslr: True
   disable-core-boost: True
   disable-smt: True
   governor-performance: False
 matrix:
   thread: [2, 4, 8]
-  tag: ["slow", "fast"]
+  tag: ["sleeper-v2.0", "sleeper-v2.2"]
   input: ["data1", "data2", "data3"]
 samples: 3
 save-output: "run.log"
@@ -103,10 +102,10 @@ The `plot.png` will look like this:
 
 And `table.md` like this:
 ```markdown
-| tag   | mean time to process data1   | mean time to process data2   | mean time to process data3   |
-|:------|:-----------------------------|:-----------------------------|:-----------------------------|
-| slow  | 0.474 ± 0.235                | 0.222 ± 0.087                | 0.508 ± 0.247                |
-| fast  | 0.362 ± 0.166                | 0.212 ± 0.081                | 0.475 ± 0.229                |
+| tag          | mean time to process data1   | mean time to process data2   | mean time to process data3   |
+|:-------------|:-----------------------------|:-----------------------------|:-----------------------------|
+| sleeper-v2.0 | 0.005 ± 0.002                | 0.003 ± 0.001                | 0.004 ± 0.002                |
+| sleeper-v2.2 | 0.003 ± 0.001                | 0.002 ± 0.000                | 0.003 ± 0.001                |
 ```
 
 ### Matrix
@@ -117,7 +116,7 @@ Benchmarker will run a benchmark for each combination of variable values specifi
 ```yaml
 matrix:
     thread: [2, 4, 8]
-    tag: [sleeper-v1.0, sleeper-v1.1] 
+    tag: [sleeper-v2.0, sleeper-v2.2] 
     input: [data1, data2, data3]
 ```
 
@@ -126,11 +125,11 @@ For each combination of variable values, a run will be performed, e.g.:
 The above configuration will result in runs:  
 
 ```
-thread = 2; input = "data1"; tag = "sleeper-v1.0"
-thread = 4; input = "data1"; tag = "sleeper-v1.0"
-thread = 8; input = "data1"; tag = "sleeper-v1.0"
+thread = 2; input = "data1"; tag = "sleeper-v2.0"
+thread = 4; input = "data1"; tag = "sleeper-v2.0"
+thread = 8; input = "data1"; tag = "sleeper-v2.0"
 [...]  
-thread = 8; input = "data3"; tag = "sleeper-v1.1"
+thread = 8; input = "data3"; tag = "sleeper-v2.2"
 ```
 
 in total creating 18 combinations of variable values.
@@ -144,7 +143,7 @@ To exclude given variable combination, use `exclude` section:
 <!-- name="section-exclude" -->
 ```yaml
 exclude:
-  - tag: sleeper-v1.0
+  - tag: sleeper-v2.0
     input: data1
 ```
 
@@ -155,7 +154,7 @@ To run benchmarks with given variable value assignment without creating combinat
 <!-- name="section-include" -->
 ```yaml
 include:
-  - tag: sleeper-v1.0
+  - tag: sleeper-v2.1
     input: data1
     thread: 32
 ```
