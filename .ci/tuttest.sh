@@ -11,7 +11,6 @@ TMP_DIR=$(mktemp -d)
 git clone . $TMP_DIR
 cd $TMP_DIR
 CONFIG="$(tuttest README.md config.yml)"
-INSTALL=$(tuttest README.md install)
 DEPENDENCIES=$(tuttest README.md dependencies)
 RUN=$(tuttest README.md run)
 RUN_UPDATE=$(tuttest README.md update-output)
@@ -20,7 +19,8 @@ SIZE_CONFIG=$(tuttest README.md size-config)
 if [ "$CI" == 'true' ]; then
     eval "$DEPENDENCIES"
 fi
-eval "$INSTALL"
+python3 -m  venv .venv
+source .venv/bin/activate
 pip install .
 eval "$HELP_INFORMATION"
 

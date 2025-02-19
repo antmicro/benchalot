@@ -12,15 +12,9 @@ To use the program, first install dependencies:
 ```bash
 apt install python3 python3-venv cpuset -y
 ```
-and then create a Python virtual environment:
-<!--name="install"-->
+then install the Benchmarker:
 ```bash
-python3 -m  venv .venv
-source .venv/bin/activate
-```
-then run:
-```bash
-pip install .
+python3 -m pip install .
 ```
 
 Configure the application by editing the YAML configuration file.
