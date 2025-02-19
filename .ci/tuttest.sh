@@ -107,6 +107,8 @@ if {
     echo "$SECTION_INCLUDE" >> config.yml
     echo "$SECTION_RUN" >> config.yml
     echo "$SECTION_SYSTEM" >> config.yml
+    # Remove isolate CPUs line since it causes any line with chained commands '&&' to fail.
+    sed -i '/isolate-cpus/d' config.yml
     if [ "$CI" == 'true' ]; then
         echo "    governor-performance: False" >> config.yml # cannot set governor in CI
     fi
