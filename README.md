@@ -41,7 +41,7 @@ samples: 5
 
 Benchmarker will use this configuration to run these three commands:
 
-```
+```bash
 gzip plot.png -c > output
 bzip2 plot.png -c > output
 xz plot.png -c > output
@@ -297,7 +297,7 @@ To create multiple outputs from one rule, you can use variables in filenames.
 For example, to create a separate bar chart for each value of variable `tag`, your configuration should look like this:
 
 <!-- name=special-option-mul" -->
-```
+```yaml
 mul-plot:
   filename: "plot_{{input}}.png"
   format: "bar"
@@ -371,7 +371,7 @@ Benchmarker will store `19.3` as the measurement for `stage1` and `30.12` as the
 
 To see available command line arguments type:
 <!--name="cli-help"-->
-```
+```bash
 benchmarker --help
 ```
 
