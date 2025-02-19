@@ -3,7 +3,7 @@
 assert_file_exists() {
     if [ ! -f "$1" ]; then
         echo "$1 does not exist."
-        exit 1
+        return 1
     fi
 }
 set -e
@@ -39,93 +39,191 @@ python3 -m  venv .venv
 source .venv/bin/activate
 pip install .
 
-echo "$EXAMPLE_BASIC" > config.yml
-eval "$RUN"
-assert_file_exists result.csv
-mv result.csv basic_result.csv
-rm output
+n_failed=0
+n_passed=0
 
+function test_passed(){
+    echo "TEST PASSED."
+    n_passed=$((n_passed + 1))
+    rm output.log
+}
 
-echo "$EXAMPLE_INTERMEDIATE" > config.yml
-eval "$RUN"
-assert_file_exists plot.png
-assert_file_exists table.md
-assert_file_exists result.csv
-rm table.md
-rm result.csv
+function test_failed(){
+    cat output.log
+    echo "TEST FAILED!"
+    n_failed=$((n_failed + 1))
+    rm output.log
+}
 
-echo "$EXAMPLE_ADVANCED" > config.yml
-cat config.yml
-eval "$RUN"
-assert_file_exists file_size.csv
-assert_file_exists file_table.md
-rm file_size.csv
-rm file_table.md
-rm plot.png # remove plot from EXAMPLE_INTERMEDIATE, needed here for compression
-
-rm config.yml
-echo "$SECTION_MATRIX" >> config.yml
-echo "$SECTION_EXCLUDE" >> config.yml
-echo "$SECTION_INCLUDE" >> config.yml
-echo "$SECTION_RUN" >> config.yml
-echo "$SECTION_SYSTEM" >> config.yml
-if [ "$CI" == 'true' ]; then
-    echo "    governor-performance: False" >> config.yml
+echo "RUNNING TEST CONFIG EXAMPLE BASIC..."
+if {
+    echo "$EXAMPLE_BASIC" > config.yml
+    eval "$RUN" &> output.log
+    assert_file_exists result.csv
+    mv result.csv basic_result.csv
+    rm output
+}; then 
+    test_passed
+else
+    test_failed
 fi
-echo "$SECTION_RESULTS" >> config.yml
-printf "\n%s" "$SPECIAL_OPTION_MUL" | sed 's/^/    /' >> config.yml
-eval "$RUN"
-assert_file_exists example.csv
-assert_file_exists example.md
-assert_file_exists example.html
-assert_file_exists example_scatter.png
-assert_file_exists example_box.png
-assert_file_exists example_violin.png
-assert_file_exists example_bar.png
-assert_file_exists plot_data1.png
-assert_file_exists plot_data2.png
-assert_file_exists plot_data3.png
-rm example.csv
-rm example.md
-rm example.html
-rm example_scatter.png
-rm example_box.png
-rm example_violin.png
-rm example_bar.png
-rm plot_data1.png
-rm plot_data2.png
-rm plot_data3.png
+
+
+echo "RUNNING TEST CONFIG EXAMPLE INTERMEDIATE..."
+if {
+    echo "$EXAMPLE_INTERMEDIATE" > config.yml
+    eval "$RUN" &> output.log
+    assert_file_exists plot.png
+    assert_file_exists table.md
+    assert_file_exists result.csv
+    rm table.md
+    rm result.csv
+}; then 
+    test_passed
+else
+    test_failed
+fi
+
+echo "RUNNING TEST CONFIG EXAMPLE ADVANCED..."
+if {
+    echo "$EXAMPLE_ADVANCED" &> config.yml
+    eval "$RUN" &> output.log
+    assert_file_exists file_size.csv
+    assert_file_exists file_table.md
+    rm file_size.csv
+    rm file_table.md
+    rm plot.png # remove plot from EXAMPLE_INTERMEDIATE, needed here for compression
+}; then 
+    test_passed
+else
+    test_failed
+fi
+
+echo "RUNNING TEST SECTION TUTORIALS..."
+if {
+    rm config.yml
+    echo "$SECTION_MATRIX" >> config.yml
+    echo "$SECTION_EXCLUDE" >> config.yml
+    echo "$SECTION_INCLUDE" >> config.yml
+    echo "$SECTION_RUN" >> config.yml
+    echo "$SECTION_SYSTEM" >> config.yml
+    if [ "$CI" == 'true' ]; then
+        echo "    governor-performance: False" >> config.yml # cannot set governor in CI
+    fi
+    echo "$SECTION_RESULTS" >> config.yml
+    printf "\n%s" "$SPECIAL_OPTION_MUL" | sed 's/^/    /' >> config.yml
+    eval "$RUN" &> output.log
+    assert_file_exists example.csv
+    assert_file_exists example.md
+    assert_file_exists example.html
+    assert_file_exists example_scatter.png
+    assert_file_exists example_box.png
+    assert_file_exists example_violin.png
+    assert_file_exists example_bar.png
+    assert_file_exists plot_data1.png
+    assert_file_exists plot_data2.png
+    assert_file_exists plot_data3.png
+    rm example.csv
+    rm example.md
+    rm example.html
+    rm example_scatter.png
+    rm example_box.png
+    rm example_violin.png
+    rm example_bar.png
+    rm plot_data1.png
+    rm plot_data2.png
+    rm plot_data3.png
+}; then 
+    test_passed
+else
+    test_failed
+fi
 
 # Create test environment
 cp basic_result.csv result.csv
 echo "$EXAMPLE_BASIC" > config.yml
 printf "results:\n    cs2:\n        filename: \"test_result.csv\" \n        format: \"csv\"" >> config.yml
 
-eval "$CLI_HELP"
-eval "$CLI_PLAN"
+echo "RUNNING TEST CLI HELP..."
+if {
+    eval "$CLI_HELP" &> output.log
+}; then 
+    test_passed
+else
+    test_failed
+fi
 
-eval "$CLI_RESULTS_FROM_CSV"
-assert_file_exists test_result.csv
-rm test_result.csv
+echo "RUNNING TEST CLI PLAN..."
+if {
+    eval "$CLI_PLAN" &> output.log
+}; then 
+    test_passed
+else
+    test_failed
+fi
 
-eval $CLI_INCLUDE
-assert_file_exists test_result.csv
-rm test_result.csv
+echo "RUNNING TEST CLI RESULTS FROM CSV..."
+if {
+    eval "$CLI_RESULTS_FROM_CSV" &> output.log
+    assert_file_exists test_result.csv
+    rm test_result.csv
+}; then 
+    test_passed
+else
+    test_failed
+fi
 
-eval $CLI_INCLUDE_FAILED
-assert_file_exists test_result.csv
-rm test_result.csv
+echo "RUNNING TEST CLI INCLUDE..."
+if {
+    eval $CLI_INCLUDE &> output.log
+    assert_file_exists test_result.csv
+    rm test_result.csv
+}; then 
+    test_passed
+else
+    test_failed
+fi
 
-eval $CLI_INCLUDE_OUTLIERS
-assert_file_exists test_result.csv
-rm test_result.csv
+echo "RUNNING TEST CLI INCLUDE FAILED..."
+if {
+    eval $CLI_INCLUDE_FAILED &> output.log
+    assert_file_exists test_result.csv
+    rm test_result.csv
+}; then 
+    test_passed
+else
+    test_failed
+fi
+
+echo "RUNNING TEST CLI INCLUDE OUTLIERS..."
+if {
+    eval $CLI_INCLUDE_OUTLIERS &> output.log
+    assert_file_exists test_result.csv
+    rm test_result.csv
+}; then 
+    test_passed
+else
+    test_failed
+fi
 
 
-echo "$EXAMPLE_INTERMEDIATE" > config.yml
-eval "$CLI_SPLIT"
-assert_file_exists "out/config.yml.part0.yml"
-assert_file_exists "out/config.yml.part1.yml"
+echo "RUNNING TEST CLI SPLIT..."
+if {
+    echo "$EXAMPLE_INTERMEDIATE" > config.yml
+    eval "$CLI_SPLIT" &> output.log
+    assert_file_exists "out/config.yml.part0.yml"
+    assert_file_exists "out/config.yml.part1.yml"
 
-# test if the configuration files are valid
-benchmarker "out/config.yml.part0.yml" -p
-benchmarker "out/config.yml.part1.yml" -p
+    # test if the configuration files are valid
+    benchmarker "out/config.yml.part0.yml" -p &>> output.log
+    benchmarker "out/config.yml.part1.yml" -p &>> output.log
+}; then 
+    test_passed
+else
+    test_failed
+fi
+
+echo "PASSED $n_passed/$((n_failed+n_passed)) TESTS"
+if [ "$n_failed" -gt 0 ]; then
+  exit 1
+fi
