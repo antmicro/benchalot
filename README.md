@@ -1,23 +1,21 @@
-# General Description
+# Benchmarker
+
+Copyright (c) 2024-2025 [Antmicro](https://www.antmicro.com)
+
+
+## Overview
 
 Benchmarker is a tool used for automatic benchmarking of software. 
+Benchmarker can be configured to execute multiple benchmarks with different parameters, aggregate their results and present them using tables and plots.
 
+## Installation
 
-User can specify commands to be run before and after taking measurement to prepare the environment using a configuration file.
+To use Benchmarker, install it as a pip package.
+If you plan on using [isolate-cpus](System) option, install `cpuset`.
 
-# Usage
+## Usage
 
-To use the program, first install dependencies:
-<!--name="dependencies"-->
-```bash
-apt install python3 pipx cpuset -y
-```
-then install the Benchmarker:
-```bash
-python3 -m pip install .
-```
-
-Configure the application by editing the YAML configuration file.
+To use Benchmarker first create [YAML configuration file](Configuration). 
 Then pass configuration file's name as an argument.
 For example, start the benchmark by typing this command:
 <!--name="run"-->
@@ -28,7 +26,28 @@ benchmarker config.yml
 
 ## Configuration
 
-Benchmarker is configured using a YAML file, e.g.:
+Benchmarker is configured using a YAML file.
+For example:
+```yaml
+matrix:
+    program: [gzip, bzip2, xz]
+benchmarker:
+    - {{program}} plot.png -c > output
+samples: 5
+```
+
+Benchmarker will measure execution time of these three commands:
+
+```
+gzip plot.png -c > output
+bzip2 plot.png -c > output
+xz plot.png -c > output
+```
+Each command will be executed three times.
+The summary will be then printed to the terminal and results saved in `result.csv` file.
+
+Benchmarker is much more capable. 
+For example look at the following configuration file:
 
 <!-- name="config.yml" -->
 ```yaml
@@ -54,9 +73,6 @@ cleanup:
 - "cd ../{{tag}} && make clean"
 - "rm -rf ../{{tag}}"
 results:
-  csv:
-    filename: "result.csv"
-    format: "csv"
   plot:
     filename: "plot.png"
     format: "bar"
@@ -74,11 +90,14 @@ results:
     stats: ["mean", "std"]
 ```
 
-The config above will generate this `plot.png`:
+Benchmarker automatically builds and measures execution time of the program `sleeper` with different combinations of arguments. 
+Then results are aggregated and, in addition to `result.csv`, two files are created - `plot.png` and `table.md`.
+
+The `plot.png` will look like this:
 
 <img src="plot.png" alt="plot created automatically based on configuration file" width="700" height="630"/>
 
-And this `table.md`:
+And `table.md` like this:
 ```markdown
 | tag   | mean time to process data1   | mean time to process data2   | mean time to process data3   |
 |:------|:-----------------------------|:-----------------------------|:-----------------------------|
@@ -88,7 +107,7 @@ And this `table.md`:
 
 ### Matrix
 
-Based on that config, Benchmarker will run a benchmark for each value specified in `matrix.*` fields.
+Based on that configuration file, Benchmarker will run a benchmark for each value specified in `matrix.*` fields.
 Commands will have very substring in format `{{var_name}}` substituted to corresponding value.
 For each combination of variable values, a run will be performed, e.g.:  
 The above configuration will result in runs:  
