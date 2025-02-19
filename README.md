@@ -11,11 +11,11 @@ Benchmarker can be configured to execute multiple benchmarks with different para
 ## Installation
 
 To use Benchmarker, install it as a pip package.
-If you plan on using [isolate-cpus](System) option, install `cpuset`.
+If you plan on using [isolate-cpus](#system) option, install `cpuset`.
 
 ## Usage
 
-To use Benchmarker first create [YAML configuration file](Configuration). 
+To use Benchmarker first create [YAML configuration file](#configuration). 
 Then pass configuration file's name as an argument.
 For example, start the benchmark by typing this command:
 
@@ -135,7 +135,7 @@ thread = 8; input = "data3"; tag = "sleeper-v2.2"
 
 in total creating 18 combinations of variable values.
 
-Matrix variables can [contain fields](Advanced Configuration).
+Matrix variables can [contain fields](#advanced-configuration).
 
 #### Exclude
 
