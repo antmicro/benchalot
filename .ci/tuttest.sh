@@ -69,6 +69,9 @@ echo "$SECTION_EXCLUDE" >> config.yml
 echo "$SECTION_INCLUDE" >> config.yml
 echo "$SECTION_RUN" >> config.yml
 echo "$SECTION_SYSTEM" >> config.yml
+if [ "$CI" == 'true' ]; then
+    echo "    governor-performance: False" >> config.yml
+fi
 echo "$SECTION_RESULTS" >> config.yml
 printf "\n%s" "$SPECIAL_OPTION_MUL" | sed 's/^/    /' >> config.yml
 eval "$RUN"
