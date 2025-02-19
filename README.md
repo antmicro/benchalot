@@ -11,7 +11,7 @@ Benchalot can be configured to execute multiple benchmarks with different parame
 ## Installation
 
 To use benchalot, install it as a pip package.
-If you plan on using [isolate-cpus](#system) option, install `cpuset`.
+If you plan on using [isolate-cpus](#system) feature, install [`cpuset`](https://github.com/SUSE/cpuset).
 
 ## Usage
 
