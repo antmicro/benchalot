@@ -3,8 +3,12 @@ stages:
 flake8:
   stage: linting
   image:
-    name: "debian:bookworm"
+    name: external/docker/debian
   before_script:
-    - pip3 install -r requirements.txt
+    - apt update -y && apt upgrade -y && apt install python3 python3-pip python3-venv -y
+    - python3 -m venv .venv
+    - source .venv/bin/activate
+    - pip install -r requirements.txt
   script:
+    - source .venv/bin/activate
     - flake8 --verbose ./src
