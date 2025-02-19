@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 import os
 from uuid import uuid4
-from benchmarker.config import (
+from benchalot.config import (
     TableMdOutput,
     TableHTMLOutput,
     BasePlotOutput,
@@ -13,11 +13,11 @@ from benchmarker.config import (
     OutputFormat,
     ResultsSection,
 )
-from benchmarker.interpolate import (
+from benchalot.interpolate import (
     VAR_REGEX,
     interpolate_variables,
 )
-from benchmarker.output_constants import (
+from benchalot.output_constants import (
     RESULT_COLUMN,
     TIME_STAMP_COLUMN,
     STAGE_COLUMN,
@@ -44,10 +44,10 @@ from plotnine import (
     geom_point,
     geom_violin,
 )
-from benchmarker.log import console
+from benchalot.log import console
 from pathlib import Path
 
-logger = getLogger(f"benchmarker.{__name__}")
+logger = getLogger(f"benchalot.{__name__}")
 
 
 def read_old_results(include: list[str]) -> pd.DataFrame:
@@ -559,7 +559,7 @@ def _output_results(
             )
             if len(non_csv_outputs) > 0:
                 console.print(
-                    "To generate output with failed benchmarks included run run benchmarker with '--include-failed' flag"
+                    "To generate output with failed benchmarks included run run benchalot with '--include-failed' flag"
                 )
             if len(results_df.index) == 0:
                 logger.critical("All benchmarks failed! Bailing out.")
@@ -607,7 +607,7 @@ def _output_results(
             )
             if len(non_csv_outputs) > 0:
                 console.print(
-                    "To generate output with outliers included run benchmarker with '--include-outliers' flag"
+                    "To generate output with outliers included run benchalot with '--include-outliers' flag"
                 )
         results_df = results_df.drop(outlier_column_name, axis=1)
 

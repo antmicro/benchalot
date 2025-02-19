@@ -9,7 +9,7 @@ from pydantic import (
 )
 from typing import Any, Literal
 from logging import getLogger
-from benchmarker.output_constants import (
+from benchalot.output_constants import (
     DEFAULT_STAGE_NAME,
     METRIC_COLUMN,
     STAGE_COLUMN,
@@ -17,7 +17,7 @@ from benchmarker.output_constants import (
 )
 from enum import StrEnum
 
-logger = getLogger(f"benchmarker.{__name__}")
+logger = getLogger(f"benchalot.{__name__}")
 
 
 def error_and_exit(error):

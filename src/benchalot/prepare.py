@@ -1,14 +1,14 @@
 from logging import getLogger
-from benchmarker.interpolate import (
+from benchalot.interpolate import (
     create_variable_combinations,
     interpolate_variables,
 )
 from dataclasses import dataclass
-from benchmarker.config import ConfigFile
-from benchmarker.output_constants import TIME_STAMP_COLUMN, TIME_STAMP
+from benchalot.config import ConfigFile
+from benchalot.output_constants import TIME_STAMP_COLUMN, TIME_STAMP
 from os.path import expandvars, expanduser
 
-logger = getLogger(f"benchmarker.{__name__}")
+logger = getLogger(f"benchalot.{__name__}")
 
 
 @dataclass

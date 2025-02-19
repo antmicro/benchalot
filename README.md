@@ -1,33 +1,33 @@
-# Benchmarker
+# Benchalot
 
 Copyright (c) 2024-2025 [Antmicro](https://www.antmicro.com)
 
 
 ## Overview
 
-Benchmarker is a tool used for automatic benchmarking of software. 
-Benchmarker can be configured to execute multiple benchmarks with different parameters, aggregate their results and present them using tables and plots.
+Benchalot is a tool used for automatic benchmarking of software. 
+Benchalot can be configured to execute multiple benchmarks with different parameters, aggregate their results and present them using tables and plots.
 
 ## Installation
 
-To use Benchmarker, install it as a pip package.
+To use benchalot, install it as a pip package.
 If you plan on using [isolate-cpus](#system) option, install `cpuset`.
 
 ## Usage
 
-To use Benchmarker first create [YAML configuration file](#configuration). 
+To use benchalot first create [YAML configuration file](#configuration). 
 Then pass configuration file's name as an argument.
 For example, start the benchmark by typing this command:
 
 <!--name="run"-->
 ```bash
-benchmarker config.yml
+benchalot config.yml
 ```
 
 
 ## Configuration
 
-Benchmarker is configured using a YAML file.
+Benchalot is configured using a YAML file.
 For example:
 
 <!--name="example-basic"-->
@@ -39,7 +39,7 @@ benchmark:
 samples: 5
 ```
 
-Benchmarker will use this configuration to run these three commands:
+Benchalot will use this configuration to run these three commands:
 
 ```bash
 gzip plot.png -c > output
@@ -50,7 +50,7 @@ Each command will be executed five times.
 The summary containing min, median, and max execution will be then printed to the terminal.
 Detailed results will be saved to `result.csv`.
 
-Benchmarker is much more capable. 
+Benchalot is much more capable. 
 For example look at the following configuration file:
 
 <!-- name="example-intermediate" -->
@@ -94,7 +94,7 @@ results:
     stats: ["mean", "std"]
 ```
 
-Benchmarker automatically builds and measures execution time of the program `sleeper` with different combinations of arguments. 
+Benchalot automatically builds and measures execution time of the program `sleeper` with different combinations of arguments. 
 Then results are aggregated and, in addition to `result.csv`, two files are created - `plot.png` and `table.md`.
 
 The `plot.png` will look like this:
@@ -111,7 +111,7 @@ And `table.md` like this:
 
 ### Matrix
 
-Benchmarker will run a benchmark for each combination of variable values specified in `matrix.*` fields.
+Benchalot will run a benchmark for each combination of variable values specified in `matrix.*` fields.
 
 <!-- name="section-matrix" -->
 ```yaml
@@ -162,7 +162,7 @@ include:
 
 ### Command Execution
 
-Benchmarker has predefined execution order:
+Benchalot has predefined execution order:
 
 ```
 setup -> (prepare -> benchmark -> conclude -> custom-metrics) * samples -> cleanup
@@ -200,7 +200,7 @@ custom-metrics:         # specify your own metrics, for more information checkou
     - threads: echo {{thread}}
 
 samples: 5                      # how many times repeat each benchmark (default=1)
-save-output: "{{datetime}}.log" # log file for command output, 'datetime' is special matrix variable defined by Benchmarker
+save-output: "{{datetime}}.log" # log file for command output, 'datetime' is special matrix variable defined by benchalot
 cwd: "./"                       # change working directory of the commands to specified location, you can also use matrix variable in here
 env:                            # specify additional environment variables to be used when running commands
     CC: gcc
@@ -212,8 +212,8 @@ env:                            # specify additional environment variables to be
 The `system` section allows the user to apply variance reduction measures.
 When benchmarking in a regular system environment, external factors such as other processes or randomized memory layout can affect the measurements.
 Options in this section aim to minimize some of the external factors. 
-Using these options require Benchmarker to be run with root privileges.
-The section is optional; if no options are specified, Benchmarker can be run without root.
+Using these options require benchalot to be run with root privileges.
+The section is optional; if no options are specified, benchalot can be run without root.
 
 <!-- name="section-system" -->
 ```yaml
@@ -231,7 +231,7 @@ system:
 ```yaml
 # Here are examples of available output formats.
 results:
-    # Results in a csv file in format that is compatible with the Benchmarker
+    # Results in a csv file in format that is compatible with the benchalot
     csv-table:
         format: csv
         filename: example.csv
@@ -310,7 +310,7 @@ mul-plot:
   dpi: 100
 ```
 
-If we add this section to the configuration above, Benchmarker will generate two files: `plot_slow.png` which visualizes benchmarks with `tag == slow`, and `plot_fast.png` which visualizes benchmarks with `tag == fast`.
+If we add this section to the configuration above, benchalot will generate two files: `plot_slow.png` which visualizes benchmarks with `tag == slow`, and `plot_fast.png` which visualizes benchmarks with `tag == fast`.
 
 ### Advanced Configuration
 
@@ -365,52 +365,52 @@ For example, if the custom metric command outputs this:
 stage1,stage2
 19.3,30.12
 ```
-Benchmarker will store `19.3` as the measurement for `stage1` and `30.12` as the measurement for `stage2`.
+Benchalot will store `19.3` as the measurement for `stage1` and `30.12` as the measurement for `stage2`.
 
 ## CLI
 
 To see available command line arguments type:
 <!--name="cli-help"-->
 ```bash
-benchmarker --help
+benchalot --help
 ```
 
 To print command execution plan without running benchmarks, use `--plan`:
 <!--name="cli-plan"-->
 ```bash
-benchmarker config.yml --plan
+benchalot config.yml --plan
 ```
 Please note that the execution plan will not take number of samples into account.
 
 To generate the output without re-running benchmarks, use `--results-from-csv`:
 <!--name="cli-results-from-csv"-->
 ```bash
-benchmarker config.yml --results-from-csv result.csv
+benchalot config.yml --results-from-csv result.csv
 ```
 
 To include previous results with the next benchmark, use `--include`:
 <!--name="cli-include"-->
 ```bash
-benchmarker config.yml --include result.csv
+benchalot config.yml --include result.csv
 ```
 
 To split configuration file into many smaller ones, use `--split`:
 <!--name="cli-split"-->
 ```bash
-benchmarker config.yml --split tag
+benchalot config.yml --split tag
 ```
 
-In case one of the benchmarks fails (its exit code is not equal 0) Benchmarker will filter out the failed results when creating outputs (the `csv` file will still include the failed benchmarks).
+In case one of the benchmarks fails (its exit code is not equal 0) benchalot will filter out the failed results when creating outputs (the `csv` file will still include the failed benchmarks).
 To generate outputs with failed benchmarks, use `--include-failed`:
 <!--name="cli-include-failed"-->
 ```bash
-benchmarker config.yml -r result.csv --include-failed
+benchalot config.yml -r result.csv --include-failed
 ```
 
 
-The Benchmarker will try to automatically detect and remove outliers (the `csv` file will still include them) using [modified Z-Score](http://d-scholarship.pitt.edu/7948/1/Seo.pdf).
+Benchalot will try to automatically detect and remove outliers (the `csv` file will still include them) using [modified Z-Score](http://d-scholarship.pitt.edu/7948/1/Seo.pdf).
 To generate outputs with outliers, use `--include-outliers`:
 <!--name="cli-include-outliers"-->
 ```bash
-benchmarker config.yml -r result.csv --include-outliers
+benchalot config.yml -r result.csv --include-outliers
 ```

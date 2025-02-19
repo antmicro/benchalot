@@ -4,8 +4,8 @@ from os import getcwd, wait4, waitstatus_to_exitcode, environ
 from time import monotonic_ns
 from io import StringIO
 from csv import DictReader
-from benchmarker.prepare import PreparedBenchmark
-from benchmarker.output_constants import (
+from benchalot.prepare import PreparedBenchmark
+from benchalot.output_constants import (
     HAS_FAILED_COLUMN,
     METRIC_COLUMN,
     STAGE_COLUMN,
@@ -14,13 +14,13 @@ from benchmarker.output_constants import (
     DEFAULT_STAGE_NAME,
 )
 from uuid import uuid4
-from benchmarker.log import console
-from benchmarker.config import BuiltInMetrics, SystemSection
+from benchalot.log import console
+from benchalot.config import BuiltInMetrics, SystemSection
 from concurrent import futures
-from benchmarker.system import modify_system_state, restore_system_state
+from benchalot.system import modify_system_state, restore_system_state
 from os.path import isdir
 
-logger = getLogger(f"benchmarker.{__name__}")
+logger = getLogger(f"benchalot.{__name__}")
 working_directory = getcwd()
 
 
@@ -34,7 +34,7 @@ def set_working_directory(cwd: str) -> None:
 
 
 def check_return_code(command: str, code: int) -> bool:
-    """Check return code of the command and exit Benchmarker if it is not 0
+    """Check return code of the command and exit benchalot if it is not 0
 
     Args:
         command: Command string, used in logging.
@@ -148,7 +148,7 @@ def perform_benchmarks(
     Args:
         benchmarks: List of benchmarks, each containing variable values, preprocessed commands and callable metrics.
         samples: How many times each benchmark needs to be repeated.
-        builtin_metrics: What benchmarker's builtint metrics need to be measured
+        builtin_metrics: What benchalot's builtint metrics need to be measured
         system: Configuration defining variance reducing system measures
 
     Returns:

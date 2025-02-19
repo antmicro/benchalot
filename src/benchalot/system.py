@@ -2,15 +2,15 @@ from atexit import register, unregister
 from subprocess import run
 from multiprocessing import cpu_count
 from logging import getLogger
-from benchmarker.config import SystemSection
+from benchalot.config import SystemSection
 from os.path import isfile
 
-logger = getLogger(f"benchmarker.{__name__}")
+logger = getLogger(f"benchalot.{__name__}")
 
 
 def get_and_set(filename: str, value: str) -> str:
     """First read the file, then overwrite with value.
-    The function will crash the Benchmarker if the `filename` is not found.
+    The function will crash the benchalot if the `filename` is not found.
 
     Args:
         filename: Name of the file.
@@ -140,7 +140,7 @@ def modify_system_state(system_options: SystemSection) -> None:
 
 
 def restore_system_state() -> None:
-    """Restore operating system's state from before Benchmarker's modifications.
+    """Restore operating system's state from before benchalot's modifications.
 
     Args:
         system_options: Configuration file's system section.

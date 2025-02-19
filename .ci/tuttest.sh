@@ -217,8 +217,8 @@ if {
     assert_file_exists "out/config.yml.part1.yml"
 
     # test if the configuration files are valid
-    benchmarker "out/config.yml.part0.yml" -p &>> output.log
-    benchmarker "out/config.yml.part1.yml" -p &>> output.log
+    benchalot "out/config.yml.part0.yml" -p &>> output.log
+    benchalot "out/config.yml.part1.yml" -p &>> output.log
 }; then 
     test_passed
 else

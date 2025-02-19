@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
-from benchmarker.interpolate import interpolate_variables, create_variable_combinations
-from benchmarker.output import get_combination_filtered_dfs
+from benchalot.interpolate import interpolate_variables, create_variable_combinations
+from benchalot.output import get_combination_filtered_dfs
 
 
 class TestInterpoleVariables(unittest.TestCase):

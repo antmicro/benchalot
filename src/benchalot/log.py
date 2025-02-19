@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from tqdm import tqdm
 
 
-logger = getLogger(f"benchmarker.{__name__}")
+logger = getLogger(f"benchalot.{__name__}")
 
 
 class FastConsole:
@@ -104,7 +104,7 @@ class FastConsole:
 console = FastConsole()
 
 
-def setup_benchmarker_logging(verbose: bool, debug: bool) -> None:
+def setup_benchalot_logging(verbose: bool, debug: bool) -> None:
     """Setup loggers.
 
     Args:
@@ -126,17 +126,15 @@ def setup_benchmarker_logging(verbose: bool, debug: bool) -> None:
         consoleHandler.setLevel(DEBUG)
         getLogger().setLevel(DEBUG)
     getLogger().addHandler(consoleHandler)
-    benchmarker_formatter = Formatter(
+    benchalot_formatter = Formatter(
         "[%(asctime)s][%(name)s][%(levelname)s]: %(message)s", datefmt="%H:%M:%S"
     )
-    benchmarker_logger = getLogger("benchmarker")
-    temp_log_file = NamedTemporaryFile(
-        prefix="benchmarker-", suffix=".log", delete=False
-    )
-    benchmarker_handler = FileHandler(temp_log_file.name)
-    benchmarker_handler.setFormatter(benchmarker_formatter)
-    benchmarker_logger.addHandler(benchmarker_handler)
-    benchmarker_logger.setLevel(DEBUG)
+    benchalot_logger = getLogger("benchalot")
+    temp_log_file = NamedTemporaryFile(prefix="benchalot-", suffix=".log", delete=False)
+    benchalot_handler = FileHandler(temp_log_file.name)
+    benchalot_handler.setFormatter(benchalot_formatter)
+    benchalot_logger.addHandler(benchalot_handler)
+    benchalot_logger.setLevel(DEBUG)
     register(crash_msg_log_file, temp_log_file.name)
 
 
@@ -146,4 +144,4 @@ def crash_msg_log_file(filename):
     Args:
         filename: Name of the debug log file.
     """
-    logger.critical(f"Benchmarker exited abnormally! Log files generated: {filename}.")
+    logger.critical(f"benchalot exited abnormally! Log files generated: {filename}.")

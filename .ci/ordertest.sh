@@ -7,9 +7,9 @@ n_failed=0
 n_passed=0
 prev_failed=0
 
-function benchmarker_run() {
+function benchalot_run() {
   echo "$1" > config.yml
-  benchmarker config.yml &> bench_log
+  benchalot config.yml &> bench_log
   rm result.csv
   rm config.yml
 }
@@ -37,7 +37,7 @@ function compare_order() {
 
 function test() {
   echo "RUNNING  $1..."
-  benchmarker_run "$2"
+  benchalot_run "$2"
   if compare_order "$3" output; then
     echo "TEST SUCCESS"
     n_passed=$((n_passed + 1))
@@ -233,7 +233,7 @@ EOF
 )
 
 echo "RUNNING TEST ORDER SAVE-OUTPUT..."
-benchmarker_run "$test_order_save_output"
+benchalot_run "$test_order_save_output"
 if compare_order "$expected_order_save_output_A" outputA; then
   if compare_order "$expected_order_save_output_B" outputB; then
     if compare_order "$expected_order_save_output_C" outputC; then

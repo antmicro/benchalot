@@ -2,7 +2,7 @@
 requires = ["setuptools >= 40.9.0"]
 build-backend = "setuptools.build_meta"
 [project]
-name = "benchmarker"
+name = "benchalot"
 readme = "README.md"
 version = "0.1"
 description = "A tool used for automatic benchmarking of software."
@@ -26,4 +26,4 @@ dev = [
   "types-tqdm>=4.66.0.20240417"
 ]
 [project.scripts]
-benchmarker = "benchmarker.main:main"
+benchalot = "benchalot.main:main"

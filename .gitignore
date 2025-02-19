@@ -2,5 +2,5 @@
 *.csv
 __pycache__
 table.md
-benchmarker.egg-info
+benchalot.egg-info
 build

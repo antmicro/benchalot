@@ -1,24 +1,24 @@
 import yaml
 from sys import argv, executable
-from benchmarker.config import validate_config, validate_output_config
-from benchmarker.prepare import prepare_benchmarks
-from benchmarker.execute import perform_benchmarks
+from benchalot.config import validate_config, validate_output_config
+from benchalot.prepare import prepare_benchmarks
+from benchalot.execute import perform_benchmarks
 from os import geteuid, execvp
-from benchmarker.output import output_results_from_dict, output_results_from_file
+from benchalot.output import output_results_from_dict, output_results_from_file
 from argparse import ArgumentParser
 from os.path import isfile
-from benchmarker.log import setup_benchmarker_logging, crash_msg_log_file
+from benchalot.log import setup_benchalot_logging, crash_msg_log_file
 from logging import getLogger
 from atexit import unregister
 from pathlib import Path
 
-logger = getLogger(f"benchmarker.{__name__}")
+logger = getLogger(f"benchalot.{__name__}")
 
 
 def main():
     parser = get_argument_parser()
     args = parser.parse_args()
-    setup_benchmarker_logging(args.verbose, args.debug)
+    setup_benchalot_logging(args.verbose, args.debug)
 
     config_file = load_configuration_file(args.config_filename)
     if args.results_from_csv:  # Update output and exit
@@ -33,11 +33,11 @@ def main():
             args.include_failed,
             args.include_outliers,
         )
-        exit_benchmarker()
+        exit_benchalot()
     config = validate_config(config_file)
     if args.split:  # Split configuration file and exit
         generate_config_files(config_file, args.config_filename, args.split)
-        exit_benchmarker()
+        exit_benchalot()
 
     for file in args.include:
         if not isfile(file):
@@ -84,7 +84,7 @@ def main():
             if config.samples > 2:
                 print()
                 print()
-        exit_benchmarker()
+        exit_benchalot()
 
     logger.info("Performing benchmarks...")
     results = perform_benchmarks(
@@ -99,24 +99,24 @@ def main():
         args.include_outliers,
     )
 
-    exit_benchmarker()
+    exit_benchalot()
 
 
-def exit_benchmarker():
-    """Exit Benchmarker normally."""
+def exit_benchalot():
+    """Exit benchalot normally."""
     unregister(crash_msg_log_file)
     exit(0)
 
 
 def get_argument_parser() -> ArgumentParser:
-    """Create argument parser for Benchmarker command line arguments.
+    """Create argument parser for benchalot command line arguments.
 
     Returns:
         ArgumentParser: Parser object.
     """
     parser = ArgumentParser(
-        prog="benchmarker",
-        description="Benchmarker is a tool used for automatic benchmarking of software.",
+        prog="benchalot",
+        description="benchalot is a tool used for automatic benchmarking of software.",
     )
     parser.add_argument("config_filename", help="a path to YAML configuration file")
     parser.add_argument(
@@ -125,7 +125,7 @@ def get_argument_parser() -> ArgumentParser:
         dest="debug",
         default=False,
         action="store_true",
-        help="print debug information during Benchmarker execution",
+        help="print debug information during benchalot execution",
     )
     parser.add_argument(
         "-v",
@@ -133,7 +133,7 @@ def get_argument_parser() -> ArgumentParser:
         default=False,
         action="store_true",
         dest="verbose",
-        help="print basic information during Benchmarker execution",
+        help="print basic information during benchalot execution",
     )
     mul_input_split_group = parser.add_mutually_exclusive_group()
     include_update_group = mul_input_split_group.add_mutually_exclusive_group()
@@ -246,7 +246,7 @@ def generate_config_files(config: dict, config_filename: str, split: list[str]) 
             exit(1)
     logger.info("Spliting configuration file...")
     matrices = split_matrix(config["matrix"], split)
-    command = "benchmarker " + config_filename + " -r"
+    command = "benchalot " + config_filename + " -r"
     directory = "out"
     for i, matrix in enumerate(matrices):
         new_config = {k: v for k, v in config.items() if k != "matrix"}

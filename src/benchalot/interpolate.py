@@ -2,7 +2,7 @@ from itertools import product
 from re import sub
 from logging import getLogger
 
-logger = getLogger(f"benchmarker.{__name__}")
+logger = getLogger(f"benchalot.{__name__}")
 VAR_REGEX = r"{{([a-zA-Z0-9_\-.]+)}}"
 
 
