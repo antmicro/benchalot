@@ -55,7 +55,7 @@ function test_failed(){
     rm output.log
 }
 
-echo "RUNNING TEST CONFIG EXAMPLE BASIC..."
+echo "RUNNING TEST EXAMPLE BASIC..."
 if {
     echo "$EXAMPLE_BASIC" > config.yml
     eval "$RUN" &> output.log
@@ -69,7 +69,7 @@ else
 fi
 
 
-echo "RUNNING TEST CONFIG EXAMPLE INTERMEDIATE..."
+echo "RUNNING TEST EXAMPLE INTERMEDIATE..."
 if {
     echo "$EXAMPLE_INTERMEDIATE" > config.yml
     eval "$RUN" &> output.log
@@ -84,7 +84,7 @@ else
     test_failed
 fi
 
-echo "RUNNING TEST CONFIG EXAMPLE ADVANCED..."
+echo "RUNNING TEST EXAMPLE ADVANCED..."
 if {
     echo "$EXAMPLE_ADVANCED" &> config.yml
     eval "$RUN" &> output.log
