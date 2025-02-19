@@ -57,6 +57,7 @@ For example look at the following configuration file:
 ```yaml
 ---
 system:
+  isolate-cpus: [0]
   disable-aslr: True
   disable-core-boost: True
   disable-smt: True
