@@ -10,10 +10,52 @@ from logging import (
 from tempfile import NamedTemporaryFile
 from atexit import register
 from contextlib import contextmanager
-from tqdm import tqdm
+import sys
 
 
 logger = getLogger(f"benchalot.{__name__}")
+
+
+class Bar:
+    def __init__(self, n_iter):
+        self.n_iter = n_iter
+        self.curr_iter = 0
+        self.saved_pos = False
+
+    def update(self, i):
+        self.curr_iter += i
+        if self.saved_pos:
+            self.restore_cursor_pos()
+        self.save_cursor_pos()
+        sys.stdout.write(f"{self.curr_iter/self.n_iter*100:.0f}%")
+        sys.stdout.flush()
+        if self.curr_iter == self.n_iter:
+            self.erase_bar()
+
+    def save_cursor_pos(self):
+        sys.stdout.write("\033[s")
+        sys.stdout.flush()
+        self.saved_pos = True
+
+    def restore_cursor_pos(self):
+        sys.stdout.write("\033[u")
+        sys.stdout.flush()
+        self.saved_pos = False
+
+    def write(self, buffer):
+        self.erase_bar()
+        sys.stdout.write(buffer)
+        sys.stdout.flush()
+        self.update(0)
+
+    def erase_bar(self):
+        if self.saved_pos:
+            self.restore_cursor_pos()
+            sys.stdout.write("")
+            sys.stdout.flush()
+
+    def set_description(self, txt):
+        self.update(0)
 
 
 class FastConsole:
@@ -23,7 +65,8 @@ class FastConsole:
         It's main purpose is to allow provide live progress bar with very small performance penalty.
         It is achieved by using string buffer.
         """
-        self._bar = None
+        self._bar = False
+
         self.capacity = 1024
         self.buffer = ""
         self.verbose = False
@@ -67,15 +110,14 @@ class FastConsole:
         """
         try:
             if not self._bar:
-                bar = tqdm(total=n_iter, leave=False, mininterval=1)
+                bar = Bar(n_iter)
                 self._bar = bar
             else:
                 raise RuntimeError(
                     "bar() cannot be called with while other bar still exists."
                 )
-            yield self._bar
+            yield bar
         finally:
-            self._bar.close()
             self._bar = None
 
     def log_command_output(self, text: str):
@@ -95,7 +137,7 @@ class FastConsole:
         else simply print it to stdout.
         """
         if self._bar:
-            self._bar.write(self.buffer, end="")
+            self._bar.write(self.buffer)
         else:
             print(self.buffer, end="")
         self.buffer = ""
