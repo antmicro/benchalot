@@ -11,6 +11,7 @@ from benchalot.log import setup_benchalot_logging, crash_msg_log_file
 from logging import getLogger
 from atexit import unregister
 from pathlib import Path
+import asyncio
 
 logger = getLogger(f"benchalot.{__name__}")
 
@@ -87,8 +88,8 @@ def main():
         exit_benchalot()
 
     logger.info("Performing benchmarks...")
-    results = perform_benchmarks(
-        benchmarks, config.samples, config.metrics, config.system
+    results = asyncio.run(
+        perform_benchmarks(benchmarks, config.samples, config.metrics, config.system)
     )
 
     output_results_from_dict(

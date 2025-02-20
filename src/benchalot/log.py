@@ -11,6 +11,9 @@ from tempfile import NamedTemporaryFile
 from atexit import register
 from contextlib import contextmanager
 import sys
+from statistics import mean
+from time import monotonic_ns
+import asyncio
 
 
 logger = getLogger(f"benchalot.{__name__}")
@@ -22,14 +25,56 @@ class Bar:
         self.curr_iter = 0
         self.saved_pos = False
 
-    def update(self, i):
-        self.curr_iter += i
-        if self.saved_pos:
-            self.restore_cursor_pos()
-        self.save_cursor_pos()
-        sys.stdout.write(f"{self.curr_iter/self.n_iter*100:.0f}%")
-        sys.stdout.flush()
-        if self.curr_iter == self.n_iter:
+        self.time_start = monotonic_ns()
+        self.time_prev = monotonic_ns()
+
+        self.time_history = []
+        self.time_average = 0
+
+        self.bar = "".join([" "] * 20)
+        self.title = ""
+
+    async def constatnly_refresh(self):
+        while True:
+            completion_rate = self.curr_iter / self.n_iter * 100
+            if self.saved_pos:
+                self.restore_cursor_pos()
+
+            if self.time_history:
+                time_estimated_completion = self.n_iter * self.time_average - (
+                    monotonic_ns() - self.time_start
+                )
+            else:
+                time_estimated_completion = 0
+            self.save_cursor_pos()
+            sys.stdout.write(
+                f"{self.title}:[{self.bar}]{completion_rate:.0f}% {time_estimated_completion/1e9:.2f}s"
+            )
+            sys.stdout.flush()
+
+            if self.curr_iter >= self.n_iter:
+                self.erase_bar()
+                break
+            await asyncio.sleep(0.1)
+
+    def progress(self):
+        self.curr_iter += 1
+
+        time_curr = monotonic_ns()
+        time_elapsed = time_curr - self.time_prev
+        self.time_history.append(time_elapsed)
+        self.time_average = mean(self.time_history)
+        self.time_prev = time_curr
+
+        completion_rate = self.curr_iter / self.n_iter * 100
+        bar_width = 20
+        bar = [" "] * bar_width
+        tick_rate = 100 / bar_width
+        progress = int(completion_rate / tick_rate)
+        for i in range(progress):
+            bar[i] = "#"
+        self.bar = "".join(bar)
+        if self.curr_iter >= self.n_iter:
             self.erase_bar()
 
     def save_cursor_pos(self):
@@ -46,16 +91,15 @@ class Bar:
         self.erase_bar()
         sys.stdout.write(buffer)
         sys.stdout.flush()
-        self.update(0)
 
     def erase_bar(self):
         if self.saved_pos:
             self.restore_cursor_pos()
-            sys.stdout.write("")
+            sys.stdout.write("\033[0K")
             sys.stdout.flush()
 
-    def set_description(self, txt):
-        self.update(0)
+    def set_description(self, title):
+        self.title = title
 
 
 class FastConsole:

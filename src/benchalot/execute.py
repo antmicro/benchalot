@@ -19,6 +19,8 @@ from benchalot.config import BuiltInMetrics, SystemSection
 from concurrent import futures
 from benchalot.system import modify_system_state, restore_system_state
 from os.path import isdir
+import threading
+import asyncio
 
 logger = getLogger(f"benchalot.{__name__}")
 working_directory = getcwd()
@@ -137,7 +139,22 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
         return ({DEFAULT_STAGE_NAME: None}, True)
 
 
-def perform_benchmarks(
+def wait_for_process(loop, pid, future):
+    result = wait4(pid, 0)
+    loop.call_soon_threadsafe(process_exited, future, result)
+
+
+def process_exited(future, result):
+    future.set_result(result)
+
+
+# async def wait_for_process(pid):
+# loop = asyncio.get_running_loop()
+# result = await loop.run_in_executor(None, wait4, pid, 0)
+# return result
+
+
+async def perform_benchmarks(
     benchmarks: list[PreparedBenchmark],
     samples: int,
     builtin_metrics: set[BuiltInMetrics],
@@ -154,8 +171,10 @@ def perform_benchmarks(
     Returns:
         dict[str, list]: Dictionary containing results.
     """
+    loop = asyncio.get_running_loop()
     results: dict[str, list] = dict()
     with console.bar((len(benchmarks) * samples)) as bar:
+        loop.create_task(bar.constatnly_refresh())
 
         def _execute_section(commands):
             for c in commands:
@@ -231,9 +250,15 @@ def perform_benchmarks(
                                         )
                                         process_stdout = stdout_future.result()
                                         process_stderr = stderr_future.result()
-                                else:
-                                    log_output(process)
-                                _, exit_status, resources = wait4(process.pid, 0)
+                                # else:
+                                # log_output(process)
+                                exit_status_future = loop.create_future()
+                                thread = threading.Thread(
+                                    target=wait_for_process,
+                                    args=(loop, process.pid, exit_status_future),
+                                )
+                                thread.start()
+                                _, exit_status, resources = await exit_status_future
                                 stage_elapsed_time += monotonic_ns() - start
                                 # source: https://manpages.debian.org/bookworm/manpages-dev/getrusage.2.en.html
                                 if measure_utime:
@@ -320,7 +345,7 @@ def perform_benchmarks(
                                 stderr_measurements
                             )
 
-                        bar.update(1)
+                        bar.progress()
                         id = uuid4()
                         for metric_name, measurements in benchmark_results.items():
                             for stage, result in measurements.items():
