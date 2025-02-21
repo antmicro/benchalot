@@ -16,7 +16,6 @@ from benchalot.output_constants import (
 from uuid import uuid4
 from benchalot.log import console
 from benchalot.config import BuiltInMetrics, SystemSection
-from concurrent import futures
 from benchalot.system import modify_system_state, restore_system_state
 from os.path import isdir
 import threading
@@ -139,19 +138,39 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
         return ({DEFAULT_STAGE_NAME: None}, True)
 
 
-def wait_for_process(loop, pid, future):
-    result = wait4(pid, 0)
-    loop.call_soon_threadsafe(process_exited, future, result)
+def create_process_exit_future(pid):
+    loop = asyncio.get_running_loop()
+
+    def _wait_for_process(loop, pid, future):
+        result = wait4(pid, 0)
+        loop.call_soon_threadsafe(_process_exited, future, result)
+
+    def _process_exited(future, result):
+        future.set_result(result)
+
+    exit_status_future = loop.create_future()
+    threading.Thread(
+        target=_wait_for_process, args=(loop, pid, exit_status_future), daemon=True
+    ).start()
+    return exit_status_future
 
 
-def process_exited(future, result):
-    future.set_result(result)
+def create_output_future(pipe):
+    loop = asyncio.get_running_loop()
 
+    def _read_pipe(loop, file, future):
+        for line in file:
+            console.log_command_output(line.decode("utf-8"))
+        file.close()
+        loop.call_soon_threadsafe(_return_pipe_results, future)
 
-# async def wait_for_process(pid):
-# loop = asyncio.get_running_loop()
-# result = await loop.run_in_executor(None, wait4, pid, 0)
-# return result
+    def _return_pipe_results(future):
+        future.set_result(b"test")
+
+    future = loop.create_future()
+    threading.Thread(target=_read_pipe, args=(loop, pipe, future), daemon=True).start()
+
+    return future
 
 
 async def perform_benchmarks(
@@ -185,11 +204,6 @@ async def perform_benchmarks(
                 if not check_return_code(c, process.returncode):
                     return False
             return True
-
-        def read_pipe(file):
-            output = file.read()
-            file.close()
-            return output
 
         for benchmark in benchmarks:
             try:
@@ -237,28 +251,15 @@ async def perform_benchmarks(
                                 process_stdout = b""
                                 process_stderr = b""
                                 start = monotonic_ns()
-                                process = execute_command(
-                                    command, measure_stderr or measure_stdout
+                                process = execute_command(command)
+
+                                exit_status_future = create_process_exit_future(
+                                    process.pid
                                 )
-                                if measure_stderr or measure_stdout:
-                                    with futures.ThreadPoolExecutor() as executor:
-                                        stdout_future = executor.submit(
-                                            read_pipe, process.stdout
-                                        )
-                                        stderr_future = executor.submit(
-                                            read_pipe, process.stderr
-                                        )
-                                        process_stdout = stdout_future.result()
-                                        process_stderr = stderr_future.result()
-                                # else:
-                                # log_output(process)
-                                exit_status_future = loop.create_future()
-                                thread = threading.Thread(
-                                    target=wait_for_process,
-                                    args=(loop, process.pid, exit_status_future),
-                                )
-                                thread.start()
+                                stdout_future = create_output_future(process.stdout)
+
                                 _, exit_status, resources = await exit_status_future
+                                await stdout_future
                                 stage_elapsed_time += monotonic_ns() - start
                                 # source: https://manpages.debian.org/bookworm/manpages-dev/getrusage.2.en.html
                                 if measure_utime:

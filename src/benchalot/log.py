@@ -14,6 +14,7 @@ import sys
 from statistics import mean
 from time import monotonic_ns
 import asyncio
+import threading
 
 
 logger = getLogger(f"benchalot.{__name__}")
@@ -113,6 +114,7 @@ class FastConsole:
 
         self.capacity = 1024
         self.buffer = ""
+        self.buffer_lock = threading.RLock()
         self.verbose = False
         self.file = None
 
@@ -122,9 +124,10 @@ class FastConsole:
 
     def write(self, text: str):
         """Write `text` to buffer. Flush the buffer if it is full."""
-        if len(self.buffer) + len(text) >= self.capacity:
-            self.flush()
-        self.buffer += text
+        with self.buffer_lock:
+            if len(self.buffer) + len(text) >= self.capacity:
+                self.flush()
+            self.buffer += text
 
     @contextmanager
     def log_to_file(self, filename: str | None):
@@ -180,11 +183,12 @@ class FastConsole:
         If the bar is present print the buffer above the bar,
         else simply print it to stdout.
         """
-        if self._bar:
-            self._bar.write(self.buffer)
-        else:
-            print(self.buffer, end="")
-        self.buffer = ""
+        with self.buffer_lock:
+            if self._bar:
+                self._bar.write(self.buffer)
+            else:
+                print(self.buffer, end="")
+            self.buffer = ""
 
 
 console = FastConsole()
