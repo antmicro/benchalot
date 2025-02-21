@@ -22,7 +22,7 @@ class Bar:
         self.n_iter = n_iter
         self.curr_iter = 0
 
-        self.bar = "".join([" "] * 50)
+        self.bar = "".join(["·"] * 20)
         self.title = ""
         self.spinner_state = 0
 
@@ -42,7 +42,7 @@ class Bar:
 
         if self.redraw_bar:
             self.erase()
-            self._write_now(f"{self.title}:[{self.bar}]")
+            self._write_now(f"{self.title} [{self.bar}]")
             self.redraw_bar = False
 
         anim = ["|", "/", "-", "\\"]
@@ -53,7 +53,9 @@ class Bar:
         time_string = f" {time_elapsed/1e9:.1f}s"
 
         self.save_cursor_pos()
-        self._write_now(f"[{anim[self.spinner_state]}{time_string}]")
+        self._write_now(
+            f"  {self.curr_iter}/{self.n_iter}  [{anim[self.spinner_state]}{time_string}]"
+        )
 
         self.restore_cursor_pos()
 
@@ -66,9 +68,9 @@ class Bar:
         completion_rate = self.curr_iter / self.n_iter * 100
         tick_rate = 100 / len(self.bar)
         progress = int(completion_rate / tick_rate)
-        bar = [" "] * len(self.bar)
+        bar = ["·"] * len(self.bar)
         for i in range(progress):
-            bar[i] = "#"
+            bar[i] = "█"
         self.bar = "".join(bar)
         self.redraw_bar = True
 
