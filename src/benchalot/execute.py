@@ -349,7 +349,6 @@ def perform_benchmarks(
                                 stderr_measurements
                             )
 
-                        bar.progress()
                         id = uuid4()
                         for metric_name, measurements in benchmark_results.items():
                             for stage, result in measurements.items():
@@ -377,6 +376,7 @@ def perform_benchmarks(
                                 )
                                 results.setdefault(STAGE_COLUMN, []).append(stage)
                                 results.setdefault(RESULT_COLUMN, []).append(result)
+                        bar.progress()
 
                     if not has_failed:
                         _execute_section(benchmark.cleanup)

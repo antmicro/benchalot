@@ -22,9 +22,11 @@ class Bar:
         self.n_iter = n_iter
         self.curr_iter = 0
 
-        self.bar = "".join([" "] * 40)
+        self.bar = "".join([" "] * 50)
         self.title = ""
         self.spinner_state = 0
+
+        self.start_time = monotonic_ns()
 
         self.prev_tic = monotonic_ns()
 
@@ -36,27 +38,31 @@ class Bar:
         sys.stdout.flush()
 
     def refresh(self):
+        time_curr = monotonic_ns()
+
         if self.redraw_bar:
             self.erase()
             self._write_now(f"{self.title}:[{self.bar}]")
             self.redraw_bar = False
 
         anim = ["|", "/", "-", "\\"]
+        time_string = ""
+
+        time_elapsed = time_curr - self.start_time
+
+        time_string = f" {time_elapsed/1e9:.1f}s"
 
         self.save_cursor_pos()
-
-        self._write_now(f"[{anim[self.spinner_state]}]")
+        self._write_now(f"[{anim[self.spinner_state]}{time_string}]")
 
         self.restore_cursor_pos()
 
-        time_curr = monotonic_ns()
         if (time_curr - self.prev_tic) / 1e6 >= 100.0:
             self.spinner_state = (self.spinner_state + 1) % len(anim)
             self.prev_tic = time_curr
 
     def progress(self):
         self.curr_iter += 1
-
         completion_rate = self.curr_iter / self.n_iter * 100
         tick_rate = 100 / len(self.bar)
         progress = int(completion_rate / tick_rate)
