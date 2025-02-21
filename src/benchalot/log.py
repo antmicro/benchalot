@@ -36,6 +36,8 @@ class Bar:
         self.title = ""
 
     async def constatnly_refresh(self):
+        anim = ["|", "/", "-", "\\"]
+        i = 0
         while True:
             completion_rate = self.curr_iter / self.n_iter * 100
             if self.saved_pos:
@@ -49,10 +51,10 @@ class Bar:
                 time_estimated_completion = 0
             self.save_cursor_pos()
             sys.stdout.write(
-                f"{self.title}:[{self.bar}]{completion_rate:.0f}% {time_estimated_completion/1e9:.2f}s"
+                f"{self.title}:[{self.bar}]{completion_rate:.0f}% {time_estimated_completion/1e9:.2f}s [{anim[i]}]"
             )
             sys.stdout.flush()
-
+            i = (i + 1) % len(anim)
             if self.curr_iter >= self.n_iter:
                 self.erase_bar()
                 break
