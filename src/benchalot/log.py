@@ -11,7 +11,6 @@ from tempfile import NamedTemporaryFile
 from atexit import register
 from contextlib import contextmanager
 import sys
-from statistics import mean
 from time import monotonic_ns
 
 
@@ -22,88 +21,72 @@ class Bar:
     def __init__(self, n_iter):
         self.n_iter = n_iter
         self.curr_iter = 0
-        self.saved_pos = False
 
-        self.time_start = monotonic_ns()
-        self.time_prev = monotonic_ns()
-
-        self.time_history = []
-        self.time_average = 0
-
-        self.bar = "".join([" "] * 20)
+        self.bar = "".join([" "] * 40)
         self.title = ""
         self.spinner_state = 0
 
         self.prev_tic = monotonic_ns()
 
-    def refresh(self):
-        time_curr = monotonic_ns()
-        if (time_curr - self.prev_tic) / 1e6 <= 32.0:
-            return
-        self.prev_tic = time_curr
-        anim = ["|", "/", "-", "\\"]
-        completion_rate = self.curr_iter / self.n_iter * 100
-        if self.saved_pos:
-            self.restore_cursor_pos()
+        self.redraw_bar = True
+        self._write_now("\33[?25l")  # hide cursor
 
-        if self.time_history:
-            time_estimated_completion = self.n_iter * self.time_average - (
-                time_curr - self.time_start
-            )
-        else:
-            time_estimated_completion = 0
-        self.save_cursor_pos()
-        sys.stdout.write(
-            f"{self.title}:[{self.bar}]{completion_rate:.0f}% {time_estimated_completion/1e9:.2f}s [{anim[self.spinner_state]}]"
-        )
+    def _write_now(self, txt):
+        sys.stdout.write(txt)
         sys.stdout.flush()
-        self.spinner_state = (self.spinner_state + 1) % len(anim)
-        if self.curr_iter >= self.n_iter:
-            self.erase_bar()
+
+    def refresh(self):
+        if self.redraw_bar:
+            self.erase()
+            self._write_now(f"{self.title}:[{self.bar}]")
+            self.redraw_bar = False
+
+        anim = ["|", "/", "-", "\\"]
+
+        self.save_cursor_pos()
+
+        self._write_now(f"[{anim[self.spinner_state]}]")
+
+        self.restore_cursor_pos()
+
+        time_curr = monotonic_ns()
+        if (time_curr - self.prev_tic) / 1e6 >= 100.0:
+            self.spinner_state = (self.spinner_state + 1) % len(anim)
+            self.prev_tic = time_curr
 
     def progress(self):
         self.curr_iter += 1
 
-        time_curr = monotonic_ns()
-        time_elapsed = time_curr - self.time_prev
-        self.time_history.append(time_elapsed)
-        self.time_average = mean(self.time_history)
-        self.time_prev = time_curr
-
         completion_rate = self.curr_iter / self.n_iter * 100
-        bar_width = 20
-        bar = [" "] * bar_width
-        tick_rate = 100 / bar_width
+        tick_rate = 100 / len(self.bar)
         progress = int(completion_rate / tick_rate)
+        bar = [" "] * len(self.bar)
         for i in range(progress):
             bar[i] = "#"
         self.bar = "".join(bar)
-        if self.curr_iter >= self.n_iter:
-            self.erase_bar()
+        self.redraw_bar = True
 
     def save_cursor_pos(self):
-        sys.stdout.write("\033[s")
-        sys.stdout.flush()
-        self.saved_pos = True
+        self._write_now("\033[s")
 
     def restore_cursor_pos(self):
-        sys.stdout.write("\033[u")
-        sys.stdout.flush()
-        self.saved_pos = False
+        self._write_now("\033[u")
 
     def write(self, buffer):
-        self.erase_bar()
-        sys.stdout.write(buffer)
-        sys.stdout.flush()
+        self.erase()
+        self._write_now(buffer)
+        self.redraw_bar = True
 
-    def erase_bar(self):
-        if self.saved_pos:
-            self.restore_cursor_pos()
-            sys.stdout.write("\033[0K")
-            sys.stdout.flush()
+    def erase(self):
+        self._write_now("\33[2K")  # erase entire line
+        self._write_now("\33[0G")  # move cursor to the first column
 
     def set_description(self, title):
         self.title = title
+        self.redraw_bar = True
+
+    def __del__(self):
+        self._write_now("\33[?25h")  # show cursor again
 
 
 class FastConsole:
@@ -166,6 +149,7 @@ class FastConsole:
                 )
             yield bar
         finally:
+            self._bar.erase()
             self._bar = None
 
     def log_command_output(self, text: str):
