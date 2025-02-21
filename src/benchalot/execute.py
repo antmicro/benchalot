@@ -104,8 +104,6 @@ async def gather_custom_metric(
     await exit_future
     output = await stdout_future
     output = output.decode("utf-8")
-    console.log_command_output(output)
-    console.flush()
     if len(output.splitlines()) == 1:
         out = try_convert_to_float(output)
         return ({DEFAULT_STAGE_NAME: out}, out is None)
