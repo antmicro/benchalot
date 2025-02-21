@@ -1,6 +1,6 @@
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE
 from logging import getLogger
-from os import getcwd, wait4, waitstatus_to_exitcode, environ
+from os import getcwd, wait4, waitstatus_to_exitcode, environ, WNOHANG
 from time import monotonic_ns
 from io import StringIO
 from csv import DictReader
@@ -19,7 +19,7 @@ from benchalot.config import BuiltInMetrics, SystemSection
 from benchalot.system import modify_system_state, restore_system_state
 from os.path import isdir
 import threading
-import asyncio
+import queue
 
 logger = getLogger(f"benchalot.{__name__}")
 working_directory = getcwd()
@@ -50,7 +50,7 @@ def check_return_code(command: str, code: int) -> bool:
     return True
 
 
-def execute_command(command: str, separate_stderr: bool = False) -> Popen:
+def execute_command(command: str) -> Popen:
     """Execute command in shell, with `stdout` and `stderr` piped.
 
     Args:
@@ -62,13 +62,7 @@ def execute_command(command: str, separate_stderr: bool = False) -> Popen:
     """
     global working_directory
     logger.info(command)
-    if separate_stderr:
-        stderr_stream = PIPE
-    else:
-        stderr_stream = STDOUT
-    return Popen(
-        command, shell=True, stdout=PIPE, stderr=stderr_stream, cwd=working_directory
-    )
+    return Popen(command, shell=True, stdout=PIPE, stderr=PIPE, cwd=working_directory)
 
 
 def try_convert_to_float(value: str) -> float | None:
@@ -87,9 +81,7 @@ def try_convert_to_float(value: str) -> float | None:
         return None
 
 
-async def gather_custom_metric(
-    metric_command: str,
-) -> tuple[dict[str, float | None], bool]:
+def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], bool]:
     """Gather custom metric measurements.
     If output has more than one line, treat output as csv file, with each column representing separate stage.
 
@@ -99,11 +91,10 @@ async def gather_custom_metric(
         tuple[dict[str, float | None], bool]: Containing single or multi stage result and whether the custom_metric failed.
     """
     process = execute_command(metric_command)
-    stdout_future = create_output_future(process.stdout)
-    exit_future = create_process_exit_future(process.pid)
-    await exit_future
-    output = await stdout_future
+    output, _ = process.communicate()
     output = output.decode("utf-8")
+    console.log_command_output(output)
+    console.flush()
     if len(output.splitlines()) == 1:
         out = try_convert_to_float(output)
         return ({DEFAULT_STAGE_NAME: out}, out is None)
@@ -128,46 +119,40 @@ async def gather_custom_metric(
         return ({DEFAULT_STAGE_NAME: None}, True)
 
 
-def create_process_exit_future(pid):
-    loop = asyncio.get_running_loop()
-
-    def _wait_for_process(loop, pid, future):
-        result = wait4(pid, 0)
-        loop.call_soon_threadsafe(_process_exited, future, result)
-
-    def _process_exited(future, result):
-        future.set_result(result)
-
-    exit_status_future = loop.create_future()
-    threading.Thread(
-        target=_wait_for_process, args=(loop, pid, exit_status_future), daemon=True
-    ).start()
-    return exit_status_future
+def read_pipe(pipe, queue):
+    if pipe:
+        for line in pipe:
+            queue.put(line)
+        pipe.close()
+    queue.put(None)
 
 
-def create_output_future(pipe):
-    loop = asyncio.get_running_loop()
+class OutputLogger:
+    def __init__(self, file, store=False):
+        self.queue = queue.Queue()
+        self.stderr_done = False
+        self.done = False
+        self.store = store
+        self.output = b""
+        threading.Thread(target=read_pipe, args=(file, self.queue), daemon=True).start()
 
-    def _read_pipe(loop, file, future):
-        result = b""
-        if file:
-            for line in file:
-                result += line
-                console.log_command_output(line.decode("utf-8"))
-            console.flush()
-            file.close()
-        loop.call_soon_threadsafe(_return_pipe_results, future, result)
-
-    def _return_pipe_results(future, output):
-        future.set_result(output)
-
-    future = loop.create_future()
-    threading.Thread(target=_read_pipe, args=(loop, pipe, future), daemon=True).start()
-
-    return future
+    def log(self):
+        if self.done:
+            return
+        try:
+            output = self.queue.get_nowait()
+            if output is None:
+                self.done = True
+                console.flush()
+            else:
+                if self.store:
+                    self.output += output
+                console.log_command_output(output.decode("utf-8"))
+        except queue.Empty:
+            pass
 
 
-async def perform_benchmarks(
+def perform_benchmarks(
     benchmarks: list[PreparedBenchmark],
     samples: int,
     builtin_metrics: set[BuiltInMetrics],
@@ -184,19 +169,26 @@ async def perform_benchmarks(
     Returns:
         dict[str, list]: Dictionary containing results.
     """
-    loop = asyncio.get_running_loop()
     results: dict[str, list] = dict()
     with console.bar((len(benchmarks) * samples)) as bar:
-        loop.create_task(bar.constatnly_refresh())
 
-        async def _execute_section(commands):
+        def _execute_section(commands):
+
             for c in commands:
                 bar.set_description(c)
                 process = execute_command(c)
-                exit_future = create_process_exit_future(process.pid)
-                stdout_future = create_output_future(process.stdout)
-                await stdout_future
-                _, exit_status, _ = await exit_future
+                stdout_logger = OutputLogger(process.stderr)
+                stderr_logger = OutputLogger(process.stdout)
+                finished = False
+
+                while not finished or not stdout_logger.done or not stderr_logger.done:
+                    stdout_logger.log()
+                    stderr_logger.log()
+                    if not finished:
+                        pid, exit_status, resources = wait4(process.pid, WNOHANG)
+                        finished = pid == process.pid
+                    bar.refresh()
+
                 if not check_return_code(c, waitstatus_to_exitcode(exit_status)):
                     return False
             return True
@@ -209,12 +201,10 @@ async def perform_benchmarks(
                 environ.update(benchmark.env)
                 with console.log_to_file(benchmark.save_output):
                     has_failed = False
-                    if not await _execute_section(benchmark.setup):
+                    if not _execute_section(benchmark.setup):
                         has_failed = True
                     for _ in range(0, samples):
-                        if not has_failed and not await _execute_section(
-                            benchmark.prepare
-                        ):
+                        if not has_failed and not _execute_section(benchmark.prepare):
                             has_failed = True
 
                         measure_time = BuiltInMetrics.TIME in builtin_metrics
@@ -246,25 +236,34 @@ async def perform_benchmarks(
                                 if has_failed:
                                     break
                                 bar.set_description(command)
-                                process_stdout = b""
-                                process_stderr = b""
+                                finished = False
+                                process = execute_command(command)
                                 start = monotonic_ns()
-                                process = execute_command(
-                                    command, measure_stdout or measure_stderr
+                                stdout_logger = OutputLogger(
+                                    process.stdout, measure_stdout
                                 )
-
-                                exit_status_future = create_process_exit_future(
-                                    process.pid
+                                stderr_logger = OutputLogger(
+                                    process.stderr, measure_stderr
                                 )
-                                stdout_future = create_output_future(process.stdout)
-                                if measure_stderr or measure_stdout:
-                                    stderr_future = create_output_future(process.stderr)
+                                finished = False
 
-                                _, exit_status, resources = await exit_status_future
+                                while not finished:
+                                    stdout_logger.log()
+                                    stderr_logger.log()
+                                    pid, exit_status, resources = wait4(
+                                        process.pid, WNOHANG
+                                    )
+                                    finished = pid == process.pid
+                                    bar.refresh()
+
                                 stage_elapsed_time += monotonic_ns() - start
-                                process_stdout = await stdout_future
-                                if measure_stderr or measure_stdout:
-                                    process_stderr = await stderr_future
+
+                                # empty output
+                                while not (stdout_logger.done and stderr_logger.done):
+                                    stdout_logger.log()
+                                    stderr_logger.log()
+                                    bar.refresh()
+
                                 # source: https://manpages.debian.org/bookworm/manpages-dev/getrusage.2.en.html
                                 if measure_utime:
                                     stage_utime += resources.ru_utime
@@ -275,9 +274,9 @@ async def perform_benchmarks(
                                         stage_memory, resources.ru_maxrss
                                     )
                                 if measure_stdout:
-                                    stage_stdout += process_stdout.decode("utf-8")
+                                    stage_stdout += stdout_logger.output.decode("utf-8")
                                 if measure_stderr:
-                                    stage_stderr += process_stderr.decode("utf-8")
+                                    stage_stderr += stdout_logger.output.decode("utf-8")
                                 success = check_return_code(
                                     command, waitstatus_to_exitcode(exit_status)
                                 )
@@ -319,9 +318,7 @@ async def perform_benchmarks(
                         if system.modify:
                             restore_system_state()
 
-                        if not has_failed and not await _execute_section(
-                            benchmark.conclude
-                        ):
+                        if not has_failed and not _execute_section(benchmark.conclude):
                             has_failed = True
 
                         benchmark_results: dict[str, dict[str, float | int | None]] = {}
@@ -329,7 +326,7 @@ async def perform_benchmarks(
                         for custom_metric in benchmark.custom_metrics:
                             metric_name, command = list(custom_metric.items())[0]
                             custom_measurements, custom_metric_failed = (
-                                await gather_custom_metric(command)
+                                gather_custom_metric(command)
                             )
                             if custom_metric_failed:
                                 has_failed = True
@@ -382,7 +379,7 @@ async def perform_benchmarks(
                                 results.setdefault(RESULT_COLUMN, []).append(result)
 
                     if not has_failed:
-                        await _execute_section(benchmark.cleanup)
+                        _execute_section(benchmark.cleanup)
 
             except KeyboardInterrupt:
                 logger.warning("Stopped benchmarks.")

@@ -13,8 +13,6 @@ from contextlib import contextmanager
 import sys
 from statistics import mean
 from time import monotonic_ns
-import asyncio
-import threading
 
 
 logger = getLogger(f"benchalot.{__name__}")
@@ -34,31 +32,34 @@ class Bar:
 
         self.bar = "".join([" "] * 20)
         self.title = ""
+        self.spinner_state = 0
 
-    async def constatnly_refresh(self):
+        self.prev_tic = monotonic_ns()
+
+    def refresh(self):
+        time_curr = monotonic_ns()
+        if (time_curr - self.prev_tic) / 1e6 <= 32.0:
+            return
+        self.prev_tic = time_curr
         anim = ["|", "/", "-", "\\"]
-        i = 0
-        while True:
-            completion_rate = self.curr_iter / self.n_iter * 100
-            if self.saved_pos:
-                self.restore_cursor_pos()
+        completion_rate = self.curr_iter / self.n_iter * 100
+        if self.saved_pos:
+            self.restore_cursor_pos()
 
-            if self.time_history:
-                time_estimated_completion = self.n_iter * self.time_average - (
-                    monotonic_ns() - self.time_start
-                )
-            else:
-                time_estimated_completion = 0
-            self.save_cursor_pos()
-            sys.stdout.write(
-                f"{self.title}:[{self.bar}]{completion_rate:.0f}% {time_estimated_completion/1e9:.2f}s [{anim[i]}]"
+        if self.time_history:
+            time_estimated_completion = self.n_iter * self.time_average - (
+                time_curr - self.time_start
             )
-            sys.stdout.flush()
-            i = (i + 1) % len(anim)
-            if self.curr_iter >= self.n_iter:
-                self.erase_bar()
-                break
-            await asyncio.sleep(0.1)
+        else:
+            time_estimated_completion = 0
+        self.save_cursor_pos()
+        sys.stdout.write(
+            f"{self.title}:[{self.bar}]{completion_rate:.0f}% {time_estimated_completion/1e9:.2f}s [{anim[self.spinner_state]}]"
+        )
+        sys.stdout.flush()
+        self.spinner_state = (self.spinner_state + 1) % len(anim)
+        if self.curr_iter >= self.n_iter:
+            self.erase_bar()
 
     def progress(self):
         self.curr_iter += 1
@@ -116,7 +117,6 @@ class FastConsole:
 
         self.capacity = 1024
         self.buffer = ""
-        self.buffer_lock = threading.RLock()
         self.verbose = False
         self.file = None
 
@@ -126,10 +126,9 @@ class FastConsole:
 
     def write(self, text: str):
         """Write `text` to buffer. Flush the buffer if it is full."""
-        with self.buffer_lock:
-            if len(self.buffer) + len(text) >= self.capacity:
-                self.flush()
-            self.buffer += text
+        if len(self.buffer) + len(text) >= self.capacity:
+            self.flush()
+        self.buffer += text
 
     @contextmanager
     def log_to_file(self, filename: str | None):
@@ -185,12 +184,11 @@ class FastConsole:
         If the bar is present print the buffer above the bar,
         else simply print it to stdout.
         """
-        with self.buffer_lock:
-            if self._bar:
-                self._bar.write(self.buffer)
-            else:
-                print(self.buffer, end="")
-            self.buffer = ""
+        if self._bar:
+            self._bar.write(self.buffer)
+        else:
+            print(self.buffer, end="")
+        self.buffer = ""
 
 
 console = FastConsole()
