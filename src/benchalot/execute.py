@@ -249,7 +249,9 @@ async def perform_benchmarks(
                                 process_stdout = b""
                                 process_stderr = b""
                                 start = monotonic_ns()
-                                process = execute_command(command)
+                                process = execute_command(
+                                    command, measure_stdout or measure_stderr
+                                )
 
                                 exit_status_future = create_process_exit_future(
                                     process.pid
@@ -259,10 +261,10 @@ async def perform_benchmarks(
                                     stderr_future = create_output_future(process.stderr)
 
                                 _, exit_status, resources = await exit_status_future
+                                stage_elapsed_time += monotonic_ns() - start
                                 process_stdout = await stdout_future
                                 if measure_stderr or measure_stdout:
                                     process_stderr = await stderr_future
-                                stage_elapsed_time += monotonic_ns() - start
                                 # source: https://manpages.debian.org/bookworm/manpages-dev/getrusage.2.en.html
                                 if measure_utime:
                                     stage_utime += resources.ru_utime
