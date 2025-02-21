@@ -150,11 +150,12 @@ def create_output_future(pipe):
 
     def _read_pipe(loop, file, future):
         result = b""
-        for line in file:
-            result += line
-            console.log_command_output(line.decode("utf-8"))
-        console.flush()
-        file.close()
+        if file:
+            for line in file:
+                result += line
+                console.log_command_output(line.decode("utf-8"))
+            console.flush()
+            file.close()
         loop.call_soon_threadsafe(_return_pipe_results, future, result)
 
     def _return_pipe_results(future, output):
