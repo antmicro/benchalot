@@ -19,7 +19,7 @@ from benchalot.config import BuiltInMetrics, SystemSection
 from benchalot.system import modify_system_state, restore_system_state
 from os.path import isdir
 import threading
-import queue
+from collections import deque
 
 logger = getLogger(f"benchalot.{__name__}")
 working_directory = getcwd()
@@ -94,7 +94,6 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
     output, _ = process.communicate()
     output = output.decode("utf-8")
     console.log_command_output(output)
-    console.flush()
     if len(output.splitlines()) == 1:
         out = try_convert_to_float(output)
         return ({DEFAULT_STAGE_NAME: out}, out is None)
@@ -120,27 +119,38 @@ def gather_custom_metric(metric_command: str) -> tuple[dict[str, float | None], 
 
 
 def read_pipe(pipe, queue):
+    start = monotonic_ns()
     if pipe:
-        for line in pipe:
-            queue.put(line)
+        while True:
+            # NOTE: read1 gets any data with at most one read() call
+            #       normal read() would block here unitl EOF is reached
+            data = pipe.read1()
+            if not data:
+                break
+            queue.append(data)
         pipe.close()
-    queue.put(None)
+    queue.append(None)
+    end = monotonic_ns() - start
+    logger.debug(f"Thread finished reading output: {end/1e9}s")
 
 
 class OutputLogger:
     def __init__(self, file, store=False):
-        self.queue = queue.Queue()
+        # NOTE: deque.append and deque.popleft are atomic operations
+        self.queue = deque()
         self.stderr_done = False
         self.done = False
         self.store = store
         self.output = b""
         threading.Thread(target=read_pipe, args=(file, self.queue), daemon=True).start()
+        self.total_log_time = 0
 
     def log(self):
+        start = monotonic_ns()
         if self.done:
             return
-        try:
-            output = self.queue.get_nowait()
+        if len(self.queue) > 0:
+            output = self.queue.popleft()
             if output is None:
                 self.done = True
                 console.flush()
@@ -148,8 +158,11 @@ class OutputLogger:
                 if self.store:
                     self.output += output
                 console.log_command_output(output.decode("utf-8"))
-        except queue.Empty:
-            pass
+        end = monotonic_ns() - start
+        self.total_log_time += end
+
+    def __del__(self):
+        logger.debug(f"Total time to log from queue: {self.total_log_time/1e9}s")
 
 
 def perform_benchmarks(
@@ -258,11 +271,14 @@ def perform_benchmarks(
 
                                 stage_elapsed_time += monotonic_ns() - start
 
+                                start = monotonic_ns()
                                 # empty output
                                 while not (stdout_logger.done and stderr_logger.done):
                                     stdout_logger.log()
                                     stderr_logger.log()
                                     bar.refresh()
+                                end = monotonic_ns() - start
+                                logger.debug(f"Time for flushing output: {end/1e9}s")
 
                                 # source: https://manpages.debian.org/bookworm/manpages-dev/getrusage.2.en.html
                                 if measure_utime:

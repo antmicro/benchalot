@@ -11,7 +11,7 @@ from tempfile import NamedTemporaryFile
 from atexit import register
 from contextlib import contextmanager
 import sys
-from time import monotonic_ns
+from time import monotonic
 
 
 logger = getLogger(f"benchalot.{__name__}")
@@ -26,42 +26,45 @@ class Bar:
         self.title = ""
         self.spinner_state = 0
 
-        self.start_time = monotonic_ns()
+        self.start_time = monotonic()
 
-        self.prev_tic = monotonic_ns()
+        self.prev_tic = monotonic()
 
         self.redraw_bar = True
         self._write_now("\33[?25l")  # hide cursor
+        self.tick_counter = 0
+        self.total_drawing_time = 0
 
     def _write_now(self, txt):
         sys.stdout.write(txt)
-        sys.stdout.flush()
 
     def refresh(self):
-        time_curr = monotonic_ns()
+        time_curr = monotonic()
+        if (time_curr - self.prev_tic) >= 0.100:
+            buffer = ""
 
-        if self.redraw_bar:
-            self.erase()
-            self._write_now(f"{self.title} [{self.bar}]")
-            self.redraw_bar = False
+            if self.redraw_bar:
+                self.erase()
+                buffer += f"{self.title} [{self.bar}]"
+                self.redraw_bar = False
 
-        anim = ["|", "/", "-", "\\"]
-        time_string = ""
+            anim = ["|", "/", "-", "\\"]
+            time_string = ""
 
-        time_elapsed = time_curr - self.start_time
+            time_elapsed = time_curr - self.start_time
 
-        time_string = f" {time_elapsed/1e9:.1f}s"
+            time_string = f" {time_elapsed:.1f}s"
 
-        self.save_cursor_pos()
-        self._write_now(
-            f"  {self.curr_iter}/{self.n_iter}  [{anim[self.spinner_state]}{time_string}]"
-        )
+            buffer += "\033[s"
 
-        self.restore_cursor_pos()
+            buffer += f"  {self.curr_iter}/{self.n_iter}  [{anim[self.spinner_state]}{time_string}]"
 
-        if (time_curr - self.prev_tic) / 1e6 >= 100.0:
+            buffer += "\033[u"
             self.spinner_state = (self.spinner_state + 1) % len(anim)
             self.prev_tic = time_curr
+            sys.stdout.write(buffer)
+            sys.stdout.flush()
+        self.total_drawing_time += monotonic() - time_curr
 
     def progress(self):
         self.curr_iter += 1
@@ -73,6 +76,8 @@ class Bar:
             bar[i] = "█"
         self.bar = "".join(bar)
         self.redraw_bar = True
+        logger.debug(f"Total time spent on drawing bar {self.total_drawing_time:.2f}s")
+        self.times = []
 
     def save_cursor_pos(self):
         self._write_now("\033[s")
@@ -105,9 +110,6 @@ class FastConsole:
         It is achieved by using string buffer.
         """
         self._bar = False
-
-        self.capacity = 1024
-        self.buffer = ""
         self.verbose = False
         self.file = None
 
@@ -117,9 +119,10 @@ class FastConsole:
 
     def write(self, text: str):
         """Write `text` to buffer. Flush the buffer if it is full."""
-        if len(self.buffer) + len(text) >= self.capacity:
-            self.flush()
-        self.buffer += text
+        if self._bar:
+            self._bar.write(text)
+        else:
+            print(text, end="")
 
     @contextmanager
     def log_to_file(self, filename: str | None):
@@ -130,12 +133,11 @@ class FastConsole:
             filename: name of the logfile.  If `None`, the output will redirected to `/dev/null`
         """
         if not filename:
-            log_file_desc = "/dev/null"
-        else:
-            log_file_desc = filename
-        with open(log_file_desc, "a") as log_file:
-            self.file = log_file
             yield
+        else:
+            with open(filename, "a") as log_file:
+                self.file = log_file
+                yield
         self.file = None
 
     @contextmanager
@@ -164,7 +166,8 @@ class FastConsole:
         """Print command output to stdout and/or save it to a file"""
         if self.verbose:
             self.write(text)
-        self.file.write(text)
+        if self.file:
+            self.file.write(text)
 
     def print(self, text="", end="\n"):
         """Print text to stdout, above the live progress bar"""
@@ -176,11 +179,7 @@ class FastConsole:
         If the bar is present print the buffer above the bar,
         else simply print it to stdout.
         """
-        if self._bar:
-            self._bar.write(self.buffer)
-        else:
-            print(self.buffer, end="")
-        self.buffer = ""
+        pass
 
 
 console = FastConsole()
