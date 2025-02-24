@@ -271,7 +271,6 @@ def perform_benchmarks(
                                 if has_failed:
                                     break
                                 bar.set_description(command)
-                                finished = False
                                 process = execute_command(command)
                                 start = monotonic_ns()
                                 stdout_logger = OutputLogger(
@@ -280,12 +279,10 @@ def perform_benchmarks(
                                 stderr_logger = OutputLogger(
                                     process.stderr, measure_stderr
                                 )
-                                finished = False
 
-                                while not finished:
+                                while not poll(process):
                                     stdout_logger.log()
                                     stderr_logger.log()
-                                    finished = poll(process)
                                     bar.refresh()
 
                                 stage_elapsed_time += monotonic_ns() - start
