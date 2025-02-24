@@ -24,46 +24,38 @@ class Bar:
 
         self.bar = "".join(["·"] * 20)
         self.title = ""
+        self.anim = ["|", "/", "-", "\\"]
         self.spinner_state = 0
 
         self.start_time = monotonic()
-
         self.prev_tic = monotonic()
 
         self.redraw_bar = True
-        self._write_now("\33[?25l")  # hide cursor
-        self.tick_counter = 0
+        self._write_impl("\33[?25l")  # hide cursor
         self.total_drawing_time = 0
 
-    def _write_now(self, txt):
+    def _write_impl(self, txt):
         sys.stdout.write(txt)
+
+    def _flush_impl(self):
+        sys.stdout.flush()
 
     def refresh(self):
         time_curr = monotonic()
         if (time_curr - self.prev_tic) >= 0.100:
             buffer = ""
-
             if self.redraw_bar:
                 self.erase()
                 buffer += f"{self.title} [{self.bar}]"
                 self.redraw_bar = False
-
-            anim = ["|", "/", "-", "\\"]
-            time_string = ""
-
             time_elapsed = time_curr - self.start_time
-
-            time_string = f" {time_elapsed:.1f}s"
-
-            buffer += "\033[s"
-
-            buffer += f"  {self.curr_iter}/{self.n_iter}  [{anim[self.spinner_state]}{time_string}]"
-
-            buffer += "\033[u"
-            self.spinner_state = (self.spinner_state + 1) % len(anim)
+            buffer += "\033[s"  # save cursor position
+            buffer += f"  {self.curr_iter}/{self.n_iter}  [{self.anim[self.spinner_state]} {time_elapsed:.1f}s]"
+            buffer += "\033[u"  # restore cursor position
+            self.spinner_state = (self.spinner_state + 1) % len(self.anim)
             self.prev_tic = time_curr
-            sys.stdout.write(buffer)
-            sys.stdout.flush()
+            self._write_impl(buffer)
+            self._flush_impl()
         self.total_drawing_time += monotonic() - time_curr
 
     def progress(self):
@@ -77,29 +69,23 @@ class Bar:
         self.bar = "".join(bar)
         self.redraw_bar = True
         logger.debug(f"Total time spent on drawing bar {self.total_drawing_time:.2f}s")
-        self.times = []
-
-    def save_cursor_pos(self):
-        self._write_now("\033[s")
-
-    def restore_cursor_pos(self):
-        self._write_now("\033[u")
 
     def write(self, buffer):
         self.erase()
-        self._write_now(buffer)
+        self._write_impl(buffer)
         self.redraw_bar = True
 
     def erase(self):
-        self._write_now("\33[2K")  # erase entire line
-        self._write_now("\33[0G")  # move cursor to the first column
+        self._write_impl("\33[2K")  # erase entire line
+        self._write_impl("\33[0G")  # move cursor to the first column
 
     def set_description(self, title):
         self.title = title
         self.redraw_bar = True
 
     def __del__(self):
-        self._write_now("\33[?25h")  # show cursor again
+        self._write_impl("\33[?25h")  # show cursor again
+        self._flush_impl()
 
 
 class FastConsole:
@@ -109,7 +95,7 @@ class FastConsole:
         It's main purpose is to allow provide live progress bar with very small performance penalty.
         It is achieved by using string buffer.
         """
-        self._bar = False
+        self._bar = None
         self.verbose = False
         self.file = None
 
@@ -118,7 +104,7 @@ class FastConsole:
         self.verbose = verbose
 
     def write(self, text: str):
-        """Write `text` to buffer. Flush the buffer if it is full."""
+        """Write `text` to terminal. If a bar is present, display it above the bar."""
         if self._bar:
             self._bar.write(text)
         else:
@@ -130,7 +116,7 @@ class FastConsole:
         Convenience function for logging command output to a file.
 
         Args:
-            filename: name of the logfile.  If `None`, the output will redirected to `/dev/null`
+            filename: name of the logfile.
         """
         if not filename:
             yield
@@ -172,13 +158,9 @@ class FastConsole:
     def print(self, text="", end="\n"):
         """Print text to stdout, above the live progress bar"""
         self.write(text + end)
-        self.flush()
 
     def flush(self) -> None:
-        """
-        If the bar is present print the buffer above the bar,
-        else simply print it to stdout.
-        """
+        """Left here for compatiblity reasons"""
         pass
 
 

@@ -1,6 +1,16 @@
 from subprocess import Popen, PIPE
 from logging import getLogger
-from os import getcwd, wait4, waitstatus_to_exitcode, environ, WNOHANG
+from os import (
+    getcwd,
+    wait4,
+    waitstatus_to_exitcode,
+    environ,
+    WNOHANG,
+    waitid,
+    WNOWAIT,
+    WEXITED,
+    P_PID,
+)
 from time import monotonic_ns
 from io import StringIO
 from csv import DictReader
@@ -165,6 +175,19 @@ class OutputLogger:
         logger.debug(f"Total time to log from queue: {self.total_log_time/1e9}s")
 
 
+def poll(process):
+    """Without blocking, check if process returned. Process needs to be reaped later"""
+    status = waitid(P_PID, process.pid, WNOHANG | WNOWAIT | WEXITED)
+    finished = status is not None
+    return finished
+
+
+def reap(process):
+    """Get information about finished process"""
+    pid, wait_status, resources = wait4(process.pid, 0)
+    return pid, waitstatus_to_exitcode(wait_status), resources
+
+
 def perform_benchmarks(
     benchmarks: list[PreparedBenchmark],
     samples: int,
@@ -195,14 +218,14 @@ def perform_benchmarks(
                 finished = False
 
                 while not finished or not stdout_logger.done or not stderr_logger.done:
+                    bar.refresh()
                     stdout_logger.log()
                     stderr_logger.log()
                     if not finished:
-                        pid, exit_status, resources = wait4(process.pid, WNOHANG)
-                        finished = pid == process.pid
-                    bar.refresh()
+                        finished = poll(process)
 
-                if not check_return_code(c, waitstatus_to_exitcode(exit_status)):
+                _, exit_code, _ = reap(process)
+                if not check_return_code(c, exit_code):
                     return False
             return True
 
@@ -263,13 +286,11 @@ def perform_benchmarks(
                                 while not finished:
                                     stdout_logger.log()
                                     stderr_logger.log()
-                                    pid, exit_status, resources = wait4(
-                                        process.pid, WNOHANG
-                                    )
-                                    finished = pid == process.pid
+                                    finished = poll(process)
                                     bar.refresh()
 
                                 stage_elapsed_time += monotonic_ns() - start
+                                pid, exit_status, resources = reap(process)
 
                                 start = monotonic_ns()
                                 # empty output
@@ -293,9 +314,7 @@ def perform_benchmarks(
                                     stage_stdout += stdout_logger.output.decode("utf-8")
                                 if measure_stderr:
                                     stage_stderr += stdout_logger.output.decode("utf-8")
-                                success = check_return_code(
-                                    command, waitstatus_to_exitcode(exit_status)
-                                )
+                                success = check_return_code(command, exit_status)
                                 if not success:
                                     has_failed = True
                             if not has_failed:
