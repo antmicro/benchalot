@@ -313,7 +313,7 @@ def perform_benchmarks(
                                 if measure_stdout:
                                     stage_stdout += stdout_logger.output.decode("utf-8")
                                 if measure_stderr:
-                                    stage_stderr += stdout_logger.output.decode("utf-8")
+                                    stage_stderr += stderr_logger.output.decode("utf-8")
                                 success = check_return_code(command, exit_status)
                                 if not success:
                                     has_failed = True
