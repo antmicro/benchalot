@@ -141,7 +141,7 @@ def read_pipe(pipe, queue):
         pipe.close()
     queue.append(None)
     end = monotonic_ns() - start
-    logger.debug(f"Thread finished reading output: {end/1e9}s")
+    logger.debug(f"Reading output from pipe took: {end/1e9}s")
 
 
 class OutputLogger:
@@ -172,7 +172,7 @@ class OutputLogger:
         self.total_log_time += end
 
     def __del__(self):
-        logger.debug(f"Total time to log from queue: {self.total_log_time/1e9}s")
+        logger.debug(f"Logging output took: {self.total_log_time/1e9}s")
 
 
 def poll(process):
@@ -209,7 +209,6 @@ def perform_benchmarks(
     with console.bar((len(benchmarks) * samples)) as bar:
 
         def _execute_section(commands):
-
             for c in commands:
                 bar.set_description(c)
                 process = execute_command(c)
@@ -293,13 +292,15 @@ def perform_benchmarks(
                                 pid, exit_status, resources = reap(process)
 
                                 start = monotonic_ns()
-                                # empty output
+                                # log remaining output
                                 while not (stdout_logger.done and stderr_logger.done):
                                     stdout_logger.log()
                                     stderr_logger.log()
                                     bar.refresh()
                                 end = monotonic_ns() - start
-                                logger.debug(f"Time for flushing output: {end/1e9}s")
+                                logger.debug(
+                                    f"Logging remaining output took: {end/1e9}s"
+                                )
 
                                 # source: https://manpages.debian.org/bookworm/manpages-dev/getrusage.2.en.html
                                 if measure_utime:

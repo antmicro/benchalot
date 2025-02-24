@@ -68,7 +68,7 @@ class Bar:
             bar[i] = "█"
         self.bar = "".join(bar)
         self.redraw_bar = True
-        logger.debug(f"Total time spent on drawing bar {self.total_drawing_time:.2f}s")
+        logger.debug(f"Drawing live progress bar took: {self.total_drawing_time:.2f}s")
 
     def write(self, buffer):
         self.erase()
