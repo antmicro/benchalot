@@ -4,13 +4,13 @@ from benchalot.config import validate_config, validate_output_config
 from benchalot.prepare import prepare_benchmarks
 from benchalot.execute import perform_benchmarks
 from os import geteuid, execvp
-from benchalot.output import output_results_from_dict, output_results_from_file
 from argparse import ArgumentParser
 from os.path import isfile
 from benchalot.log import setup_benchalot_logging, crash_msg_log_file
 from logging import getLogger
 from atexit import unregister
 from pathlib import Path
+import importlib
 
 logger = getLogger(f"benchalot.{__name__}")
 
@@ -27,7 +27,7 @@ def main():
                 logger.critical(f"File '{file}' not found")
                 exit(1)
         config = validate_output_config(config_file)
-        output_results_from_file(
+        output_module().output_results_from_file(
             config.results,
             args.results_from_csv,
             args.include_failed,
@@ -91,7 +91,7 @@ def main():
         benchmarks, config.samples, config.metrics, config.system
     )
 
-    output_results_from_dict(
+    output_module().output_results_from_dict(
         results,
         config.results,
         args.include,
@@ -106,6 +106,11 @@ def exit_benchalot():
     """Exit benchalot normally."""
     unregister(crash_msg_log_file)
     exit(0)
+
+
+def output_module():
+    """Lazy load output module to decrease startup time"""
+    return importlib.import_module("benchalot.output")
 
 
 def get_argument_parser() -> ArgumentParser:
