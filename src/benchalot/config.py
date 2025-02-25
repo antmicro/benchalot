@@ -259,6 +259,19 @@ class ConfigFile(BaseModel):
         return matrix
 
     @model_validator(mode="after")
+    def variable_not_a_metric(self):
+        """Check if one of matrix variable names is the same as one of the metrics."""
+        metric_names = [str(metric) for metric in self.metrics] + [
+            list(metric.items())[0][0] for metric in self.custom_metrics
+        ]
+        for var_name in self.matrix:
+            if var_name in metric_names:
+                raise ValueError(
+                    f"'{var_name}' cannot be used as both a variable name and a metric name."
+                )
+        return self
+
+    @model_validator(mode="after")
     def at_least_one_csv(self):
         """Check if results section contains at least one csv output, if not create a default `result.csv` output config."""
         if not self.results:
