@@ -2,7 +2,6 @@ stages:
   - lint_and_style
   - tests
 
-
 black:
   image: "debian:bookworm"
   stage: lint_and_style
