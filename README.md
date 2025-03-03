@@ -2,33 +2,31 @@
 
 Copyright (c) 2024-2025 [Antmicro](https://www.antmicro.com)
 
-
 ## Overview
 
-Benchalot is a tool used for automatic benchmarking of software. 
+Benchalot is a tool used for automatic benchmarking of software.
 Benchalot can be configured to execute multiple benchmarks with different parameters, aggregate their results and present them using tables and plots.
 
 ## Installation
 
 To use benchalot, install it as a pip package.
-If you plan on using [isolate-cpus](#system) feature, install [`cpuset`](https://github.com/SUSE/cpuset).
+If you're planning on using the [isolate-cpus](#system) feature, install [`cpuset`](https://github.com/SUSE/cpuset).
 
 ## Usage
 
-To use benchalot first create [YAML configuration file](#configuration). 
-Then pass configuration file's name as an argument.
-For example, start the benchmark by typing this command:
+To use benchalot, you first need to create a [YAML configuration file](#configuration).
+Then pass the configuration file's name as an argument.
+For example, you can start a benchmark by running this command:
 
 <!--name="run"-->
 ```bash
 benchalot config.yml
 ```
 
-
 ## Configuration
 
 Benchalot is configured using a YAML file.
-For example:
+A basic example of such a file can look as follows:
 
 <!--name="example-basic"-->
 ```yaml
@@ -46,12 +44,12 @@ gzip plot.png -c > output
 bzip2 plot.png -c > output
 xz plot.png -c > output
 ```
+
 Each command will be executed five times.
 The summary containing min, median, and max execution will be then printed to the terminal.
 Detailed results will be saved to `result.csv`.
 
-Benchalot is much more capable. 
-For example look at the following configuration file:
+Below you can see an example of a configuration file that takes advantage of more of Benchalot's capabilities:
 
 <!-- name="example-intermediate" -->
 ```yaml
@@ -94,7 +92,7 @@ results:
     stats: ["mean", "std"]
 ```
 
-Benchalot automatically builds and measures execution time of the program `sleeper` with different combinations of arguments. 
+Here, benchalot automatically builds and measures the execution time of `sleeper` with different combinations of arguments.
 Then results are aggregated and, in addition to `result.csv`, two files are created - `plot.png` and `table.md`.
 
 The `plot.png` will look like this:
@@ -102,6 +100,7 @@ The `plot.png` will look like this:
 <img src="plot.png" alt="plot created automatically based on configuration file" width="700" height="630"/>
 
 And `table.md` like this:
+
 ```markdown
 | tag          | mean time to process data1   | mean time to process data2   | mean time to process data3   |
 |:-------------|:-----------------------------|:-----------------------------|:-----------------------------|
@@ -121,9 +120,9 @@ matrix:
     input: [data1, data2, data3]
 ```
 
-Commands will have very substring in format `{{var_name}}` substituted to corresponding value.
-For each combination of variable values, a run will be performed, e.g.:  
-The above configuration will result in runs:  
+Commands will have each substring in the format `{{var_name}}` substituted to its corresponding value.
+For each combination of variable values, a run will be performed.  
+For instance, the configuration above will result in runs:  
 
 ```
 thread = 2; input = "data1"; tag = "sleeper-v2.0"
@@ -133,13 +132,14 @@ thread = 8; input = "data1"; tag = "sleeper-v2.0"
 thread = 8; input = "data3"; tag = "sleeper-v2.2"
 ```
 
-in total creating 18 combinations of variable values.
+In total, this configuration creates 18 combinations of variable values.
 
-Matrix variables can [contain fields](#advanced-configuration).
+Matrix variables can contain fields that enable passing multiple values per variable.
+See the [Advanced configuration](#advanced-configuration) section for details.
 
 #### Exclude
 
-To exclude given variable combination, use `exclude` section:
+To exclude a given variable combination, use the `exclude` section:
 
 <!-- name="section-exclude" -->
 ```yaml
@@ -150,7 +150,7 @@ exclude:
 
 #### Include
 
-To run benchmarks with given variable value assignment without creating combinations, use `include` section:
+To run benchmarks with particular variable values assigned (without creating combinations), use the `include` section:
 
 <!-- name="section-include" -->
 ```yaml
@@ -162,14 +162,14 @@ include:
 
 ### Command Execution
 
-Benchalot has predefined execution order:
+Benchalot has a predefined execution order:
 
 ```
 setup -> (prepare -> benchmark -> conclude -> custom-metrics) * samples -> cleanup
 ```
 
-By default, only commands inside `benchmark` section are measured.
-However, you can modify this behavior by using `custom-metrics`.
+By default, only the commands inside the `benchmark` section are measured.
+However, you can modify this behavior by using the `custom-metrics` section.
 
 <!-- name="section-run" -->
 ```yaml
@@ -211,9 +211,9 @@ env:                            # specify additional environment variables to be
 
 The `system` section allows the user to apply variance reduction measures.
 When benchmarking in a regular system environment, external factors such as other processes or randomized memory layout can affect the measurements.
-Options in this section aim to minimize some of the external factors. 
-Using these options require benchalot to be run with root privileges.
-The section is optional; if no options are specified, benchalot can be run without root.
+The options in this section aim to minimize some of such external factors.
+To use these options, you need to run benchalot with root privileges.
+This section is optional; if no options are specified, you can run benchalot without root.
 
 <!-- name="section-system" -->
 ```yaml
@@ -286,15 +286,15 @@ results:
 ```
 
 Additionally, instead of using variable names you can use one of the following:
-* `stage` - column containing stages' names.
-* `failed` - column containing `True` or `False` depending on whether the benchmark failed.
 
+* `stage` - column containing stage names
+* `failed` - column containing `True` or `False` depending on whether the benchmark failed
 
 #### Multiplying output
 
 To create multiple outputs from one rule, you can use variables in filenames.
 
-For example, to create a separate bar chart for each value of variable `tag`, your configuration should look like this:
+For example, to create a separate bar chart for each value of the variable `tag`, your configuration should look like this:
 
 <!-- name=special-option-mul" -->
 ```yaml
@@ -314,7 +314,7 @@ If we add this section to the configuration above, benchalot will generate two f
 
 ### Advanced Configuration
 
-This configuration file is used to measure size difference between a file compressed by `gzip`, `bzip2` and `xz`
+The configuration file below is used to measure size difference between a file compressed by `gzip`, `bzip2` and `xz`
 It also measures how much time it takes to compress and decompress a file.
 
  <!--name="example-advanced"-->
@@ -332,7 +332,7 @@ matrix:
       decompress: "unxz"
       ext: "xz"
 
-benchmark:                                                        # divide benchmark section into two stages `compress` and `decompress`
+benchmark:                                                        # divide benchmark section into two stages: `compress` and `decompress`
   compress:
     - "{{opt.compress}} -c plot.png > out.{{opt.ext}}"            # use `{{opt.compress}}` to compress the file
   decompress:
@@ -358,13 +358,16 @@ results:
 
 #### Custom Metrics and Stages
 
-Standard syntax for specifying stages does not work with custom metrics.
-To specify your own stages with custom metrics make sure that command prints formatted measurements formatted like `csv` file to `stdout`.
-For example, if the custom metric command outputs this:
+The standard syntax for specifying stages does not work with custom metrics.
+To specify your own stages with custom metrics, make sure that the command prints csv-formatted measurements to `stdout`.
+
+For example, if the custom metric command outputs the following:
+
 ```csv
 stage1,stage2
 19.3,30.12
 ```
+
 Benchalot will store `19.3` as the measurement for `stage1` and `30.12` as the measurement for `stage2`.
 
 ## CLI
@@ -375,41 +378,47 @@ To see available command line arguments type:
 benchalot --help
 ```
 
-To print command execution plan without running benchmarks, use `--plan`:
+To print the command execution plan without running benchmarks, use `--plan`:
+
 <!--name="cli-plan"-->
 ```bash
 benchalot config.yml --plan
 ```
-Please note that the execution plan will not take number of samples into account.
+
+Please note that the execution plan will not take the number of samples into account.
 
 To generate the output without re-running benchmarks, use `--results-from-csv`:
+
 <!--name="cli-results-from-csv"-->
 ```bash
 benchalot config.yml --results-from-csv result.csv
 ```
 
 To include previous results with the next benchmark, use `--include`:
+
 <!--name="cli-include"-->
 ```bash
 benchalot config.yml --include result.csv
 ```
 
-To split configuration file into many smaller ones, use `--split`:
+To split the configuration file into many smaller ones, use `--split`:
+
 <!--name="cli-split"-->
 ```bash
 benchalot config.yml --split tag
 ```
 
-In case one of the benchmarks fails (its exit code is not equal 0) benchalot will filter out the failed results when creating outputs (the `csv` file will still include the failed benchmarks).
+In case one of the benchmarks fails (its exit code is not equal to 0), benchalot will filter out the failed results when creating outputs (the `csv` file will still include the failed benchmarks).
 To generate outputs with failed benchmarks, use `--include-failed`:
+
 <!--name="cli-include-failed"-->
 ```bash
 benchalot config.yml -r result.csv --include-failed
 ```
 
-
 Benchalot will try to automatically detect and remove outliers (the `csv` file will still include them) using [modified Z-Score](http://d-scholarship.pitt.edu/7948/1/Seo.pdf).
 To generate outputs with outliers, use `--include-outliers`:
+
 <!--name="cli-include-outliers"-->
 ```bash
 benchalot config.yml -r result.csv --include-outliers
