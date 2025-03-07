@@ -49,7 +49,7 @@ def main():
         print(
             "To perform system configuration, root privileges are required. Running sudo..."
         )
-        execvp("sudo", ["sudo", executable] + argv)
+        execvp("sudo", ["sudo", "-E", executable] + argv)
 
     benchmarks = prepare_benchmarks(config)
     logger.info("Preparing 'setup' and 'cleanup' commands...")
