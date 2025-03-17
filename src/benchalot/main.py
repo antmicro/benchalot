@@ -215,7 +215,7 @@ def load_configuration_file(filename):
             with config_file:
                 config = yaml.safe_load(config_file)
         except yaml.YAMLError as e:
-            logger.critical(e)
+            logger.critical(f"Failed to parse config file:\n{e}")
             exit(1)
 
     return config

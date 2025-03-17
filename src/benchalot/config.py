@@ -21,11 +21,13 @@ logger = getLogger(f"benchalot.{__name__}")
 
 
 def error_and_exit(error):
-    logger.critical("Config validation failed.")
-    logger.critical(f"Encountered {error.error_count()} errors")
+    error_msgs = []
     for e in error.errors():
-        location = e["loc"]
-        logger.critical(f"{location}: {e['msg']}, input: '{e['input']}'")
+        locations = e["loc"]
+        location_str = ".".join(locations)
+        error_msgs.append(f"{location_str}: {e['msg']}, received '{e['input']}'.")
+    error_str = "\n".join(error_msgs)
+    logger.critical(f"Config validation failed:\n{error_str}")
     exit(1)
 
 
