@@ -2,6 +2,8 @@
 
 Copyright (c) 2024-2025 [Antmicro](https://www.antmicro.com)
 
+![Benchalot logo](./images/benchalot-logo.png)
+
 ## Overview
 
 Benchalot is a tool used for automatic benchmarking of software.
