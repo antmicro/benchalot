@@ -30,6 +30,7 @@ from benchalot.system import modify_system_state, restore_system_state
 from os.path import isdir
 import threading
 from collections import deque
+from os.path import expandvars, expanduser
 
 logger = getLogger(f"benchalot.{__name__}")
 working_directory = getcwd()
@@ -38,6 +39,8 @@ working_directory = getcwd()
 def set_working_directory(cwd: str) -> None:
     """Set working directory of executed commands"""
     global working_directory
+    cwd = expandvars(cwd)
+    cwd = expanduser(cwd)
     if not isdir(cwd):
         logger.critical(f"Directory '{cwd}' not found")
         exit(1)
@@ -231,9 +234,9 @@ def perform_benchmarks(
         for benchmark in benchmarks:
             try:
                 logger.debug(f"Running benchmark: {benchmark}")
+                environ.update(benchmark.env)
                 if benchmark.cwd:
                     set_working_directory(benchmark.cwd)
-                environ.update(benchmark.env)
                 with console.log_to_file(benchmark.save_output):
                     has_failed = False
                     if not _execute_section(benchmark.setup):
