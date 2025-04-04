@@ -290,7 +290,7 @@ def output_md(results_df: pd.DataFrame, output: TableMdOutput, output_filename):
     )
     if table is not None:
         # NOTE: to_markdown messes with column dtypes
-        table.to_markdown(output_filename, index=False, intfmt=",", floatfmt=",")
+        table.to_markdown(output_filename, index=False, intfmt=",", floatfmt=".3f")
         return True
     else:
         return False
@@ -310,7 +310,7 @@ def output_html(
     if table is not None:
         # NOTE: to_markdown messes with column dtypes
         table.to_markdown(
-            output_filename, index=False, tablefmt="html", intfmt=",", floatfmt=","
+            output_filename, index=False, tablefmt="html", intfmt=",", floatfmt=".3f"
         )
         return True
     else:
@@ -640,5 +640,5 @@ def _output_results(
         )
         if print_table is not None:
             console.print(
-                print_table.to_markdown(index=False, intfmt=",", floatfmt=",")
+                print_table.to_markdown(index=False, intfmt=",", floatfmt=".3f")
             )
