@@ -12,7 +12,7 @@ from atexit import register
 from contextlib import contextmanager
 import sys
 from time import monotonic
-
+from shutil import get_terminal_size
 
 logger = getLogger(f"benchalot.{__name__}")
 
@@ -43,17 +43,35 @@ class Bar:
     def refresh(self):
         time_curr = monotonic()
         if (time_curr - self.prev_tic) >= 0.100:
+            time_elapsed = time_curr - self.start_time
+
+            # the elapsed time is longer by 1 digit,
+            # we need to redraw the whole bar in case it does not fit on the screen
+            if int(time_elapsed) // 10 > int(self.prev_tic - self.start_time) // 10:
+                self.redraw_bar = True
+
+            self.prev_tic = time_curr
+
+            anim_str = f"  {self.curr_iter}/{self.n_iter}  [{self.anim[self.spinner_state]} {time_elapsed:.1f}s]"
+            self.spinner_state = (self.spinner_state + 1) % len(self.anim)
+
             buffer = ""
             if self.redraw_bar:
                 self.erase()
-                buffer += f"{self.title} [{self.bar}]"
+                terminal_width = get_terminal_size().columns
+                bar_str = f"{self.title} [{self.bar}]"
+                n_overlowing_chars = (len(bar_str) + len(anim_str)) - terminal_width
+                if n_overlowing_chars > 0:
+                    ellipsis = "..."
+                    title = (
+                        self.title[: -(n_overlowing_chars + len(ellipsis))] + ellipsis
+                    )
+                    bar_str = f"{title} [{self.bar}]"
+                buffer += bar_str
                 self.redraw_bar = False
-            time_elapsed = time_curr - self.start_time
             buffer += "\033[s"  # save cursor position
-            buffer += f"  {self.curr_iter}/{self.n_iter}  [{self.anim[self.spinner_state]} {time_elapsed:.1f}s]"
+            buffer += anim_str
             buffer += "\033[u"  # restore cursor position
-            self.spinner_state = (self.spinner_state + 1) % len(self.anim)
-            self.prev_tic = time_curr
             self._write_impl(buffer)
             self._flush_impl()
         self.total_drawing_time += monotonic() - time_curr
