@@ -73,7 +73,6 @@ def execute_command(command: str) -> Popen:
     Returns:
         Popen: Process object.
     """
-    global working_directory
     logger.info(command)
     return Popen(command, shell=True, stdout=PIPE, stderr=PIPE, cwd=working_directory)
 

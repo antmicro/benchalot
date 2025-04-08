@@ -174,7 +174,6 @@ def setup_benchalot_logging(verbose: bool, debug: bool) -> None:
         verbose: If true, set logging level to `INFO`.
         debug: If true, set logging level to `DEBUG`.
     """
-    global console
     console.set_verbose(verbose or debug)
     consoleHandler = StreamHandler(stream=console)
     consoleHandler.setFormatter(
