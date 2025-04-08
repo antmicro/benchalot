@@ -30,7 +30,6 @@ class Bar:
         self.start_time = monotonic()
         self.prev_tic = monotonic()
 
-        self.redraw_bar = True
         self._write_impl("\33[?25l")  # hide cursor
         self.total_drawing_time = 0
 
@@ -44,35 +43,19 @@ class Bar:
         time_curr = monotonic()
         if (time_curr - self.prev_tic) >= 0.100:
             time_elapsed = time_curr - self.start_time
-
-            # the elapsed time is longer by 1 digit,
-            # we need to redraw the whole bar in case it does not fit on the screen
-            if int(time_elapsed) // 10 > int(self.prev_tic - self.start_time) // 10:
-                self.redraw_bar = True
-
             self.prev_tic = time_curr
+            self.erase()
 
-            anim_str = f"  {self.curr_iter}/{self.n_iter}  [{self.anim[self.spinner_state]} {time_elapsed:.1f}s]"
+            constant_length_part = f"[{self.bar}]  {self.curr_iter}/{self.n_iter}  [{self.anim[self.spinner_state]} {time_elapsed:.1f}s]"
+            terminal_width = get_terminal_size().columns
+            n_overflowing_chars = (
+                len(constant_length_part) + len(self.title) - terminal_width
+            )
+            if n_overflowing_chars > 0:
+                self.title = self.title[: -(n_overflowing_chars + 3)] + "..."
+            self._write_impl(self.title)
+            self._write_impl(constant_length_part)
             self.spinner_state = (self.spinner_state + 1) % len(self.anim)
-
-            buffer = ""
-            if self.redraw_bar:
-                self.erase()
-                terminal_width = get_terminal_size().columns
-                bar_str = f"{self.title} [{self.bar}]"
-                n_overlowing_chars = (len(bar_str) + len(anim_str)) - terminal_width
-                if n_overlowing_chars > 0:
-                    ellipsis = "..."
-                    title = (
-                        self.title[: -(n_overlowing_chars + len(ellipsis))] + ellipsis
-                    )
-                    bar_str = f"{title} [{self.bar}]"
-                buffer += bar_str
-                self.redraw_bar = False
-            buffer += "\033[s"  # save cursor position
-            buffer += anim_str
-            buffer += "\033[u"  # restore cursor position
-            self._write_impl(buffer)
             self._flush_impl()
         self.total_drawing_time += monotonic() - time_curr
 
@@ -85,21 +68,19 @@ class Bar:
         for i in range(progress):
             bar[i] = "█"
         self.bar = "".join(bar)
-        self.redraw_bar = True
         logger.debug(f"Drawing live progress bar took: {self.total_drawing_time:.2f}s")
+        self.total_drawing_time = 0
 
     def write(self, buffer):
         self.erase()
         self._write_impl(buffer)
-        self.redraw_bar = True
 
     def erase(self):
         self._write_impl("\33[2K")  # erase entire line
         self._write_impl("\33[0G")  # move cursor to the first column
 
     def set_description(self, title):
-        self.title = title
-        self.redraw_bar = True
+        self.title = title.strip()
 
     def __del__(self):
         self._write_impl("\33[?25h")  # show cursor again
